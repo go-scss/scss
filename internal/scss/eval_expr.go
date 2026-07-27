@@ -87,7 +87,7 @@ func (e *evaluator) evalVarRef(x *VarRef) Value {
 func (e *evaluator) evalIdent(x *Ident) Value {
 	lower := strings.ToLower(x.Name)
 	if lower == "transparent" {
-		return &SassColor{Rf: 0, Gf: 0, Bf: 0, A: 0, Original: x.Name}
+		return namedColorTransparent(x.Name)
 	}
 	if c, ok := lookupNamedColor(x.Name); ok {
 		return c
@@ -155,15 +155,20 @@ func (e *evaluator) evalBinary(x *Binary) Value {
 		}
 		return e.evalExpr(x.Right)
 	}
-	if x.Op == "/" && x.Slash {
+	if x.Op == "/" {
 		l := e.evalExpr(x.Left)
 		r := e.evalExpr(x.Right)
-		if _, lok := l.(*Number); lok {
-			if _, rok := r.(*Number); rok {
-				return &List{Elements: []Value{l, r}, Sep: SepSlash}
+		_, lnum := l.(*Number)
+		_, rnum := r.(*Number)
+		if lnum && rnum {
+			if x.Slash {
+				return &List{Elements: []Value{l, r}, Sep: SepSlash, SlashLit: true}
 			}
+			return e.arith(x.Op, l, r)
 		}
-		return e.arith(x.Op, l, r)
+		// "/" between operands that aren't both numbers is a slash separator, not
+		// division (e.g. the "/ none" or "/ calc(…)" alpha in a color function).
+		return &List{Elements: []Value{l, r}, Sep: SepSlash, SlashLit: true}
 	}
 	l := e.evalExpr(x.Left)
 	r := e.evalExpr(x.Right)
@@ -215,8 +220,6 @@ func (e *evaluator) arith(op string, l, r Value) Value {
 		return e.stringOp(l, r, "")
 	case "-":
 		return e.stringOp(l, r, "-")
-	case "/":
-		return e.stringOp(l, r, "/")
 	case "*":
 		e.fail("Undefined operation \"%s * %s\".", serializeValue(l, false), serializeValue(r, false))
 	case "%":

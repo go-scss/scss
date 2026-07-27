@@ -290,10 +290,7 @@ func serializeValue(v Value, compressed bool) string {
 		}
 		return formatFloat(x.Val, compressed) + unitOutput(x)
 	case *SassColor:
-		if compressed {
-			return x.compressedRepr()
-		}
-		return x.expandedRepr()
+		return serializeColor(x, compressed, false)
 	case *SassString:
 		if x.Quoted {
 			return serializeQuoted(x.Text)
@@ -344,7 +341,11 @@ func serializeList(l *List, compressed bool) string {
 			sep = ", "
 		}
 	case SepSlash:
-		sep = "/"
+		if compressed || l.SlashLit {
+			sep = "/"
+		} else {
+			sep = " / "
+		}
 	default:
 		sep = " "
 	}

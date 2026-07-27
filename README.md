@@ -72,7 +72,7 @@ type CompileResult struct { CSS string; LoadedURLs []string; SourceMap string }
 
 Correctness is defined as **matching dart-sass byte-for-byte**. Two oracles enforce it:
 
-1. **sass-spec** — the canonical conformance suite ([github.com/sass/sass-spec](https://github.com/sass/sass-spec)), whose HRX archives pair each `input.scss` with the reference `output.css`. A differential harness runs every success case and reports the pass rate. Current rate: **3014 / 11406 success cases (26.4%)**. A representative, self-contained, all-passing subset of **506 cases** is frozen under `testdata/spec` as the in-repo conformance gate, so CI needs no sass-spec checkout; the full suite runs skip-gated (`SASS_SPEC_PATH=…`) and as a non-blocking CI job.
+1. **sass-spec** — the canonical conformance suite ([github.com/sass/sass-spec](https://github.com/sass/sass-spec)), whose HRX archives pair each `input.scss` with the reference `output.css`. A differential harness runs every success case and reports the pass rate. Current rate: **7520 / 11406 success cases (65.9%)**. A representative, self-contained, all-passing subset of **551 cases** is frozen under `testdata/spec` as the in-repo conformance gate, so CI needs no sass-spec checkout; the full suite runs skip-gated (`SASS_SPEC_PATH=…`) and as a non-blocking CI job.
 2. **Live dart-sass** — a hand-curated corpus of representative `.scss`/`.sass` files is compiled with both engines and diffed byte-for-byte (**all byte-match dart-sass 1.102** in expanded and compressed). Frozen as golden `testdata`; a skip-gated live test re-verifies against a real `sass` binary when present.
 
 ```
@@ -81,7 +81,7 @@ sass --version && go test ./...                 # also runs the live differentia
 SASS_SPEC_PATH=/path/to/sass-spec go test -run TestSassSpecFull -v ./   # full suite pass rate
 ```
 
-The bulk of remaining failures is the **CSS Color 4 color-space module** (see residuals).
+The **CSS Color 4 color-space module** is now implemented (see residuals for the named exotic cases that remain).
 
 ## Honest residuals
 
@@ -93,10 +93,12 @@ Dart Sass output is the source of truth; where this compiler intentionally diver
 - **Non-finite numbers** — `1/0`, `math.cos(∞)` serialize as `calc(infinity)` / `calc(-infinity)` / `calc(NaN)`.
 - **Hyphen/underscore-insensitive identifiers** — variables, functions, and mixins fold `_`↔`-` on both definition and lookup (`function_exists` ≡ `function-exists`).
 - **`meta.feature-exists`** returns the correct booleans for known features.
+- **CSS Color Level 4 color-space module** — all Color 4 spaces (`srgb`, `srgb-linear`, `display-p3`, `a98-rgb`, `prophoto-rgb`, `rec2020`, `xyz`/`xyz-d65`, `xyz-d50`, `lab`, `lch`, `oklab`, `oklch`) plus the `color()`, `lab()`/`lch()`/`oklab()`/`oklch()`/`hwb()` constructors and the `sass:color` module (`space`, `to-space`, `channel`, `is-legacy`, `is-missing`, `is-in-gamut`, `is-powerless`, `same`, `to-gamut` with `clip`/`local-minde`, plus `change`/`adjust`/`scale`/`mix`/`invert`/`complement` extended with `$space` and space-specific channels). Conversion matrices, gamma companding, Bradford D65↔D50 adaptation, OkLab/OkLCH, missing/`none`-channel carrying and powerless-channel rules match dart-sass 1.102 byte-for-byte (all products are rounded separately to keep results identical to dart across every architecture — dart never fuses multiply-add). This closed ~4400 sass-spec cases.
 
 **Still divergent** (named, not hidden):
 
-- **CSS Color Level 4 color-space module** — `color.to-space`, `color()`, `lab()`/`oklab()`/`oklch()`, `color.channel`, `color.to-gamut`, `color.is-powerless`, `math.atan2` and the non-sRGB spaces are **not implemented**. This is the single largest block of remaining sass-spec failures (~2800 cases, e.g. `core_functions/color/space/*`). The legacy sRGB/HSL/HWB model is complete.
+- **Special-number passthrough in color functions** — `calc()`/`var()`/`env()`/`attr()` channel arguments are preserved verbatim, but `min()`/`max()`/`clamp()` (and the `attr()` parse) still evaluate as Sass functions rather than CSS calculations, so a subset of `core_functions/color/**/special_functions/*` (min/max/clamp/attr) diverges. Needs the CSS calculation value type.
+- **Extreme out-of-gamut colors** — conversions of colors whose channels are far outside their gamut (e.g. `core_functions/color/to_space/*/out_of_range/far`) can differ from dart in the last 1–2 ULPs because the magnitudes amplify unavoidable floating-point rounding order differences; and a handful of achromatic extremes (`lab`/`oklab` white via HSL) can differ by one ULP.
 - **Source maps** — not emitted (`CompileResult.SourceMap` is empty).
 - **`@extend` / `sass:selector` unification** — class/placeholder extension with dart-compatible ordering works; `selector.extend`, `selector.is-superselector`, `selector.parse`, and complex/compound selector unification are not implemented (`core_functions/selector/extend/*`).
 - **Modern media-query syntax** — range (`width < 100px`) and `and`/`or`/`not` logic merging/pruning are partial (`css/media/logic/*`, `css/media/range/*`).
