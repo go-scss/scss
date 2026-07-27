@@ -30,7 +30,7 @@ func TestValueMethods(t *testing.T) {
 		newNumber(1, "px"),
 		&SassString{Text: "a", Quoted: true},
 		&SassString{Text: "b", Quoted: false},
-		&SassColor{Rf: 1, Gf: 2, Bf: 3, A: 1},
+		sassColorRGB(pf(1), pf(2), pf(3), pf(1), fmtNone),
 		&Boolean{V: true}, &Boolean{V: false},
 		sassNull,
 		&List{Elements: []Value{newNumber(1), newNumber(2)}, Sep: SepComma},
@@ -56,9 +56,9 @@ func TestValueMethods(t *testing.T) {
 		_ = n.unitString()
 		_ = serializeValue(n, false)
 	}
-	// clampInt255 bounds.
+	// clampLikeCss bounds.
 	for _, v := range []float64{-5, 0, 128, 255, 300} {
-		_ = clampInt255(v)
+		_ = clampLikeCss(v, 0, 255)
 	}
 }
 
@@ -193,8 +193,8 @@ func TestTargetedBranches(t *testing.T) {
 		// rgb/hsl argument forms
 		".a{v: rgb(1 2 3)}",
 		".a{v: rgb(10%, 20%, 30%); w: rgba(1,2,3,0.4)}",
-		".a{v: rgb((1 2 3)); w: rgb((1 2 3 4))}",
-		".a{v: hsl(120 50% 50%); w: hsl((120, 50%, 50%)); x: hsl((0 100% 50% 0.5))}",
+		".a{v: rgb((1 2 3)); w: rgb(1 2 3 / 0.5)}",
+		".a{v: hsl(120 50% 50%); w: hsl(120, 50%, 50%); x: hsl(0 100% 50% / 0.5)}",
 		".a{v: hsla(0,100%,50%,50%)}",
 		// color.scale all channels & signs, change/adjust alpha
 		"@use \"sass:color\"; .a{v: color.scale(#808080, $red: 50%, $green: -50%, $blue: 20%, $alpha: -10%)}",
@@ -306,7 +306,7 @@ func TestValueEqualityAndFormat(t *testing.T) {
 		_ = isHexColor(s)
 	}
 	for _, h := range []float64{-30, 400, 0, 360, 720} {
-		_ = normalizeHue(h)
+		_ = normalizeHueP(pf(h), false)
 	}
 }
 
@@ -377,8 +377,8 @@ func TestRawAndMiscBranches(t *testing.T) {
 	}
 	// value.equals across differing types and colors with alpha
 	cs := []Value{
-		&SassColor{Rf: 1, Gf: 2, Bf: 3, A: 0.5},
-		&SassColor{Rf: 1, Gf: 2, Bf: 3, A: 1},
+		sassColorRGB(pf(1), pf(2), pf(3), pf(0.5), fmtNone),
+		sassColorRGB(pf(1), pf(2), pf(3), pf(1), fmtNone),
 		newNumber(1, "px"),
 		newNumber(1, "em"),
 		&SassString{Text: "x", Quoted: true},

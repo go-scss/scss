@@ -81,47 +81,6 @@ func (n *Number) unitString() string {
 	return num + "/" + den
 }
 
-// SassColor is a legacy RGBA color with floating-point channels (0..255). Modern
-// dart-sass keeps sub-integer channel precision (e.g. after mix/scale/adjust) and
-// serializes non-integer channels as rgb() percentages, so the channels are
-// stored as floats. Original, when non-empty, is the verbatim serialization for a
-// source literal (hex/keyword/hsl); rgbFmt marks an rgb()-function literal, which
-// serializes in rgb() form without keyword substitution.
-type SassColor struct {
-	Rf, Gf, Bf float64
-	A          float64
-	Original   string
-	rgbFmt     bool
-}
-
-// Ri/Gi/Bi return channels rounded and clamped to the legacy 0..255 integer
-// range, used by channel accessors (red/green/blue) and equality.
-func (c *SassColor) Ri() int { return clampInt255(c.Rf) }
-func (c *SassColor) Gi() int { return clampInt255(c.Gf) }
-func (c *SassColor) Bi() int { return clampInt255(c.Bf) }
-
-func clampInt255(v float64) int {
-	r := int(fuzzyRound(v))
-	if r < 0 {
-		return 0
-	}
-	if r > 255 {
-		return 255
-	}
-	return r
-}
-
-func (c *SassColor) isTruthy() bool  { return true }
-func (c *SassColor) sep() Separator  { return SepUndecided }
-func (c *SassColor) asList() []Value { return []Value{c} }
-func (c *SassColor) equals(o Value) bool {
-	oc, ok := o.(*SassColor)
-	if !ok {
-		return false
-	}
-	return c.Ri() == oc.Ri() && c.Gi() == oc.Gi() && c.Bi() == oc.Bi() && c.A == oc.A
-}
-
 // SassString is a text value, quoted or unquoted.
 type SassString struct {
 	Text   string
@@ -177,6 +136,10 @@ type List struct {
 	Elements  []Value
 	Sep       Separator
 	Bracketed bool
+	// SlashLit marks a slash-separated list that came from literal "a/b"
+	// division syntax, which serializes without spaces ("a/b"); constructed
+	// slash lists (list.slash) serialize with spaces ("a / b").
+	SlashLit bool
 }
 
 func (l *List) isTruthy() bool  { return true }
@@ -272,6 +235,54 @@ func fuzzyRound(v float64) float64 {
 	return math.Ceil(v - 0.5)
 }
 
+// roundDecimalString rounds a shortest decimal string to at most 10 fractional
+// digits, half-up, mirroring dart-sass's _writeRounded.
+func roundDecimalString(text string) string {
+	neg := strings.HasPrefix(text, "-")
+	body := text
+	if neg {
+		body = text[1:]
+	}
+	dot := strings.IndexByte(body, '.')
+	if dot < 0 {
+		return text
+	}
+	frac := body[dot+1:]
+	if len(frac) <= 10 {
+		return text
+	}
+	intpart := body[:dot]
+	digits := []byte(intpart + frac[:10])
+	ilen := len(intpart)
+	if frac[10] >= '5' {
+		i := len(digits) - 1
+		for {
+			if digits[i] == '9' {
+				digits[i] = '0'
+				i--
+				if i < 0 {
+					digits = append([]byte{'1'}, digits...)
+					ilen++
+					break
+				}
+			} else {
+				digits[i]++
+				break
+			}
+		}
+	}
+	ni := string(digits[:ilen])
+	nf := strings.TrimRight(string(digits[ilen:]), "0")
+	res := ni
+	if nf != "" {
+		res += "." + nf
+	}
+	if neg {
+		res = "-" + res
+	}
+	return res
+}
+
 // formatFloat renders a float the way dart-sass does: up to 10 fractional
 // digits, trailing zeros stripped, "-0" normalised to "0", and (when
 // compressed) a leading zero dropped for magnitudes below 1.
@@ -285,11 +296,9 @@ func formatFloat(f float64, compressed bool) string {
 		}
 		return "-Infinity"
 	}
-	s := strconv.FormatFloat(f, 'f', 10, 64)
-	if strings.Contains(s, ".") {
-		s = strings.TrimRight(s, "0")
-		s = strings.TrimRight(s, ".")
-	}
+	// dart-sass serializes the shortest round-trippable decimal, then rounds to
+	// at most SassNumber.precision (10) fractional digits.
+	s := roundDecimalString(strconv.FormatFloat(f, 'f', -1, 64))
 	if s == "-0" || s == "" {
 		s = "0"
 	}

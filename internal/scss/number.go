@@ -39,6 +39,37 @@ var unitFactors = map[string]struct {
 	"dppx": {"dppx", 1},
 }
 
+// hasUnit reports whether n has exactly the single numerator unit u.
+func (n *Number) hasUnit(u string) bool {
+	return len(n.Numer) == 1 && n.Numer[0] == u && len(n.Denom) == 0
+}
+
+// compatibleWithUnit reports whether n is unitless or convertible to unit u.
+func (n *Number) compatibleWithUnit(u string) bool {
+	if !n.hasUnits() {
+		return true
+	}
+	if len(n.Numer) != 1 || len(n.Denom) != 0 {
+		return false
+	}
+	c1, _, ok1 := canonicalOf(n.Numer[0])
+	c2, _, ok2 := canonicalOf(u)
+	return ok1 && ok2 && c1 == c2
+}
+
+// coerceValueToUnit returns n's value expressed in unit u (n must be unitless
+// or unit-compatible with u).
+func (n *Number) coerceValueToUnit(u string) float64 {
+	if !n.hasUnits() {
+		return n.Val
+	}
+	v, ok := convertUnitList(n.Val, n.Numer, []string{u}, true)
+	if !ok {
+		return n.Val
+	}
+	return v
+}
+
 func canonicalOf(unit string) (string, float64, bool) {
 	f, ok := unitFactors[strings.ToLower(unit)]
 	if !ok {

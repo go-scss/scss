@@ -4,80 +4,775 @@
 package scss
 
 import (
-	"fmt"
 	"math"
 	"strings"
 )
 
-// namedColors maps CSS color keywords to their RGB triples.
-var namedColors = map[string][3]int{
-	"aliceblue": {240, 248, 255}, "antiquewhite": {250, 235, 215}, "aqua": {0, 255, 255},
-	"aquamarine": {127, 255, 212}, "azure": {240, 255, 255}, "beige": {245, 245, 220},
-	"bisque": {255, 228, 196}, "black": {0, 0, 0}, "blanchedalmond": {255, 235, 205},
-	"blue": {0, 0, 255}, "blueviolet": {138, 43, 226}, "brown": {165, 42, 42},
-	"burlywood": {222, 184, 135}, "cadetblue": {95, 158, 160}, "chartreuse": {127, 255, 0},
-	"chocolate": {210, 105, 30}, "coral": {255, 127, 80}, "cornflowerblue": {100, 149, 237},
-	"cornsilk": {255, 248, 220}, "crimson": {220, 20, 60}, "cyan": {0, 255, 255},
-	"darkblue": {0, 0, 139}, "darkcyan": {0, 139, 139}, "darkgoldenrod": {184, 134, 11},
-	"darkgray": {169, 169, 169}, "darkgreen": {0, 100, 0}, "darkgrey": {169, 169, 169},
-	"darkkhaki": {189, 183, 107}, "darkmagenta": {139, 0, 139}, "darkolivegreen": {85, 107, 47},
-	"darkorange": {255, 140, 0}, "darkorchid": {153, 50, 204}, "darkred": {139, 0, 0},
-	"darksalmon": {233, 150, 122}, "darkseagreen": {143, 188, 143}, "darkslateblue": {72, 61, 139},
-	"darkslategray": {47, 79, 79}, "darkslategrey": {47, 79, 79}, "darkturquoise": {0, 206, 209},
-	"darkviolet": {148, 0, 211}, "deeppink": {255, 20, 147}, "deepskyblue": {0, 191, 255},
-	"dimgray": {105, 105, 105}, "dimgrey": {105, 105, 105}, "dodgerblue": {30, 144, 255},
-	"firebrick": {178, 34, 34}, "floralwhite": {255, 250, 240}, "forestgreen": {34, 139, 34},
-	"fuchsia": {255, 0, 255}, "gainsboro": {220, 220, 220}, "ghostwhite": {248, 248, 255},
-	"gold": {255, 215, 0}, "goldenrod": {218, 165, 32}, "gray": {128, 128, 128},
-	"green": {0, 128, 0}, "greenyellow": {173, 255, 47}, "grey": {128, 128, 128},
-	"honeydew": {240, 255, 240}, "hotpink": {255, 105, 180}, "indianred": {205, 92, 92},
-	"indigo": {75, 0, 130}, "ivory": {255, 255, 240}, "khaki": {240, 230, 140},
-	"lavender": {230, 230, 250}, "lavenderblush": {255, 240, 245}, "lawngreen": {124, 252, 0},
-	"lemonchiffon": {255, 250, 205}, "lightblue": {173, 216, 230}, "lightcoral": {240, 128, 128},
-	"lightcyan": {224, 255, 255}, "lightgoldenrodyellow": {250, 250, 210}, "lightgray": {211, 211, 211},
-	"lightgreen": {144, 238, 144}, "lightgrey": {211, 211, 211}, "lightpink": {255, 182, 193},
-	"lightsalmon": {255, 160, 122}, "lightseagreen": {32, 178, 170}, "lightskyblue": {135, 206, 250},
-	"lightslategray": {119, 136, 153}, "lightslategrey": {119, 136, 153}, "lightsteelblue": {176, 196, 222},
-	"lightyellow": {255, 255, 224}, "lime": {0, 255, 0}, "limegreen": {50, 205, 50},
-	"linen": {250, 240, 230}, "magenta": {255, 0, 255}, "maroon": {128, 0, 0},
-	"mediumaquamarine": {102, 205, 170}, "mediumblue": {0, 0, 205}, "mediumorchid": {186, 85, 211},
-	"mediumpurple": {147, 112, 219}, "mediumseagreen": {60, 179, 113}, "mediumslateblue": {123, 104, 238},
-	"mediumspringgreen": {0, 250, 154}, "mediumturquoise": {72, 209, 204}, "mediumvioletred": {199, 21, 133},
-	"midnightblue": {25, 25, 112}, "mintcream": {245, 255, 250}, "mistyrose": {255, 228, 225},
-	"moccasin": {255, 228, 181}, "navajowhite": {255, 222, 173}, "navy": {0, 0, 128},
-	"oldlace": {253, 245, 230}, "olive": {128, 128, 0}, "olivedrab": {107, 142, 35},
-	"orange": {255, 165, 0}, "orangered": {255, 69, 0}, "orchid": {218, 112, 214},
-	"palegoldenrod": {238, 232, 170}, "palegreen": {152, 251, 152}, "paleturquoise": {175, 238, 238},
-	"palevioletred": {219, 112, 147}, "papayawhip": {255, 239, 213}, "peachpuff": {255, 218, 185},
-	"peru": {205, 133, 63}, "pink": {255, 192, 203}, "plum": {221, 160, 221},
-	"powderblue": {176, 224, 230}, "purple": {128, 0, 128}, "rebeccapurple": {102, 51, 153},
-	"red": {255, 0, 0}, "rosybrown": {188, 143, 143}, "royalblue": {65, 105, 225},
-	"saddlebrown": {139, 69, 19}, "salmon": {250, 128, 114}, "sandybrown": {244, 164, 96},
-	"seagreen": {46, 139, 87}, "seashell": {255, 245, 238}, "sienna": {160, 82, 45},
-	"silver": {192, 192, 192}, "skyblue": {135, 206, 235}, "slateblue": {106, 90, 205},
-	"slategray": {112, 128, 144}, "slategrey": {112, 128, 144}, "snow": {255, 250, 250},
-	"springgreen": {0, 255, 127}, "steelblue": {70, 130, 180}, "tan": {210, 180, 140},
-	"teal": {0, 128, 128}, "thistle": {216, 191, 216}, "tomato": {255, 99, 71},
-	"turquoise": {64, 224, 208}, "violet": {238, 130, 238}, "wheat": {245, 222, 179},
-	"white": {255, 255, 255}, "whitesmoke": {245, 245, 245}, "yellow": {255, 255, 0},
-	"yellowgreen": {154, 205, 50},
+// colorFormat records how a color literal was written, for expanded-mode
+// serialization (only meaningful for legacy rgb-space colors).
+type colorFormat int
+
+const (
+	fmtNone colorFormat = iota
+	fmtRgbFunction
+	fmtSpan // original holds the verbatim source text (hex/keyword/hsl literal)
+)
+
+// SassColor is a CSS Color 4 color: a color space, three channels (with
+// optional "missing"/none flags), and an alpha channel. Legacy rgb/hsl/hwb
+// colors are represented in their own spaces just like modern ones; the
+// serializer collapses them to the shortest legacy form.
+type SassColor struct {
+	space      ColorSpace
+	c0, c1, c2 float64
+	m0, m1, m2 bool // channel is "missing" (none)
+	alpha      float64
+	am         bool // alpha is missing
+	format     colorFormat
+	original   string
 }
 
-// rgbToName maps an RGB triple to the shortest CSS keyword, matching dart-sass's
-// choice for compressed output.
-var rgbToName = buildRGBToName()
+// --- nullable-channel helpers (mirror dart-sass's double?) ---
 
-func buildRGBToName() map[[3]int]string {
-	m := make(map[[3]int]string)
-	// Iterate deterministically over a preferred-order list so the shortest name
-	// wins ties the way dart-sass does (e.g. aqua over cyan, magenta over fuchsia).
-	for name, rgb := range namedColors {
-		if cur, ok := m[rgb]; !ok || len(name) < len(cur) || (len(name) == len(cur) && name < cur) {
-			m[rgb] = name
+// noFMA rounds x, acting as a barrier that stops the Go compiler from fusing a
+// multiply and an add into one FMA instruction (which some arches, e.g. arm64,
+// do). dart-sass never fuses, so this keeps every conversion bit-identical to
+// dart-sass and identical across all target architectures.
+func noFMA(x float64) float64 { return float64(x) }
+
+// dot3 computes a·b + c·d + e·f with each product rounded separately (no FMA).
+func dot3(a0, b0, a1, b1, a2, b2 float64) float64 {
+	return noFMA(a0*b0) + noFMA(a1*b1) + noFMA(a2*b2)
+}
+
+func pf(v float64) *float64 { return &v }
+
+func orZero(p *float64) float64 {
+	if p == nil {
+		return 0
+	}
+	return *p
+}
+
+func mapP(p *float64, f func(float64) float64) *float64 {
+	if p == nil {
+		return nil
+	}
+	return pf(f(*p))
+}
+
+func divP(p *float64, d float64) *float64 {
+	if p == nil {
+		return nil
+	}
+	return pf(*p / d)
+}
+
+func mulP(p *float64, m float64) *float64 {
+	if p == nil {
+		return nil
+	}
+	return pf(*p * m)
+}
+
+// --- fuzzy helpers (dart-sass semantics) ---
+
+func fuzzyLessThan(a, b float64) bool    { return a < b && !fuzzyEquals(a, b) }
+func fuzzyGreaterThan(a, b float64) bool { return a > b && !fuzzyEquals(a, b) }
+func fuzzyLessThanOrEquals(a, b float64) bool {
+	return a < b || fuzzyEquals(a, b)
+}
+func fuzzyGreaterThanOrEquals(a, b float64) bool {
+	return a > b || fuzzyEquals(a, b)
+}
+func fuzzyInRange(v, min, max float64) bool {
+	return fuzzyGreaterThanOrEquals(v, min) && fuzzyLessThanOrEquals(v, max)
+}
+func fuzzyIsIntC(v float64) bool { return fuzzyEquals(v, math.Round(v)) }
+
+// clampLikeCss clamps v to [min,max], snapping fuzzily-equal bounds.
+func clampLikeCss(v, min, max float64) float64 {
+	if fuzzyEquals(v, min) {
+		return min
+	}
+	if fuzzyEquals(v, max) {
+		return max
+	}
+	if v < min {
+		return min
+	}
+	if v > max {
+		return max
+	}
+	return v
+}
+
+// dartMod returns a % b with the sign of b (Dart's % operator).
+func dartMod(a, b float64) float64 {
+	r := math.Mod(a, b)
+	if r != 0 && (r < 0) != (b < 0) {
+		r += b
+	}
+	return r
+}
+
+func toLowerASCII(s string) string { return strings.ToLower(s) }
+
+// --- constructors ---
+
+// newColorRaw builds a color with no channel pre-processing (dart's _forSpace).
+func newColorRaw(space ColorSpace, c0, c1, c2, alpha *float64, format colorFormat, original string) *SassColor {
+	c := &SassColor{space: space, format: format, original: original}
+	setChan(&c.c0, &c.m0, c0)
+	setChan(&c.c1, &c.m1, c1)
+	setChan(&c.c2, &c.m2, c2)
+	if alpha == nil {
+		c.am = true
+	} else {
+		c.alpha = clampLikeCss(*alpha, 0, 1)
+	}
+	return c
+}
+
+func setChan(v *float64, miss *bool, p *float64) {
+	if p == nil {
+		*miss = true
+		*v = 0
+	} else {
+		*v = *p
+	}
+}
+
+// newColor builds a color applying dart's forSpaceInternal normalization
+// (hue wrapping and chroma/saturation absolute value for polar spaces).
+func newColor(space ColorSpace, c0, c1, c2, alpha *float64) *SassColor {
+	switch space {
+	case spaceHSL:
+		invert := c1 != nil && fuzzyLessThan(*c1, 0)
+		return newColorRaw(space, normalizeHueP(c0, invert), mapP(c1, math.Abs), c2, alpha, fmtNone, "")
+	case spaceHWB:
+		return newColorRaw(space, normalizeHueP(c0, false), c1, c2, alpha, fmtNone, "")
+	case spaceLCH, spaceOklch:
+		invert := c1 != nil && fuzzyLessThan(*c1, 0)
+		return newColorRaw(space, c0, mapP(c1, math.Abs), normalizeHueP(c2, invert), alpha, fmtNone, "")
+	default:
+		return newColorRaw(space, c0, c1, c2, alpha, fmtNone, "")
+	}
+}
+
+func normalizeHueP(hue *float64, invert bool) *float64 {
+	if hue == nil {
+		return nil
+	}
+	off := 0.0
+	if invert {
+		off = 180
+	}
+	return pf(dartMod(dartMod(*hue, 360)+360+off, 360))
+}
+
+// sassColorRGB builds a legacy rgb-space color with an explicit format.
+func sassColorRGB(r, g, b, alpha *float64, format colorFormat) *SassColor {
+	return newColorRaw(spaceRGB, r, g, b, alpha, format, "")
+}
+
+// --- accessors ---
+
+func (c *SassColor) channels() [3]*float64 {
+	var out [3]*float64
+	if !c.m0 {
+		out[0] = pf(c.c0)
+	}
+	if !c.m1 {
+		out[1] = pf(c.c1)
+	}
+	if !c.m2 {
+		out[2] = pf(c.c2)
+	}
+	return out
+}
+
+func (c *SassColor) alphaP() *float64 {
+	if c.am {
+		return nil
+	}
+	return pf(c.alpha)
+}
+
+func (c *SassColor) hasMissingChannel() bool {
+	return c.m0 || c.m1 || c.m2 || c.am
+}
+
+func (c *SassColor) isLegacy() bool { return spaceIsLegacy(c.space) }
+
+func (c *SassColor) channelMissingByName(name string) (bool, bool) {
+	chans := spaceChannels(c.space)
+	miss := [3]bool{c.m0, c.m1, c.m2}
+	for i := range chans {
+		if chans[i].name == name {
+			return miss[i], true
 		}
 	}
-	return m
+	if name == "alpha" {
+		return c.am, true
+	}
+	return false, false
 }
+
+func (c *SassColor) channelPowerlessByName(name string) (bool, bool) {
+	chans := spaceChannels(c.space)
+	for i := range chans {
+		if chans[i].name == name {
+			return c.isChannelPowerless(i), true
+		}
+	}
+	if name == "alpha" {
+		return false, true
+	}
+	return false, false
+}
+
+func (c *SassColor) isChannelPowerless(index int) bool {
+	switch index {
+	case 0:
+		switch c.space {
+		case spaceHSL:
+			return fuzzyEquals(c.c1, 0)
+		case spaceHWB:
+			return fuzzyGreaterThanOrEquals(c.c1+c.c2, 100)
+		}
+	case 2:
+		switch c.space {
+		case spaceLCH, spaceOklch:
+			return fuzzyEquals(c.c1, 0)
+		}
+	}
+	return false
+}
+
+func (c *SassColor) isInGamut() bool {
+	if !spaceIsBounded(c.space) {
+		return true
+	}
+	chans := spaceChannels(c.space)
+	vals := [3]float64{c.c0, c.c1, c.c2}
+	for i := range chans {
+		if chans[i].polar {
+			continue
+		}
+		if !fuzzyInRange(vals[i], chans[i].min, chans[i].max) {
+			return false
+		}
+	}
+	return true
+}
+
+// --- conversion ---
+
+// toSpace converts this color to dest. If legacyMissing is false, missing
+// channels in a resulting legacy color are replaced by zero.
+func (c *SassColor) toSpace(dest ColorSpace, legacyMissing bool) *SassColor {
+	if c.space == dest {
+		return c
+	}
+	conv := convertColor(c.space, c.channels(), c.alphaP(), dest)
+	if !legacyMissing && conv.isLegacy() && conv.hasMissingChannel() {
+		return newColorRaw(conv.space, pf(conv.c0), pf(conv.c1), pf(conv.c2), pf(conv.alpha), fmtNone, "")
+	}
+	return conv
+}
+
+func convertColor(src ColorSpace, ch [3]*float64, alpha *float64, dest ColorSpace) *SassColor {
+	c0, c1, c2 := ch[0], ch[1], ch[2]
+	switch src {
+	case spaceRGB:
+		return srgbConvert(dest, divP(c0, 255), divP(c1, 255), divP(c2, 255), alpha, false, false, false)
+	case spaceSRGB:
+		return srgbConvert(dest, c0, c1, c2, alpha, false, false, false)
+	case spaceSRGBLinear:
+		switch dest {
+		case spaceRGB, spaceHSL, spaceHWB, spaceSRGB:
+			return srgbConvert(dest, mapP(c0, srgbFromLinear), mapP(c1, srgbFromLinear), mapP(c2, srgbFromLinear), alpha, false, false, false)
+		default:
+			return convertLinear(src, dest, c0, c1, c2, alpha, false, false, false, false, false)
+		}
+	case spaceHSL:
+		return hslConvert(dest, c0, c1, c2, alpha)
+	case spaceHWB:
+		return hwbConvert(dest, c0, c1, c2, alpha)
+	case spaceLab:
+		return labConvert(dest, c0, c1, c2, alpha, false, false)
+	case spaceLCH:
+		return lchConvert(dest, c0, c1, c2, alpha)
+	case spaceOklab:
+		return oklabConvert(dest, c0, c1, c2, alpha, false, false)
+	case spaceOklch:
+		return oklchConvert(dest, c0, c1, c2, alpha)
+	case spaceLMS:
+		return lmsConvert(dest, c0, c1, c2, alpha, false, false, false, false, false)
+	case spaceXYZD50:
+		return xyzD50Convert(dest, c0, c1, c2, alpha, false, false, false, false, false)
+	case spaceDisplayP3:
+		if dest == spaceDisplayP3Lin {
+			return newColorRaw(dest, mapP(c0, srgbToLinear), mapP(c1, srgbToLinear), mapP(c2, srgbToLinear), alpha, fmtNone, "")
+		}
+		return convertLinear(src, dest, c0, c1, c2, alpha, false, false, false, false, false)
+	case spaceDisplayP3Lin:
+		if dest == spaceDisplayP3 {
+			return newColorRaw(dest, mapP(c0, srgbFromLinear), mapP(c1, srgbFromLinear), mapP(c2, srgbFromLinear), alpha, fmtNone, "")
+		}
+		return convertLinear(src, dest, c0, c1, c2, alpha, false, false, false, false, false)
+	default:
+		// a98-rgb, prophoto-rgb, rec2020, xyz-d65
+		return convertLinear(src, dest, c0, c1, c2, alpha, false, false, false, false, false)
+	}
+}
+
+func convertLinear(src, dest ColorSpace, red, green, blue, alpha *float64, mL, mC, mH, mA, mB bool) *SassColor {
+	linearDest := dest
+	switch dest {
+	case spaceHSL, spaceHWB:
+		linearDest = spaceSRGB
+	case spaceLab, spaceLCH:
+		linearDest = spaceXYZD50
+	case spaceOklab, spaceOklch:
+		linearDest = spaceLMS
+	}
+
+	var tr, tg, tb *float64
+	if linearDest == src {
+		tr, tg, tb = red, green, blue
+	} else {
+		lr := spaceToLinear(src, orZero(red))
+		lg := spaceToLinear(src, orZero(green))
+		lb := spaceToLinear(src, orZero(blue))
+		m := transformationMatrix(src, linearDest)
+		tr = pf(spaceFromLinear(linearDest, dot3(m[0], lr, m[1], lg, m[2], lb)))
+		tg = pf(spaceFromLinear(linearDest, dot3(m[3], lr, m[4], lg, m[5], lb)))
+		tb = pf(spaceFromLinear(linearDest, dot3(m[6], lr, m[7], lg, m[8], lb)))
+	}
+
+	switch dest {
+	case spaceHSL, spaceHWB:
+		return srgbConvert(dest, tr, tg, tb, alpha, mL, mC, mH)
+	case spaceLab, spaceLCH:
+		return xyzD50Convert(dest, tr, tg, tb, alpha, mL, mC, mH, mA, mB)
+	case spaceOklab, spaceOklch:
+		return lmsConvert(dest, tr, tg, tb, alpha, mL, mC, mH, mA, mB)
+	default:
+		var o0, o1, o2 *float64
+		if red != nil {
+			o0 = tr
+		}
+		if green != nil {
+			o1 = tg
+		}
+		if blue != nil {
+			o2 = tb
+		}
+		return newColorRaw(dest, o0, o1, o2, alpha, fmtNone, "")
+	}
+}
+
+func srgbConvert(dest ColorSpace, red, green, blue, alpha *float64, mL, mC, mH bool) *SassColor {
+	switch dest {
+	case spaceHSL, spaceHWB:
+		r, g, b := orZero(red), orZero(green), orZero(blue)
+		max := math.Max(math.Max(r, g), b)
+		min := math.Min(math.Min(r, g), b)
+		delta := max - min
+		var hue float64
+		switch {
+		case max == min:
+			hue = 0
+		case max == r:
+			hue = noFMA(60*(g-b)/delta) + 360
+		case max == g:
+			hue = noFMA(60*(b-r)/delta) + 120
+		default:
+			hue = noFMA(60*(r-g)/delta) + 240
+		}
+		if dest == spaceHSL {
+			lightness := (min + max) / 2
+			var saturation float64
+			if lightness == 0 || lightness == 1 {
+				saturation = 0
+			} else {
+				saturation = noFMA(100*(max-lightness)) / math.Min(lightness, 1-lightness)
+			}
+			if saturation < 0 {
+				hue += 180
+				saturation = math.Abs(saturation)
+			}
+			var hp, sp, lp *float64
+			if !(mH || fuzzyEquals(saturation, 0)) {
+				hp = pf(dartMod(hue, 360))
+			}
+			if !mC {
+				sp = pf(saturation)
+			}
+			if !mL {
+				lp = pf(lightness * 100)
+			}
+			return newColor(spaceHSL, hp, sp, lp, alpha)
+		}
+		whiteness := min * 100
+		blackness := 100 - noFMA(max*100)
+		var hp *float64
+		if !(mH || fuzzyGreaterThanOrEquals(whiteness+blackness, 100)) {
+			hp = pf(dartMod(hue, 360))
+		}
+		return newColor(spaceHWB, hp, pf(whiteness), pf(blackness), alpha)
+	case spaceRGB:
+		return sassColorRGB(mulP(red, 255), mulP(green, 255), mulP(blue, 255), alpha, fmtNone)
+	case spaceSRGBLinear:
+		return newColorRaw(dest, mapP(red, srgbToLinear), mapP(green, srgbToLinear), mapP(blue, srgbToLinear), alpha, fmtNone, "")
+	default:
+		return convertLinear(spaceSRGB, dest, red, green, blue, alpha, mL, mC, mH, false, false)
+	}
+}
+
+func hslConvert(dest ColorSpace, hue, sat, light, alpha *float64) *SassColor {
+	scaledHue := dartMod(orZero(hue)/360, 1)
+	scaledSat := orZero(sat) / 100
+	scaledLight := orZero(light) / 100
+	var m2 float64
+	if scaledLight <= 0.5 {
+		m2 = scaledLight * (scaledSat + 1)
+	} else {
+		m2 = scaledLight + scaledSat - noFMA(scaledLight*scaledSat)
+	}
+	m1 := scaledLight*2 - m2
+	return srgbConvert(dest,
+		pf(hueToRgb(m1, m2, scaledHue+1.0/3)),
+		pf(hueToRgb(m1, m2, scaledHue)),
+		pf(hueToRgb(m1, m2, scaledHue-1.0/3)),
+		alpha, light == nil, sat == nil, hue == nil)
+}
+
+func hwbConvert(dest ColorSpace, hue, white, black, alpha *float64) *SassColor {
+	scaledHue := dartMod(orZero(hue), 360) / 360
+	scaledWhite := orZero(white) / 100
+	scaledBlack := orZero(black) / 100
+	sum := scaledWhite + scaledBlack
+	if sum > 1 {
+		scaledWhite /= sum
+		scaledBlack /= sum
+	}
+	factor := 1 - scaledWhite - scaledBlack
+	toRgb := func(h float64) float64 { return noFMA(hueToRgb(0, 1, h)*factor) + scaledWhite }
+	return srgbConvert(dest,
+		pf(toRgb(scaledHue+1.0/3)),
+		pf(toRgb(scaledHue)),
+		pf(toRgb(scaledHue-1.0/3)),
+		alpha, false, false, hue == nil)
+}
+
+func hueToRgb(m1, m2, hue float64) float64 {
+	if hue < 0 {
+		hue += 1
+	}
+	if hue > 1 {
+		hue -= 1
+	}
+	switch {
+	case hue < 1.0/6:
+		return m1 + noFMA((m2-m1)*hue*6)
+	case hue < 1.0/2:
+		return m2
+	case hue < 2.0/3:
+		return m1 + noFMA((m2-m1)*(2.0/3-hue)*6)
+	default:
+		return m1
+	}
+}
+
+const (
+	labKappa   = 24389.0 / 27.0
+	labEpsilon = 216.0 / 24389.0
+)
+
+func labConvert(dest ColorSpace, light, a, b, alpha *float64, mC, mH bool) *SassColor {
+	switch dest {
+	case spaceLab:
+		powerlessAB := light == nil || fuzzyEquals(orZero(light), 0)
+		var ap, bp *float64
+		if !(a == nil || powerlessAB) {
+			ap = a
+		}
+		if !(b == nil || powerlessAB) {
+			bp = b
+		}
+		return newColor(spaceLab, light, ap, bp, alpha)
+	case spaceLCH:
+		return labToLch(spaceLCH, light, a, b, alpha, false, false)
+	default:
+		mLight := light == nil
+		L := orZero(light)
+		f1 := (L + 16) / 116
+		x := convertFToXorZ(orZero(a)/500+f1) * d50[0]
+		var yv float64
+		if L > labKappa*labEpsilon {
+			yv = math.Pow((L+16)/116, 3)
+		} else {
+			yv = L / labKappa
+		}
+		yv *= d50[1]
+		z := convertFToXorZ(f1-orZero(b)/200) * d50[2]
+		return xyzD50Convert(dest, pf(x), pf(yv), pf(z), alpha, mLight, mC, mH, a == nil, b == nil)
+	}
+}
+
+func convertFToXorZ(component float64) float64 {
+	cubed := math.Pow(component, 3)
+	if cubed > labEpsilon {
+		return cubed
+	}
+	return (float64(116*component) - 16) / labKappa
+}
+
+func lchConvert(dest ColorSpace, light, chroma, hue, alpha *float64) *SassColor {
+	hueRad := orZero(hue) * math.Pi / 180
+	return labConvert(dest, light, pf(orZero(chroma)*math.Cos(hueRad)), pf(orZero(chroma)*math.Sin(hueRad)), alpha, chroma == nil, hue == nil)
+}
+
+func oklabConvert(dest ColorSpace, light, a, b, alpha *float64, mC, mH bool) *SassColor {
+	if dest == spaceOklch {
+		return labToLch(spaceOklch, light, a, b, alpha, mC, mH)
+	}
+	mLight := light == nil
+	mA := a == nil
+	mB := b == nil
+	L, av, bv := orZero(light), orZero(a), orZero(b)
+	l0 := math.Pow(dot3(oklabToLms[0], L, oklabToLms[1], av, oklabToLms[2], bv), 3)
+	l1 := math.Pow(dot3(oklabToLms[3], L, oklabToLms[4], av, oklabToLms[5], bv), 3)
+	l2 := math.Pow(dot3(oklabToLms[6], L, oklabToLms[7], av, oklabToLms[8], bv), 3)
+	return lmsConvert(dest, pf(l0), pf(l1), pf(l2), alpha, mLight, mC, mH, mA, mB)
+}
+
+func oklchConvert(dest ColorSpace, light, chroma, hue, alpha *float64) *SassColor {
+	hueRad := orZero(hue) * math.Pi / 180
+	return oklabConvert(dest, light, pf(orZero(chroma)*math.Cos(hueRad)), pf(orZero(chroma)*math.Sin(hueRad)), alpha, chroma == nil, hue == nil)
+}
+
+func lmsConvert(dest ColorSpace, long, medium, short, alpha *float64, mL, mC, mH, mA, mB bool) *SassColor {
+	switch dest {
+	case spaceOklab:
+		ls := cubeRootSign(orZero(long))
+		ms := cubeRootSign(orZero(medium))
+		ss := cubeRootSign(orZero(short))
+		var lp, ap, bp *float64
+		if !mL {
+			lp = pf(dot3(lmsToOklab[0], ls, lmsToOklab[1], ms, lmsToOklab[2], ss))
+		}
+		if !mA {
+			ap = pf(dot3(lmsToOklab[3], ls, lmsToOklab[4], ms, lmsToOklab[5], ss))
+		}
+		if !mB {
+			bp = pf(dot3(lmsToOklab[6], ls, lmsToOklab[7], ms, lmsToOklab[8], ss))
+		}
+		return newColor(spaceOklab, lp, ap, bp, alpha)
+	case spaceOklch:
+		ls := cubeRootSign(orZero(long))
+		ms := cubeRootSign(orZero(medium))
+		ss := cubeRootSign(orZero(short))
+		var lp *float64
+		if !mL {
+			lp = pf(dot3(lmsToOklab[0], ls, lmsToOklab[1], ms, lmsToOklab[2], ss))
+		}
+		return labToLch(spaceOklch, lp,
+			pf(dot3(lmsToOklab[3], ls, lmsToOklab[4], ms, lmsToOklab[5], ss)),
+			pf(dot3(lmsToOklab[6], ls, lmsToOklab[7], ms, lmsToOklab[8], ss)),
+			alpha, mC, mH)
+	default:
+		return convertLinear(spaceLMS, dest, long, medium, short, alpha, mL, mC, mH, mA, mB)
+	}
+}
+
+func cubeRootSign(n float64) float64 {
+	return math.Pow(math.Abs(n), 1.0/3) * signOf(n)
+}
+
+func xyzD50Convert(dest ColorSpace, x, y, z, alpha *float64, mL, mC, mH, mA, mB bool) *SassColor {
+	switch dest {
+	case spaceLab, spaceLCH:
+		f0 := convertComponentToLabF(orZero(x) / d50[0])
+		f1 := convertComponentToLabF(orZero(y) / d50[1])
+		f2 := convertComponentToLabF(orZero(z) / d50[2])
+		var L *float64
+		if !mL {
+			L = pf(116*f1 - 16)
+		}
+		a := 500 * (f0 - f1)
+		b := 200 * (f1 - f2)
+		if dest == spaceLab {
+			var ap, bp *float64
+			if !mA {
+				ap = pf(a)
+			}
+			if !mB {
+				bp = pf(b)
+			}
+			return newColor(spaceLab, L, ap, bp, alpha)
+		}
+		return labToLch(spaceLCH, L, pf(a), pf(b), alpha, mC, mH)
+	default:
+		return convertLinear(spaceXYZD50, dest, x, y, z, alpha, mL, mC, mH, mA, mB)
+	}
+}
+
+func convertComponentToLabF(component float64) float64 {
+	if component > labEpsilon {
+		return math.Pow(component, 1.0/3)
+	}
+	return (noFMA(labKappa*component) + 16) / 116
+}
+
+func labToLch(dest ColorSpace, light, a, b, alpha *float64, mC, mH bool) *SassColor {
+	chroma := math.Sqrt(math.Pow(orZero(a), 2) + math.Pow(orZero(b), 2))
+	var hue *float64
+	if !(mH || fuzzyEquals(chroma, 0)) {
+		h := math.Atan2(orZero(b), orZero(a)) * 180 / math.Pi
+		if h < 0 {
+			h += 360
+		}
+		hue = pf(h)
+	}
+	var cp *float64
+	if !mC {
+		cp = pf(chroma)
+	}
+	return newColor(dest, light, cp, hue, alpha)
+}
+
+// --- gamut mapping ---
+
+func (c *SassColor) toGamut(method string) *SassColor {
+	if c.isInGamut() {
+		return c
+	}
+	if method == "clip" {
+		return c.gamutClip()
+	}
+	return c.gamutLocalMinde()
+}
+
+func (c *SassColor) gamutClip() *SassColor {
+	chans := spaceChannels(c.space)
+	vals := c.channels()
+	clamp := func(p *float64, ch channelInfo) *float64 {
+		if p == nil {
+			return nil
+		}
+		if ch.polar {
+			return p
+		}
+		return pf(clampLikeCss(*p, ch.min, ch.max))
+	}
+	return newColorRaw(c.space, clamp(vals[0], chans[0]), clamp(vals[1], chans[1]), clamp(vals[2], chans[2]), c.alphaP(), fmtNone, "")
+}
+
+func (c *SassColor) gamutLocalMinde() *SassColor {
+	const jnd = 0.02
+	const epsilon = 0.0001
+	origin := c.toSpace(spaceOklch, true)
+	lightness := origin.alphaAwareChannel(0)
+	hue := origin.alphaAwareChannel(2)
+	alpha := origin.alphaP()
+
+	if fuzzyGreaterThanOrEquals(orZero(lightness), 1) {
+		if c.isLegacy() {
+			return sassColorRGB(pf(255), pf(255), pf(255), c.alphaP(), fmtNone).toSpace(c.space, true)
+		}
+		return newColorRaw(c.space, pf(1), pf(1), pf(1), c.alphaP(), fmtNone, "")
+	} else if fuzzyLessThanOrEquals(orZero(lightness), 0) {
+		return sassColorRGB(pf(0), pf(0), pf(0), c.alphaP(), fmtNone).toSpace(c.space, true)
+	}
+
+	clipped := c.toGamut("clip")
+	if deltaEOK(clipped, c) < jnd {
+		return clipped
+	}
+
+	min := 0.0
+	max := origin.c1
+	minInGamut := true
+	for max-min > epsilon {
+		chroma := (min + max) / 2
+		current := convertColor(spaceOklch, [3]*float64{lightness, pf(chroma), hue}, alpha, c.space)
+		if minInGamut && current.isInGamut() {
+			min = chroma
+			continue
+		}
+		clipped = current.toGamut("clip")
+		e := deltaEOK(clipped, current)
+		if e < jnd {
+			if jnd-e < epsilon {
+				return clipped
+			}
+			minInGamut = false
+			min = chroma
+		} else {
+			max = chroma
+		}
+	}
+	return clipped
+}
+
+// alphaAwareChannel returns channel i as a nullable pointer (nil if missing).
+func (c *SassColor) alphaAwareChannel(i int) *float64 {
+	ch := c.channels()
+	return ch[i]
+}
+
+func deltaEOK(c1, c2 *SassColor) float64 {
+	lab1 := c1.toSpace(spaceOklab, true)
+	lab2 := c2.toSpace(spaceOklab, true)
+	return math.Sqrt(math.Pow(lab1.c0-lab2.c0, 2) + math.Pow(lab1.c1-lab2.c1, 2) + math.Pow(lab1.c2-lab2.c2, 2))
+}
+
+// --- equality ---
+
+func (c *SassColor) equals(o Value) bool {
+	oc, ok := o.(*SassColor)
+	if !ok {
+		return false
+	}
+	if c.isLegacy() {
+		if !oc.isLegacy() {
+			return false
+		}
+		if !fuzzyEqualsNullable(c.alphaP(), oc.alphaP()) {
+			return false
+		}
+		if c.space == oc.space {
+			cc := c.channels()
+			ocx := oc.channels()
+			return fuzzyEqualsNullable(cc[0], ocx[0]) && fuzzyEqualsNullable(cc[1], ocx[1]) && fuzzyEqualsNullable(cc[2], ocx[2])
+		}
+		return c.toSpace(spaceRGB, true).equals(oc.toSpace(spaceRGB, true))
+	}
+	if c.space != oc.space {
+		return false
+	}
+	cc := c.channels()
+	ocx := oc.channels()
+	return fuzzyEqualsNullable(cc[0], ocx[0]) && fuzzyEqualsNullable(cc[1], ocx[1]) &&
+		fuzzyEqualsNullable(cc[2], ocx[2]) && fuzzyEqualsNullable(c.alphaP(), oc.alphaP())
+}
+
+func fuzzyEqualsNullable(a, b *float64) bool {
+	if a == nil || b == nil {
+		return a == nil && b == nil
+	}
+	return fuzzyEquals(*a, *b)
+}
+
+func (c *SassColor) isTruthy() bool  { return true }
+func (c *SassColor) sep() Separator  { return SepUndecided }
+func (c *SassColor) asList() []Value { return []Value{c} }
+
+// --- hex/named literal parsing ---
 
 func newHexColor(hex string) *SassColor {
 	body := hex[1:]
@@ -103,223 +798,13 @@ func newHexColor(hex string) *SassColor {
 		b = hexPair(body[4:6])
 		a = float64(hexPair(body[6:8])) / 255.0
 	}
-	// A hex literal serializes verbatim in expanded output only when opaque;
-	// an alpha component forces the canonical rgba()/hex form dart-sass uses.
-	orig := hex
-	if a != 1 {
-		orig = ""
-	}
-	return &SassColor{Rf: float64(r), Gf: float64(g), Bf: float64(b), A: a, Original: orig}
-}
-
-func hexPair(s string) int {
-	v := 0
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		var d int
-		switch {
-		case c >= '0' && c <= '9':
-			d = int(c - '0')
-		case c >= 'a' && c <= 'f':
-			d = int(c-'a') + 10
-		default:
-			d = int(c-'A') + 10
-		}
-		v = v*16 + d
-	}
-	return v
-}
-
-func clampAlpha(a float64) float64 {
-	if a < 0 {
-		return 0
-	}
-	if a > 1 {
-		return 1
-	}
-	return a
-}
-
-// clampChannelF clamps a float channel to the 0..255 range without rounding.
-func clampChannelF(v float64) float64 {
-	if v < 0 {
-		return 0
-	}
-	if v > 255 {
-		return 255
-	}
-	return v
-}
-
-// fuzzyIsInt reports whether v is (within dart-sass tolerance) a whole number.
-func fuzzyIsInt(v float64) bool {
-	return math.Abs(v-math.Round(v)) < 1e-11
-}
-
-// rgbColor builds a color from evaluated rgb()/rgba() arguments. It serializes in
-// rgb() form (never keyword-substituted) in expanded output.
-func rgbColor(r, g, b, a float64) *SassColor {
-	return &SassColor{Rf: clampChannelF(r), Gf: clampChannelF(g), Bf: clampChannelF(b), A: clampAlpha(a), rgbFmt: true}
-}
-
-// computedColor builds a color with no source format, so it serialises as a CSS
-// keyword or hex when its channels are integers, or rgb()/rgba() percentages when
-// any channel is fractional — matching modern dart-sass.
-func computedColor(r, g, b, a float64) *SassColor {
-	return &SassColor{Rf: clampChannelF(r), Gf: clampChannelF(g), Bf: clampChannelF(b), A: clampAlpha(a)}
-}
-
-func (c *SassColor) allInt() bool {
-	return fuzzyIsInt(c.Rf) && fuzzyIsInt(c.Gf) && fuzzyIsInt(c.Bf)
-}
-
-func hexOf(r, g, b int) string {
-	if r%17 == 0 && g%17 == 0 && b%17 == 0 {
-		return fmt.Sprintf("#%x%x%x", r/17, g/17, b/17)
-	}
-	return fmt.Sprintf("#%02x%02x%02x", r, g, b)
-}
-
-func pctChannel(v float64, compressed bool) string {
-	return formatFloat(v/255*100, compressed) + "%"
-}
-
-// rgbFuncRepr serializes the color in rgb()/rgba() form: integer channels as
-// integers, fractional channels as percentages.
-func (c *SassColor) rgbFuncRepr(compressed bool) string {
-	sp := " "
-	if compressed {
-		sp = ""
-	}
-	var rs, gs, bs string
-	if c.allInt() {
-		rs = fmt.Sprintf("%d", c.Ri())
-		gs = fmt.Sprintf("%d", c.Gi())
-		bs = fmt.Sprintf("%d", c.Bi())
-	} else {
-		rs = pctChannel(c.Rf, compressed)
-		gs = pctChannel(c.Gf, compressed)
-		bs = pctChannel(c.Bf, compressed)
-	}
-	if c.A == 1 {
-		return fmt.Sprintf("rgb(%s,%s%s,%s%s)", rs, sp, gs, sp, bs)
-	}
-	return fmt.Sprintf("rgba(%s,%s%s,%s%s,%s%s)", rs, sp, gs, sp, bs, sp, formatFloat(c.A, compressed))
-}
-
-// expandedRepr returns the expanded-mode serialization.
-func (c *SassColor) expandedRepr() string {
-	if c.Original != "" {
-		return c.Original
-	}
-	if c.rgbFmt {
-		return c.rgbFuncRepr(false)
-	}
-	// computed color
-	if c.allInt() {
-		rgb := [3]int{c.Ri(), c.Gi(), c.Bi()}
-		if c.A == 1 {
-			if name, ok := rgbToName[rgb]; ok {
-				return name
-			}
-			return hexOf(rgb[0], rgb[1], rgb[2])
-		}
-	}
-	return c.rgbFuncRepr(false)
-}
-
-// compressedRepr returns the shortest valid serialization, independent of the
-// source format (dart-sass collapses every color to its canonical shortest form).
-func (c *SassColor) compressedRepr() string {
-	if c.allInt() && c.A == 1 {
-		hex := hexOf(c.Ri(), c.Gi(), c.Bi())
-		if name, ok := rgbToName[[3]int{c.Ri(), c.Gi(), c.Bi()}]; ok && len(name) <= len(hex) {
-			return name
-		}
-		return hex
-	}
-	return c.rgbFuncRepr(true)
-}
-
-// hsl conversion helpers (used by hsl()/color functions).
-
-func rgbToHSL(r, g, b float64) (h, s, l float64) {
-	rf := r / 255.0
-	gf := g / 255.0
-	bf := b / 255.0
-	max := math.Max(rf, math.Max(gf, bf))
-	min := math.Min(rf, math.Min(gf, bf))
-	l = (max + min) / 2
-	if max == min {
-		return 0, 0, l * 100
-	}
-	d := max - min
-	if l > 0.5 {
-		s = d / (2 - max - min)
-	} else {
-		s = d / (max + min)
-	}
-	switch max {
-	case rf:
-		h = (gf - bf) / d
-		if gf < bf {
-			h += 6
-		}
-	case gf:
-		h = (bf-rf)/d + 2
-	default:
-		h = (rf-gf)/d + 4
-	}
-	h *= 60
-	return h, s * 100, l * 100
-}
-
-func hslToRGB(h, s, l float64) (float64, float64, float64) {
-	h = math.Mod(h, 360)
-	if h < 0 {
-		h += 360
-	}
-	s /= 100
-	l /= 100
-	c := (1 - math.Abs(2*l-1)) * s
-	x := c * (1 - math.Abs(math.Mod(h/60, 2)-1))
-	m := l - c/2
-	var rf, gf, bf float64
-	switch {
-	case h < 60:
-		rf, gf, bf = c, x, 0
-	case h < 120:
-		rf, gf, bf = x, c, 0
-	case h < 180:
-		rf, gf, bf = 0, c, x
-	case h < 240:
-		rf, gf, bf = 0, x, c
-	case h < 300:
-		rf, gf, bf = x, 0, c
-	default:
-		rf, gf, bf = c, 0, x
-	}
-	return clampChannelF((rf + m) * 255), clampChannelF((gf + m) * 255), clampChannelF((bf + m) * 255)
-}
-
-func hslColor(h, s, l, a float64) *SassColor {
-	r, g, b := hslToRGB(h, s, l)
-	c := &SassColor{Rf: r, Gf: g, Bf: b, A: clampAlpha(a)}
-	sp := " "
+	c := sassColorRGB(pf(float64(r)), pf(float64(g)), pf(float64(b)), pf(a), fmtNone)
+	// A hex literal serializes verbatim in expanded output only when opaque.
 	if a == 1 {
-		c.Original = fmt.Sprintf("hsl(%s,%s%s%%,%s%s%%)", formatFloat(normalizeHue(h), false), sp, formatFloat(s, false), sp, formatFloat(l, false))
-	} else {
-		c.Original = fmt.Sprintf("hsla(%s,%s%s%%,%s%s%%,%s%s)", formatFloat(normalizeHue(h), false), sp, formatFloat(s, false), sp, formatFloat(l, false), sp, formatFloat(a, false))
+		c.format = fmtSpan
+		c.original = hex
 	}
 	return c
-}
-
-func normalizeHue(h float64) float64 {
-	h = math.Mod(h, 360)
-	if h < 0 {
-		h += 360
-	}
-	return h
 }
 
 func isHexColor(s string) bool {
@@ -344,5 +829,16 @@ func lookupNamedColor(name string) (*SassColor, bool) {
 	if !ok {
 		return nil, false
 	}
-	return &SassColor{Rf: float64(rgb[0]), Gf: float64(rgb[1]), Bf: float64(rgb[2]), A: 1, Original: name}, true
+	c := sassColorRGB(pf(float64(rgb[0])), pf(float64(rgb[1])), pf(float64(rgb[2])), pf(1), fmtNone)
+	c.format = fmtSpan
+	c.original = name
+	return c, true
+}
+
+// namedColorTransparent builds the `transparent` keyword color.
+func namedColorTransparent(name string) *SassColor {
+	c := sassColorRGB(pf(0), pf(0), pf(0), pf(0), fmtNone)
+	c.format = fmtSpan
+	c.original = name
+	return c
 }

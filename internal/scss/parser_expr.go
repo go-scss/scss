@@ -246,6 +246,15 @@ func isLiteralNumberish(e Expr) bool {
 func (p *parser) parseUnary() Expr {
 	c := p.peek()
 	if c == '-' || c == '+' {
+		// A "-" immediately followed by an identifier start is part of the
+		// identifier (e.g. -webkit-foo, or a function named -real-channel),
+		// not a unary negation.
+		if c == '-' {
+			n := p.peekAt(1)
+			if isNameStart(n) || n == '\\' {
+				return p.parsePrimary()
+			}
+		}
 		p.next()
 		p.ws()
 		return &Unary{Op: string(c), Expr: p.parseUnary()}
@@ -634,6 +643,12 @@ func (p *parser) parseParamList() *ParamList {
 }
 
 func (p *parser) parseArgList() *ArgList {
+	// Function arguments are their own arithmetic context: a "/" between literal
+	// numbers here forms a slash-separated list (e.g. the alpha in
+	// `hsl(180 60% 50% / 0.4)`), even when the call is nested in parentheses.
+	savedArith := p.arith
+	p.arith = 0
+	defer func() { p.arith = savedArith }()
 	p.next() // (
 	al := &ArgList{}
 	for {

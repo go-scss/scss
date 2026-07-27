@@ -78,7 +78,7 @@ func TestListMapFunctions(t *testing.T) {
 		"zip(1 2, 3 4)":            "1 3, 2 4",
 		"set-nth(a b c, 2, x)":     "a x c",
 		"is-bracketed([1 2])":      "true",
-		"list.slash(1, 2, 3)":      "1/2/3",
+		"list.slash(1, 2, 3)":      "1 / 2 / 3",
 		"map-merge((a:1), (b:2))":  "",
 		"map-remove((a:1,b:2), a)": "",
 		"map-keys((a:1,b:2))":      "a, b",
