@@ -5,6 +5,8 @@ package main
 
 import (
 	"bytes"
+	"io"
+	"os"
 	"strings"
 	"testing"
 )
@@ -54,5 +56,35 @@ func TestRunBadFlag(t *testing.T) {
 	var out, errb bytes.Buffer
 	if code := run([]string{"-nope"}, strings.NewReader(""), &out, &errb); code != 2 {
 		t.Errorf("expected exit 2, got %d", code)
+	}
+}
+
+type errReader struct{}
+
+func (errReader) Read([]byte) (int, error) { return 0, io.ErrClosedPipe }
+
+func TestRunReadError(t *testing.T) {
+	var out, errb bytes.Buffer
+	if code := run(nil, errReader{}, &out, &errb); code != 1 {
+		t.Errorf("expected exit 1 on read error, got %d", code)
+	}
+	if !strings.Contains(errb.String(), "read error") {
+		t.Errorf("stderr: %q", errb.String())
+	}
+}
+
+func TestMainSeam(t *testing.T) {
+	oldExit, oldArgs, oldStdin := osExit, os.Args, os.Stdin
+	defer func() { osExit, os.Args, os.Stdin = oldExit, oldArgs, oldStdin }()
+	r, w, _ := os.Pipe()
+	_, _ = w.WriteString(".a{x:1}")
+	_ = w.Close()
+	os.Stdin = r
+	os.Args = []string{"scssc"}
+	var code int
+	osExit = func(c int) { code = c }
+	main()
+	if code != 0 {
+		t.Errorf("main exit %d", code)
 	}
 }

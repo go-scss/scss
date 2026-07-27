@@ -125,3 +125,61 @@ func TestCustomImporter(t *testing.T) {
 		t.Errorf("got %q", res.CSS)
 	}
 }
+
+func TestForwardConfigShowHide(t *testing.T) {
+	files := map[string]string{
+		"base":   "$brand: blue !default;\n@mixin m { x: 1 }\n@function f() { @return 2 }\n.g { y: 3 }",
+		"fwdcfg": `@forward "base" with ($brand: red);`,
+		"fwdsh":  `@forward "base" show $brand, m;`,
+		"fwdas":  `@forward "base" as b-*;`,
+	}
+	imp := func(url string) (string, string, bool) {
+		if s, ok := files[url]; ok {
+			return s, url, true
+		}
+		return "", "", false
+	}
+	cases := []string{
+		`@use "fwdcfg" as c; .a { color: c.$brand }`,
+		`@use "fwdsh" as c; .a { color: c.$brand; @include c.m }`,
+		`@use "fwdas" as c; .a { color: c.$b-brand }`,
+	}
+	for _, src := range cases {
+		if _, err := scss.CompileString(src, &scss.Options{Importer: imp}); err != nil {
+			t.Errorf("%q: %v", src, err)
+		}
+	}
+}
+
+func TestLoadPathsAndExtensions(t *testing.T) {
+	// LoadPaths resolution + partial/extension candidates via the file importer.
+	res, err := scss.CompileString(`@use "colors"; .a { c: colors.$brand }`,
+		&scss.Options{LoadPaths: []string{filepath.Join("testdata", "imports")}})
+	if err != nil {
+		t.Fatalf("load path import: %v", err)
+	}
+	if !strings.Contains(res.CSS, "#") {
+		t.Errorf("got %q", res.CSS)
+	}
+}
+
+func TestCompileIndentedFile(t *testing.T) {
+	res, err := scss.Compile(filepath.Join("testdata", "corpus", "indented.sass"), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.CSS == "" {
+		t.Error("empty output")
+	}
+}
+
+func TestUnresolvedImportPassthrough(t *testing.T) {
+	// A relative @import that cannot be resolved becomes a plain CSS @import.
+	res, err := scss.CompileString(`@import "nonexistent-xyz";`, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(res.CSS, "@import") {
+		t.Errorf("got %q", res.CSS)
+	}
+}

@@ -6,9 +6,9 @@ package scss
 import "math"
 
 var colorFns = map[string]builtinFunc{
-	"red":            func(ci *callInfo) Value { return numOut(float64(ci.color(0).R)) },
-	"green":          func(ci *callInfo) Value { return numOut(float64(ci.color(0).G)) },
-	"blue":           func(ci *callInfo) Value { return numOut(float64(ci.color(0).B)) },
+	"red":            func(ci *callInfo) Value { return numOut(float64(ci.color(0).Ri())) },
+	"green":          func(ci *callInfo) Value { return numOut(float64(ci.color(0).Gi())) },
+	"blue":           func(ci *callInfo) Value { return numOut(float64(ci.color(0).Bi())) },
 	"alpha":          fnAlpha,
 	"opacity":        fnAlpha,
 	"hue":            fnHue,
@@ -42,11 +42,11 @@ func (ci *callInfo) color(i int) *SassColor {
 	return c
 }
 
-func channelValue(n *Number) int {
+func channelValue(n *Number) float64 {
 	if len(n.Numer) == 1 && n.Numer[0] == "%" {
-		return clampChannel(n.Val / 100 * 255)
+		return clampChannelF(n.Val / 100 * 255)
 	}
-	return clampChannel(n.Val)
+	return clampChannelF(n.Val)
 }
 
 func fnRGB(ci *callInfo) Value {
@@ -54,7 +54,7 @@ func fnRGB(ci *callInfo) Value {
 	if len(ci.positional) == 2 {
 		if c, ok := ci.positional[0].(*SassColor); ok {
 			a := ci.e.asNumber(ci.positional[1])
-			return rgbColor(c.R, c.G, c.B, alphaValue(a))
+			return rgbColor(c.Rf, c.Gf, c.Bf, alphaValue(a))
 		}
 	}
 	if len(ci.positional) == 1 {
@@ -115,19 +115,19 @@ func fnAlpha(ci *callInfo) Value {
 
 func fnHue(ci *callInfo) Value {
 	c := ci.color(0)
-	h, _, _ := rgbToHSL(c.R, c.G, c.B)
+	h, _, _ := rgbToHSL(c.Rf, c.Gf, c.Bf)
 	return numOut(normalizeHue(h), "deg")
 }
 
 func fnSaturation(ci *callInfo) Value {
 	c := ci.color(0)
-	_, s, _ := rgbToHSL(c.R, c.G, c.B)
+	_, s, _ := rgbToHSL(c.Rf, c.Gf, c.Bf)
 	return numOut(s, "%")
 }
 
 func fnLightness(ci *callInfo) Value {
 	c := ci.color(0)
-	_, _, l := rgbToHSL(c.R, c.G, c.B)
+	_, _, l := rgbToHSL(c.Rf, c.Gf, c.Bf)
 	return numOut(l, "%")
 }
 
@@ -149,16 +149,16 @@ func fnMix(ci *callInfo) Value {
 	}
 	w1 = (w1 + 1) / 2
 	w2 := 1 - w1
-	r := clampChannel(float64(c1.R)*w1 + float64(c2.R)*w2)
-	g := clampChannel(float64(c1.G)*w1 + float64(c2.G)*w2)
-	b := clampChannel(float64(c1.B)*w1 + float64(c2.B)*w2)
+	r := c1.Rf*w1 + c2.Rf*w2
+	g := c1.Gf*w1 + c2.Gf*w2
+	b := c1.Bf*w1 + c2.Bf*w2
 	alpha := c1.A*p + c2.A*(1-p)
 	return computedColor(r, g, b, alpha)
 }
 
 func fnGrayscale(ci *callInfo) Value {
 	c := ci.color(0)
-	_, _, l := rgbToHSL(c.R, c.G, c.B)
+	_, _, l := rgbToHSL(c.Rf, c.Gf, c.Bf)
 	r, g, b := hslToRGB(0, 0, l)
 	return computedColor(r, g, b, c.A)
 }
@@ -170,15 +170,15 @@ func fnInvert(ci *callInfo) Value {
 		weight = ci.e.asNumber(w).Val
 	}
 	p := weight / 100
-	r := clampChannel(float64(255-c.R)*p + float64(c.R)*(1-p))
-	g := clampChannel(float64(255-c.G)*p + float64(c.G)*(1-p))
-	b := clampChannel(float64(255-c.B)*p + float64(c.B)*(1-p))
+	r := (255-c.Rf)*p + c.Rf*(1-p)
+	g := (255-c.Gf)*p + c.Gf*(1-p)
+	b := (255-c.Bf)*p + c.Bf*(1-p)
 	return computedColor(r, g, b, c.A)
 }
 
 func fnComplement(ci *callInfo) Value {
 	c := ci.color(0)
-	h, s, l := rgbToHSL(c.R, c.G, c.B)
+	h, s, l := rgbToHSL(c.Rf, c.Gf, c.Bf)
 	r, g, b := hslToRGB(h+180, s, l)
 	return computedColor(r, g, b, c.A)
 }
@@ -186,7 +186,7 @@ func fnComplement(ci *callInfo) Value {
 func fnLighten(ci *callInfo) Value {
 	c := ci.color(0)
 	amt := ci.num(1, "amount").Val
-	h, s, l := rgbToHSL(c.R, c.G, c.B)
+	h, s, l := rgbToHSL(c.Rf, c.Gf, c.Bf)
 	r, g, b := hslToRGB(h, s, clampPct(l+amt))
 	return computedColor(r, g, b, c.A)
 }
@@ -194,7 +194,7 @@ func fnLighten(ci *callInfo) Value {
 func fnDarken(ci *callInfo) Value {
 	c := ci.color(0)
 	amt := ci.num(1, "amount").Val
-	h, s, l := rgbToHSL(c.R, c.G, c.B)
+	h, s, l := rgbToHSL(c.Rf, c.Gf, c.Bf)
 	r, g, b := hslToRGB(h, s, clampPct(l-amt))
 	return computedColor(r, g, b, c.A)
 }
@@ -202,7 +202,7 @@ func fnDarken(ci *callInfo) Value {
 func fnSaturate(ci *callInfo) Value {
 	c := ci.color(0)
 	amt := ci.num(1, "amount").Val
-	h, s, l := rgbToHSL(c.R, c.G, c.B)
+	h, s, l := rgbToHSL(c.Rf, c.Gf, c.Bf)
 	r, g, b := hslToRGB(h, clampPct(s+amt), l)
 	return computedColor(r, g, b, c.A)
 }
@@ -210,7 +210,7 @@ func fnSaturate(ci *callInfo) Value {
 func fnDesaturate(ci *callInfo) Value {
 	c := ci.color(0)
 	amt := ci.num(1, "amount").Val
-	h, s, l := rgbToHSL(c.R, c.G, c.B)
+	h, s, l := rgbToHSL(c.Rf, c.Gf, c.Bf)
 	r, g, b := hslToRGB(h, clampPct(s-amt), l)
 	return computedColor(r, g, b, c.A)
 }
@@ -218,7 +218,7 @@ func fnDesaturate(ci *callInfo) Value {
 func fnAdjustHue(ci *callInfo) Value {
 	c := ci.color(0)
 	amt := ci.num(1, "degrees").Val
-	h, s, l := rgbToHSL(c.R, c.G, c.B)
+	h, s, l := rgbToHSL(c.Rf, c.Gf, c.Bf)
 	r, g, b := hslToRGB(h+amt, s, l)
 	return computedColor(r, g, b, c.A)
 }
@@ -226,13 +226,13 @@ func fnAdjustHue(ci *callInfo) Value {
 func fnOpacify(ci *callInfo) Value {
 	c := ci.color(0)
 	amt := ci.num(1, "amount").Val
-	return computedColor(c.R, c.G, c.B, clampAlpha(c.A+amt))
+	return computedColor(c.Rf, c.Gf, c.Bf, clampAlpha(c.A+amt))
 }
 
 func fnTransparentize(ci *callInfo) Value {
 	c := ci.color(0)
 	amt := ci.num(1, "amount").Val
-	return computedColor(c.R, c.G, c.B, clampAlpha(c.A-amt))
+	return computedColor(c.Rf, c.Gf, c.Bf, clampAlpha(c.A-amt))
 }
 
 func clampPct(v float64) float64 {
@@ -247,15 +247,15 @@ func clampPct(v float64) float64 {
 
 func fnColorAdjust(ci *callInfo) Value {
 	c := ci.color(0)
-	r, g, b, a := c.R, c.G, c.B, c.A
+	r, g, b, a := c.Rf, c.Gf, c.Bf, c.A
 	if v, ok := ci.named["red"]; ok {
-		r = clampChannel(float64(r) + ci.e.asNumber(v).Val)
+		r = clampChannelF(r + ci.e.asNumber(v).Val)
 	}
 	if v, ok := ci.named["green"]; ok {
-		g = clampChannel(float64(g) + ci.e.asNumber(v).Val)
+		g = clampChannelF(g + ci.e.asNumber(v).Val)
 	}
 	if v, ok := ci.named["blue"]; ok {
-		b = clampChannel(float64(b) + ci.e.asNumber(v).Val)
+		b = clampChannelF(b + ci.e.asNumber(v).Val)
 	}
 	if v, ok := ci.named["alpha"]; ok {
 		a = clampAlpha(a + ci.e.asNumber(v).Val)
@@ -282,7 +282,7 @@ func fnColorAdjust(ci *callInfo) Value {
 
 func fnColorChange(ci *callInfo) Value {
 	c := ci.color(0)
-	r, g, b, a := c.R, c.G, c.B, c.A
+	r, g, b, a := c.Rf, c.Gf, c.Bf, c.A
 	if v, ok := ci.named["red"]; ok {
 		r = channelValue(ci.e.asNumber(v))
 	}
@@ -317,7 +317,7 @@ func fnColorChange(ci *callInfo) Value {
 
 func fnColorScale(ci *callInfo) Value {
 	c := ci.color(0)
-	r, g, b, a := float64(c.R), float64(c.G), float64(c.B), c.A
+	r, g, b, a := c.Rf, c.Gf, c.Bf, c.A
 	scale := func(cur, target, pct float64) float64 {
 		return cur + (target-cur)*(pct/100)
 	}
@@ -337,7 +337,7 @@ func fnColorScale(ci *callInfo) Value {
 		p := ci.e.asNumber(v).Val
 		a = scale(a, tern(p > 0, 1, 0), p)
 	}
-	return computedColor(clampChannel(r), clampChannel(g), clampChannel(b), clampAlpha(a))
+	return computedColor(clampChannelF(r), clampChannelF(g), clampChannelF(b), clampAlpha(a))
 }
 
 func tern(cond bool, a, b float64) float64 {
@@ -350,7 +350,7 @@ func tern(cond bool, a, b float64) float64 {
 func fnIEHexStr(ci *callInfo) Value {
 	c := ci.color(0)
 	alpha := int(math.Round(c.A * 255))
-	return &SassString{Text: "#" + hex2(alpha) + hex2(c.R) + hex2(c.G) + hex2(c.B), Quoted: false}
+	return &SassString{Text: "#" + hex2(alpha) + hex2(c.Ri()) + hex2(c.Gi()) + hex2(c.Bi()), Quoted: false}
 }
 
 func hex2(v int) string {

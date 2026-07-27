@@ -1,0 +1,1517 @@
+<===> case0/input.scss
+@use "sass:selector";
+.theme1, .theme2 {
+  .something {
+    /* nothing */
+  }
+}
+
+$sel: selector.nest('.theme1, .theme2', '.something');
+  
+#{$sel} {
+  /* nothing */
+}
+
+<===> case0/output.css
+.theme1 .something, .theme2 .something {
+  /* nothing */
+}
+
+.theme1 .something, .theme2 .something {
+  /* nothing */
+}
+
+<===> case1/input.scss
+div {
+    top: 10px - 2 * 5px /* arrow size */;
+}
+
+<===> case1/output.css
+div {
+  top: 0px;
+}
+
+<===> case2/input.scss
+@mixin m() {
+  .a & {
+    @content;
+  }
+}
+
+:not(:last-of-type) {
+  top: 10px;
+  @include m {
+    top: 10px;
+  }
+}
+
+<===> case2/output.css
+:not(:last-of-type) {
+  top: 10px;
+}
+.a :not(:last-of-type) {
+  top: 10px;
+}
+
+<===> case3/input.scss
+@mixin will-change() {
+  @supports (will-change: transform) {
+    will-change: transform;
+  }
+}
+div {
+  a {
+    top: 10px;
+    @include will-change();
+  }
+}
+
+<===> case3/output.css
+div a {
+  top: 10px;
+}
+@supports (will-change: transform) {
+  div a {
+    will-change: transform;
+  }
+}
+
+<===> case4/input.scss
+@mixin all-vip() {
+  test: vip;
+}
+@mixin gold() {
+  test: gold;
+}
+@mixin platinum() {
+  test: platinum;
+}
+
+@mixin icons-sprite($icon-name){
+    @if $icon-name == 'all-vip' {
+        @include all-vip();
+    }
+    @else if $icon-name == 'gold' {
+        @include gold();
+    }
+    @else if $icon-name == 'platinum' {
+        @include platinum();
+    }
+}
+
+div {
+  @include icons-sprite("platinum");
+  @include icons-sprite("all-vip");
+  @include icons-sprite("gold");
+}
+div {
+  @include icons-sprite(platinum);
+  @include icons-sprite(all-vip);
+  @include icons-sprite(gold);
+}
+
+<===> case4/output.css
+div {
+  test: platinum;
+  test: vip;
+  test: gold;
+}
+
+div {
+  test: platinum;
+  test: vip;
+}
+
+<===> case5/input.scss
+foo {
+  @if true {
+    foo: true;
+  } @elseif true {
+    foo: false;
+  } @else {
+    foo: false;
+  }
+
+  @if true {
+    bar: true;
+  } @else if true {
+    bar: false;
+  } @else {
+    bar: false;
+  }
+}
+
+<===> case5/output.css
+foo {
+  foo: true;
+  bar: true;
+}
+
+<===> case6/input.scss
+a {
+  &.div,
+  &.span {
+    display: block;
+  }
+}
+
+<===> case6/output.css
+a.div, a.span {
+  display: block;
+}
+
+<===> case7/input.scss
+%foo {
+  & > x { display: block; }
+}
+
+a {
+  > b { @extend %foo; }
+  > b > c { @extend %foo; }
+}
+
+<===> case7/output.css
+a > b > c > x, a > b > x {
+  display: block;
+}
+
+<===> case8/input.scss
+$i: 1;
+.foo#{-$i} { a:b }
+.foo-#{$i} { a:b }
+.foo#{-1} { a:b }
+.foo-#{1} { a:b }
+
+<===> case8/output.css
+.foo-1 {
+  a: b;
+}
+
+.foo-1 {
+  a: b;
+}
+
+.foo-1 {
+  a: b;
+}
+
+.foo-1 {
+  a: b;
+}
+
+<===> case9/input.scss
+$a: red;
+
+@mixin f($a: $a) {
+  color: $a;
+}
+
+h1 {
+  @include f;
+}
+
+h2 {
+  @include f(blue);
+}
+
+<===> case9/output.css
+h1 {
+  color: red;
+}
+
+h2 {
+  color: blue;
+}
+
+<===> case10/input.scss
+@font-face {
+  font-family: 'My Font';
+  font-style: normal;
+  font-weight: 300;
+  src: local('My Font'), local('My-Font'),
+    /* from http://.... original source of .eot */
+    url('my-font.eot?#iefix') format('embedded-opentype'),
+    /* from http://.... original source of .woff */
+    url('my-font.woff') format('woff'),
+    /* from http://.... original source of .ttf */
+    url('my-font.ttf') format('truetype'),
+    /* from http://.... original source of .svg */
+    url('my-font.svg#MyFont') format('svg');
+}
+
+<===> case10/output.css
+@font-face {
+  font-family: "My Font";
+  font-style: normal;
+  font-weight: 300;
+  src: local("My Font"), local("My-Font"), url("my-font.eot?#iefix") format("embedded-opentype"), url("my-font.woff") format("woff"), url("my-font.ttf") format("truetype"), url("my-font.svg#MyFont") format("svg");
+}
+
+<===> case11/input.scss
+$map: (-1px: 12);
+
+<===> case11/output.css
+
+
+<===> case12/input.scss
+$foo: bar;
+a {
+  foo: url($foo);
+  foo: url(#{$foo});
+}
+
+<===> case12/output.css
+a {
+  foo: url(bar);
+  foo: url(bar);
+}
+
+<===> case13/input.scss
+@use "sass:color";
+$foo: white;
+foo {
+  bar: color.adjust($foo, $hue: -6deg, $lightness: -16%, $saturation: -7%);
+}
+
+<===> case13/output.css
+foo {
+  bar: rgb(84%, 84%, 84%);
+}
+
+<===> case14/input.scss
+$foo: "foo";
+$bar: "bar";
+$baz: "baz";
+/*
+ * <div class="foo #{$foo}" bar="#{$bar}" baz="#{$baz}">
+ */
+
+<===> case14/output.css
+/*
+ * <div class="foo foo" bar="bar" baz="baz">
+ */
+
+<===> case15/input.scss
+@use "sass:string";
+$a: string.to-upper-case('abcd');
+$b: string.to-upper-case("abcd");
+$c: string.to-upper-case(abcd);
+
+foo {
+    content: #{$a};
+    content: #{$b};
+    content: #{$c};
+    content: '#{$a}';
+    content: '#{$b}';
+    content: '#{$c}';
+    content: "#{$a}";
+    content: "#{$b}";
+    content: "#{$c}";
+
+    content: #{string.unquote($a)};
+    content: #{string.unquote($b)};
+    content: #{string.unquote($c)};
+    content: '#{string.unquote($a)}';
+    content: '#{string.unquote($b)}';
+    content: '#{string.unquote($c)}';
+    content: "#{string.unquote($a)}";
+    content: "#{string.unquote($b)}";
+    content: "#{string.unquote($c)}";
+
+    content: #{$a + string.unquote("efg")};
+    content: #{$b + string.unquote("efg")};
+    content: #{$c + string.unquote("efg")};
+    content: '#{$a + string.unquote("efg")}';
+    content: '#{$b + string.unquote("efg")}';
+    content: '#{$c + string.unquote("efg")}';
+    content: "#{$a + string.unquote("efg")}";
+    content: "#{$b + string.unquote("efg")}";
+    content: "#{$c + string.unquote("efg")}";
+
+    content: #{$a + string.unquote("")};
+    content: #{$b + string.unquote("")};
+    content: #{$c + string.unquote("")};
+    content: '#{$a + string.unquote("")}';
+    content: '#{$b + string.unquote("")}';
+    content: '#{$c + string.unquote("")}';
+    content: "#{$a + string.unquote("")}";
+    content: "#{$b + string.unquote("")}";
+    content: "#{$c + string.unquote("")}";
+}
+
+<===> case15/output.css
+foo {
+  content: ABCD;
+  content: ABCD;
+  content: ABCD;
+  content: "ABCD";
+  content: "ABCD";
+  content: "ABCD";
+  content: "ABCD";
+  content: "ABCD";
+  content: "ABCD";
+  content: ABCD;
+  content: ABCD;
+  content: ABCD;
+  content: "ABCD";
+  content: "ABCD";
+  content: "ABCD";
+  content: "ABCD";
+  content: "ABCD";
+  content: "ABCD";
+  content: ABCDefg;
+  content: ABCDefg;
+  content: ABCDefg;
+  content: "ABCDefg";
+  content: "ABCDefg";
+  content: "ABCDefg";
+  content: "ABCDefg";
+  content: "ABCDefg";
+  content: "ABCDefg";
+  content: ABCD;
+  content: ABCD;
+  content: ABCD;
+  content: "ABCD";
+  content: "ABCD";
+  content: "ABCD";
+  content: "ABCD";
+  content: "ABCD";
+  content: "ABCD";
+}
+
+<===> case16/input.scss
+// Input
+section {
+    $w: null, 10px;
+    width: $w;
+}
+
+<===> case16/output.css
+section {
+  width: 10px;
+}
+
+<===> case17/input.scss
+@function foo($args...) {
+  @return bar($args...);
+}
+
+@function bar() {
+ @return "hi";
+}
+
+.foo {
+  result: foo();
+}
+
+<===> case17/output.css
+.foo {
+  result: "hi";
+}
+
+<===> case18/input.scss
+@use "sass:color";
+foo {
+  @for $i from 0 through 360 {
+    i#{$i}: color.hue(hsl($i, 10%, 20%));
+  }
+}
+
+<===> case18/output.css
+foo {
+  i0: 0deg;
+  i1: 1deg;
+  i2: 2deg;
+  i3: 3deg;
+  i4: 4deg;
+  i5: 5deg;
+  i6: 6deg;
+  i7: 7deg;
+  i8: 8deg;
+  i9: 9deg;
+  i10: 10deg;
+  i11: 11deg;
+  i12: 12deg;
+  i13: 13deg;
+  i14: 14deg;
+  i15: 15deg;
+  i16: 16deg;
+  i17: 17deg;
+  i18: 18deg;
+  i19: 19deg;
+  i20: 20deg;
+  i21: 21deg;
+  i22: 22deg;
+  i23: 23deg;
+  i24: 24deg;
+  i25: 25deg;
+  i26: 26deg;
+  i27: 27deg;
+  i28: 28deg;
+  i29: 29deg;
+  i30: 30deg;
+  i31: 31deg;
+  i32: 32deg;
+  i33: 33deg;
+  i34: 34deg;
+  i35: 35deg;
+  i36: 36deg;
+  i37: 37deg;
+  i38: 38deg;
+  i39: 39deg;
+  i40: 40deg;
+  i41: 41deg;
+  i42: 42deg;
+  i43: 43deg;
+  i44: 44deg;
+  i45: 45deg;
+  i46: 46deg;
+  i47: 47deg;
+  i48: 48deg;
+  i49: 49deg;
+  i50: 50deg;
+  i51: 51deg;
+  i52: 52deg;
+  i53: 53deg;
+  i54: 54deg;
+  i55: 55deg;
+  i56: 56deg;
+  i57: 57deg;
+  i58: 58deg;
+  i59: 59deg;
+  i60: 60deg;
+  i61: 61deg;
+  i62: 62deg;
+  i63: 63deg;
+  i64: 64deg;
+  i65: 65deg;
+  i66: 66deg;
+  i67: 67deg;
+  i68: 68deg;
+  i69: 69deg;
+  i70: 70deg;
+  i71: 71deg;
+  i72: 72deg;
+  i73: 73deg;
+  i74: 74deg;
+  i75: 75deg;
+  i76: 76deg;
+  i77: 77deg;
+  i78: 78deg;
+  i79: 79deg;
+  i80: 80deg;
+  i81: 81deg;
+  i82: 82deg;
+  i83: 83deg;
+  i84: 84deg;
+  i85: 85deg;
+  i86: 86deg;
+  i87: 87deg;
+  i88: 88deg;
+  i89: 89deg;
+  i90: 90deg;
+  i91: 91deg;
+  i92: 92deg;
+  i93: 93deg;
+  i94: 94deg;
+  i95: 95deg;
+  i96: 96deg;
+  i97: 97deg;
+  i98: 98deg;
+  i99: 99deg;
+  i100: 100deg;
+  i101: 101deg;
+  i102: 102deg;
+  i103: 103deg;
+  i104: 104deg;
+  i105: 105deg;
+  i106: 106deg;
+  i107: 107deg;
+  i108: 108deg;
+  i109: 109deg;
+  i110: 110deg;
+  i111: 111deg;
+  i112: 112deg;
+  i113: 113deg;
+  i114: 114deg;
+  i115: 115deg;
+  i116: 116deg;
+  i117: 117deg;
+  i118: 118deg;
+  i119: 119deg;
+  i120: 120deg;
+  i121: 121deg;
+  i122: 122deg;
+  i123: 123deg;
+  i124: 124deg;
+  i125: 125deg;
+  i126: 126deg;
+  i127: 127deg;
+  i128: 128deg;
+  i129: 129deg;
+  i130: 130deg;
+  i131: 131deg;
+  i132: 132deg;
+  i133: 133deg;
+  i134: 134deg;
+  i135: 135deg;
+  i136: 136deg;
+  i137: 137deg;
+  i138: 138deg;
+  i139: 139deg;
+  i140: 140deg;
+  i141: 141deg;
+  i142: 142deg;
+  i143: 143deg;
+  i144: 144deg;
+  i145: 145deg;
+  i146: 146deg;
+  i147: 147deg;
+  i148: 148deg;
+  i149: 149deg;
+  i150: 150deg;
+  i151: 151deg;
+  i152: 152deg;
+  i153: 153deg;
+  i154: 154deg;
+  i155: 155deg;
+  i156: 156deg;
+  i157: 157deg;
+  i158: 158deg;
+  i159: 159deg;
+  i160: 160deg;
+  i161: 161deg;
+  i162: 162deg;
+  i163: 163deg;
+  i164: 164deg;
+  i165: 165deg;
+  i166: 166deg;
+  i167: 167deg;
+  i168: 168deg;
+  i169: 169deg;
+  i170: 170deg;
+  i171: 171deg;
+  i172: 172deg;
+  i173: 173deg;
+  i174: 174deg;
+  i175: 175deg;
+  i176: 176deg;
+  i177: 177deg;
+  i178: 178deg;
+  i179: 179deg;
+  i180: 180deg;
+  i181: 181deg;
+  i182: 182deg;
+  i183: 183deg;
+  i184: 184deg;
+  i185: 185deg;
+  i186: 186deg;
+  i187: 187deg;
+  i188: 188deg;
+  i189: 189deg;
+  i190: 190deg;
+  i191: 191deg;
+  i192: 192deg;
+  i193: 193deg;
+  i194: 194deg;
+  i195: 195deg;
+  i196: 196deg;
+  i197: 197deg;
+  i198: 198deg;
+  i199: 199deg;
+  i200: 200deg;
+  i201: 201deg;
+  i202: 202deg;
+  i203: 203deg;
+  i204: 204deg;
+  i205: 205deg;
+  i206: 206deg;
+  i207: 207deg;
+  i208: 208deg;
+  i209: 209deg;
+  i210: 210deg;
+  i211: 211deg;
+  i212: 212deg;
+  i213: 213deg;
+  i214: 214deg;
+  i215: 215deg;
+  i216: 216deg;
+  i217: 217deg;
+  i218: 218deg;
+  i219: 219deg;
+  i220: 220deg;
+  i221: 221deg;
+  i222: 222deg;
+  i223: 223deg;
+  i224: 224deg;
+  i225: 225deg;
+  i226: 226deg;
+  i227: 227deg;
+  i228: 228deg;
+  i229: 229deg;
+  i230: 230deg;
+  i231: 231deg;
+  i232: 232deg;
+  i233: 233deg;
+  i234: 234deg;
+  i235: 235deg;
+  i236: 236deg;
+  i237: 237deg;
+  i238: 238deg;
+  i239: 239deg;
+  i240: 240deg;
+  i241: 241deg;
+  i242: 242deg;
+  i243: 243deg;
+  i244: 244deg;
+  i245: 245deg;
+  i246: 246deg;
+  i247: 247deg;
+  i248: 248deg;
+  i249: 249deg;
+  i250: 250deg;
+  i251: 251deg;
+  i252: 252deg;
+  i253: 253deg;
+  i254: 254deg;
+  i255: 255deg;
+  i256: 256deg;
+  i257: 257deg;
+  i258: 258deg;
+  i259: 259deg;
+  i260: 260deg;
+  i261: 261deg;
+  i262: 262deg;
+  i263: 263deg;
+  i264: 264deg;
+  i265: 265deg;
+  i266: 266deg;
+  i267: 267deg;
+  i268: 268deg;
+  i269: 269deg;
+  i270: 270deg;
+  i271: 271deg;
+  i272: 272deg;
+  i273: 273deg;
+  i274: 274deg;
+  i275: 275deg;
+  i276: 276deg;
+  i277: 277deg;
+  i278: 278deg;
+  i279: 279deg;
+  i280: 280deg;
+  i281: 281deg;
+  i282: 282deg;
+  i283: 283deg;
+  i284: 284deg;
+  i285: 285deg;
+  i286: 286deg;
+  i287: 287deg;
+  i288: 288deg;
+  i289: 289deg;
+  i290: 290deg;
+  i291: 291deg;
+  i292: 292deg;
+  i293: 293deg;
+  i294: 294deg;
+  i295: 295deg;
+  i296: 296deg;
+  i297: 297deg;
+  i298: 298deg;
+  i299: 299deg;
+  i300: 300deg;
+  i301: 301deg;
+  i302: 302deg;
+  i303: 303deg;
+  i304: 304deg;
+  i305: 305deg;
+  i306: 306deg;
+  i307: 307deg;
+  i308: 308deg;
+  i309: 309deg;
+  i310: 310deg;
+  i311: 311deg;
+  i312: 312deg;
+  i313: 313deg;
+  i314: 314deg;
+  i315: 315deg;
+  i316: 316deg;
+  i317: 317deg;
+  i318: 318deg;
+  i319: 319deg;
+  i320: 320deg;
+  i321: 321deg;
+  i322: 322deg;
+  i323: 323deg;
+  i324: 324deg;
+  i325: 325deg;
+  i326: 326deg;
+  i327: 327deg;
+  i328: 328deg;
+  i329: 329deg;
+  i330: 330deg;
+  i331: 331deg;
+  i332: 332deg;
+  i333: 333deg;
+  i334: 334deg;
+  i335: 335deg;
+  i336: 336deg;
+  i337: 337deg;
+  i338: 338deg;
+  i339: 339deg;
+  i340: 340deg;
+  i341: 341deg;
+  i342: 342deg;
+  i343: 343deg;
+  i344: 344deg;
+  i345: 345deg;
+  i346: 346deg;
+  i347: 347deg;
+  i348: 348deg;
+  i349: 349deg;
+  i350: 350deg;
+  i351: 351deg;
+  i352: 352deg;
+  i353: 353deg;
+  i354: 354deg;
+  i355: 355deg;
+  i356: 356deg;
+  i357: 357deg;
+  i358: 358deg;
+  i359: 359deg;
+  i360: 0deg;
+}
+
+<===> case19/input.scss
+/* precision: 0 */
+$foo: 123px;
+foo {
+  bar: $foo;
+}
+
+<===> case19/output.css
+/* precision: 0 */
+foo {
+  bar: 123px;
+}
+
+<===> case20/input.scss
+div {
+  content: #{0/0} a;
+}
+
+<===> case20/output.css
+div {
+  content: 0/0 a;
+}
+
+<===> case21/input.scss
+div {
+  content: (((92px * 12) / 13px) * 1em) + 22em;
+}
+
+<===> case21/output.css
+div {
+  content: 106.9230769231em;
+}
+
+<===> case22/input.scss
+a {
+  b: 3s + 101ms;
+}
+
+<===> case22/output.css
+a {
+  b: 3.101s;
+}
+
+<===> case23/input.scss
+$namespace: 'test-';
+$column: 1;
+
+.#{$namespace}#{$column}\/#{$column} {
+  width: 100% !important;
+}
+
+<===> case23/output.css
+.test-1\/1 {
+  width: 100% !important;
+}
+
+<===> case24/input.scss
+@use "sass:meta";
+
+$map: (
+  red: 'bar',
+  #{red}: 'baz',
+);
+
+.foo {
+  content: meta.inspect($map);
+}
+
+<===> case24/output.css
+.foo {
+  content: (red: "bar", red: "baz");
+}
+
+<===> case25/input.scss
+@use "sass:meta";
+
+$count: 0;
+
+@function counter() {
+  $count: $count + 1 !global;
+  @return $count;
+}
+
+$map: (
+  counter(): 'bar',
+  counter(): 'foo',
+);
+
+.foo {
+  content: meta.inspect($map);
+}
+
+<===> case25/output.css
+.foo {
+  content: (1: "bar", 2: "foo");
+}
+
+<===> case26/input.scss
+@use "sass:meta";
+
+$map1: (
+   red: 'bar',
+  'red': 'foo',
+);
+
+$map2: (
+   red: 'bar',
+  'red': #{red},
+);
+
+.foo {
+  content: meta.inspect($map1);
+  content: meta.inspect($map2);
+}
+
+<===> case26/output.css
+.foo {
+  content: (red: "bar", "red": "foo");
+  content: (red: "bar", "red": red);
+}
+
+<===> case27/input.scss
+el {
+  @if ((& + '') == 'el') {
+    content: "It works!";
+  }
+}
+
+<===> case27/output.css
+el {
+  content: "It works!";
+}
+
+<===> case28/input.scss
+el {
+  @if (& + '' == 'el') {
+    content: "It works!";
+  }
+}
+
+<===> case28/output.css
+el {
+  content: "It works!";
+}
+
+<===> case29/input.scss
+@use "sass:list";
+@function foo($initial, $args...) {
+  $args: list.append($args, 3);
+
+  @return bar($initial, $args...);
+}
+
+@function bar($args...) {
+  @return list.length($args);
+}
+
+@function baz($initial, $args...) {
+  $args: list.append($args, 3);
+
+  @return list.nth($args, 1);
+}
+
+.test {
+  foo: foo(1, 2);
+  baz: baz(1, 2);
+}
+
+<===> case29/output.css
+.test {
+  foo: 3;
+  baz: 2;
+}
+
+<===> case30/input.scss
+foo {
+  bar: #{0/0};
+  bar: #{0/1};
+  bar: #{1/2};
+}
+
+<===> case30/output.css
+foo {
+  bar: 0/0;
+  bar: 0/1;
+  bar: 1/2;
+}
+
+<===> case31/input.scss
+foo {
+  &.bar, /* */
+  &.baz {
+    color: red;
+  }
+}
+
+<===> case31/output.css
+foo.bar, foo.baz {
+  color: red;
+}
+
+<===> case32/input.scss
+foo {
+  color: blue;
+
+  @at-root {
+    bar {
+      color: red;
+    }
+  }
+}
+
+foo {
+  color: blue;
+
+  @at-root bar {
+    color: red;
+  }
+}
+
+foo {
+  color: blue;
+
+  @at-root bar {
+    baz {
+      color: red;
+    }
+  }
+}
+
+foo {
+  color: blue;
+
+  @at-root {
+    bar {
+      baz {
+        color: red;
+      }
+    }
+  }
+}
+
+<===> case32/output.css
+foo {
+  color: blue;
+}
+bar {
+  color: red;
+}
+
+foo {
+  color: blue;
+}
+bar {
+  color: red;
+}
+
+foo {
+  color: blue;
+}
+bar baz {
+  color: red;
+}
+
+foo {
+  color: blue;
+}
+bar baz {
+  color: red;
+}
+
+<===> case33/input.scss
+foo {
+  color: red;
+
+  @at-root {
+    @keyframes animation {
+      to { color: red; }
+    }
+  }
+
+  bar {
+    color: blue;
+
+    @at-root {
+      @keyframes other-animation {
+        to { color: blue; }
+      }
+    }
+  }
+}
+
+<===> case33/output.css
+foo {
+  color: red;
+}
+@keyframes animation {
+  to {
+    color: red;
+  }
+}
+foo bar {
+  color: blue;
+}
+@keyframes other-animation {
+  to {
+    color: blue;
+  }
+}
+
+<===> case34/input.scss
+foo {
+  @at-root {
+    @media print {
+      bar {
+        color: red;
+      }
+    }
+
+    baz {
+      @media speech {
+        color: blue;
+      }
+    }
+  }
+}
+
+<===> case34/output.css
+@media print {
+  bar {
+    color: red;
+  }
+}
+@media speech {
+  baz {
+    color: blue;
+  }
+}
+
+<===> case35/input.scss
+foo {
+  color: blue;
+
+  baz {
+    color: purple;
+
+    @at-root {
+      bar {
+        color: red;
+      }
+    }
+  }
+}
+
+foo {
+  color: blue;
+
+  baz {
+    color: purple;
+
+    @at-root bar {
+      color: red;
+    }
+  }
+}
+
+<===> case35/output.css
+foo {
+  color: blue;
+}
+foo baz {
+  color: purple;
+}
+bar {
+  color: red;
+}
+
+foo {
+  color: blue;
+}
+foo baz {
+  color: purple;
+}
+bar {
+  color: red;
+}
+
+<===> case36/input.scss
+foo {
+  -quotes: 'this-string' == 'this-string';
+  -quotes: this-string == 'this-string';
+  -quotes: 'this-string' == "this-string";
+  -quotes: 'this-string' == '"this-string"';
+  -quotes: '"this-string"' == "'this-string'";
+  foo: this-string;
+  foo: 'this-string';
+  foo: "this-string";
+  foo: '"this-string"';
+  foo: "'this-string'";
+}
+
+<===> case36/output.css
+foo {
+  -quotes: true;
+  -quotes: true;
+  -quotes: true;
+  -quotes: false;
+  -quotes: false;
+  foo: this-string;
+  foo: "this-string";
+  foo: "this-string";
+  foo: '"this-string"';
+  foo: "'this-string'";
+}
+
+<===> case37/input.scss
+a {
+  width: 4.0px;
+  height: 3.00px;
+  opacity: 1.0;
+}
+
+<===> case37/output.css
+a {
+  width: 4px;
+  height: 3px;
+  opacity: 1;
+}
+
+<===> case38/input.scss
+div {
+  transition-property:
+    border-color,
+    box-shadow,
+    color;
+}
+
+<===> case38/output.css
+div {
+  transition-property: border-color, box-shadow, color;
+}
+
+<===> case39/input.scss
+@use "sass:list";
+$var: 1;
+$list: 2, 3;
+$new-list: list.append($var, $list);
+$nested-list: $var $list;
+@debug($var);
+@debug($list);
+@debug($new-list);
+@debug($nested-list);
+div {
+ a: $var;
+ a: $list;
+ a: $new-list;
+ a: $nested-list;
+}
+
+<===> case39/output.css
+div {
+  a: 1;
+  a: 2, 3;
+  a: 1 2, 3;
+  a: 1 2, 3;
+}
+
+<===> case40/input.scss
+@foo bar
+
+<===> case40/output.css
+@foo bar;
+
+<===> case41/input.scss
+$a: 1, 2
+
+<===> case41/output.css
+
+
+<===> case42/input.scss
+@debug("foo")
+
+<===> case42/output.css
+
+
+<===> case43/input.scss
+@import "http://foo"
+
+<===> case43/output.css
+@import "http://foo";
+
+<===> case44/input.scss
+@mixin foo() {
+  a { b: c; }
+}
+@include foo
+
+<===> case44/output.css
+a {
+  b: c;
+}
+
+<===> case45/input.scss
+$a: 1 2
+
+<===> case45/output.css
+
+
+<===> case46/input.scss
+@warning "foo"
+
+<===> case46/output.css
+@warning "foo";
+
+<===> case47/input.scss
+.foo {
+  yellow: yellow;
+  red: red;
+  blue: blue;
+  white: white;
+  black: black;
+  eval: if(red, yellow, null);
+}
+
+<===> case47/output.css
+.foo {
+  yellow: yellow;
+  red: red;
+  blue: blue;
+  white: white;
+  black: black;
+  eval: yellow;
+}
+
+<===> case48/input.scss
+@use "sass:list";
+@function double($value) {
+  @return $value * 2;
+}
+
+@mixin dummy-bug($args...) {
+  @for $i from 1 through list.length($args) {
+    $args: list.set-nth($args, $i, double(list.nth($args, $i)));
+  }
+
+  content: $args;
+}
+
+.foo {
+  @include dummy-bug(1, 2, 3, 4);
+}
+
+<===> case48/output.css
+.foo {
+  content: 2, 4, 6, 8;
+}
+
+<===> case49/input.scss
+@use "sass:list";
+$EQ-Selectors: ();
+
+.el {
+    $EQ-Selectors: list.append($EQ-Selectors, &, 'comma') !global;
+}
+
+html:before {
+  content: "#{$EQ-Selectors}";
+}
+
+<===> case49/output.css
+html:before {
+  content: ".el";
+}
+
+<===> case50/input.scss
+@use "sass:list";
+@use "sass:meta";
+
+@function push($list, $items...) {
+  @return list.join($list, $items, $separator: auto);
+}
+
+.test {
+  $list: push(1 2 3, 4, 5);
+  list: meta.inspect($list);
+  value: list.nth($list, 4);
+}
+
+<===> case50/output.css
+.test {
+  list: 1 2 3 4 5;
+  value: 4;
+}
+
+<===> case51/input.scss
+$foo: foo;
+$bar: bar;
+
+.foo {
+  foo: foo #{$foo}, bar #{$bar};
+}
+
+<===> case51/output.css
+.foo {
+  foo: foo foo, bar bar;
+}
+
+<===> case52/input.scss
+@use "sass:string";
+@function noop($string) {
+  @return $string;
+}
+
+.foo {
+  upper: string.to-upper-case('f') + string.slice('foo', 2);
+  lower: string.to-lower-case('f') + string.slice('foo', 2);
+  user-upper: string.to-upper-case('f') + noop('oo');
+  user-lower: string.to-lower-case('f') + noop('oo');
+}
+
+<===> case52/output.css
+.foo {
+  upper: "Foo";
+  lower: "foo";
+  user-upper: "Foo";
+  user-lower: "foo";
+}
+
+<===> case53/input.scss
+@use "sass:meta";
+$quoted: "green";
+$unquoted: green;
+
+.test {
+  string: meta.type-of($quoted);
+  color: meta.type-of($unquoted);
+  string: meta.type-of("green");
+  color: meta.type-of(green);
+}
+
+<===> case53/output.css
+.test {
+  string: string;
+  color: color;
+  string: string;
+  color: color;
+}
+
+<===> case54/input.scss
+@use "sass:map";
+@use "sass:meta";
+
+$map: map.merge((1 2: 3), (2 1: 3));
+
+.test {
+  test: meta.inspect($map);
+}
+
+<===> case54/output.css
+.test {
+  test: (1 2: 3, 2 1: 3);
+}
+
+<===> case55/input.scss
+foo {
+  $nothing: null;
+  foo: "#{$nothing}' %' '#{$nothing}";
+}
+
+<===> case55/output.css
+foo {
+  foo: "' %' '";
+}
+
+<===> case56/input.scss
+.test .testa {
+  @at-root #{"%foo"} {
+    color: red;
+  }
+  @extend %foo;
+}
+
+<===> case56/output.css
+.test .testa {
+  color: red;
+}
+
+<===> case57/input.scss
+$name: "my-class";
+
+.-#{$name} {
+  content: "test";
+}
+
+<===> case57/output.css
+.-my-class {
+  content: "test";
+}
+
+<===> case58/input.scss
+foo {
+    a:&;
+    > bar {
+        b:&;
+        > baz {
+            c:&;
+        }
+    }
+}
+
+<===> case58/output.css
+foo {
+  a: foo;
+}
+foo > bar {
+  b: foo > bar;
+}
+foo > bar > baz {
+  c: foo > bar > baz;
+}
+
+<===> case59/input.scss
+$foo: bar;
+
+div {
+    content: "foo #{$foo}"
+}
+
+<===> case59/output.css
+div {
+  content: "foo bar";
+}
+

@@ -12,8 +12,9 @@ permissions:
 
 env:
   GO_VERSION: "1.26.4"
-  # Coverage floor. Fleet target is 100%; this gate is raised as tests grow.
-  COVERAGE_MIN: "78"
+  # Coverage floor. Achieved 95.0%; the remainder is scattered parser/eval
+  # error-recovery and defensive branches. Do not lower to pass.
+  COVERAGE_MIN: "94"
 
 jobs:
   lint:
@@ -57,6 +58,24 @@ jobs:
         run: npm i -g sass
       - name: Live differential vs dart-sass
         run: go test -run 'Differential|Golden' -v ./...
+
+  # Full sass-spec conformance suite (github.com/sass/sass-spec). Informational:
+  # reports the differential pass rate X/N against the canonical corpus. The
+  # blocking conformance gate is the frozen golden subset in the test job above.
+  conformance:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Checkout sass-spec
+        run: git clone --depth 1 https://github.com/sass/sass-spec.git "$RUNNER_TEMP/sass-spec"
+      - name: Run full conformance differential
+        env:
+          SASS_SPEC_PATH: ${{ runner.temp }}/sass-spec
+        run: go test -run TestSassSpecFull -v -timeout 600s ./
 
   build-arch:
     runs-on: ubuntu-latest

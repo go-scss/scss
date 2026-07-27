@@ -68,10 +68,10 @@ func (e *evaluator) mergeModuleGlobally(mod *module, prefix string) {
 		e.env.setGlobalIfAbsent(prefix+k, v)
 	}
 	for k, v := range mod.mixins {
-		e.env.mixins[prefix+k] = v
+		e.env.mixins[normIdent(prefix+k)] = v
 	}
 	for k, v := range mod.funcs {
-		e.env.funcs[prefix+k] = v
+		e.env.funcs[normIdent(prefix+k)] = v
 	}
 }
 

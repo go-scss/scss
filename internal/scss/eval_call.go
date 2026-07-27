@@ -146,6 +146,7 @@ func (e *evaluator) plainCSSFunction(x *FuncCall) Value {
 }
 
 func (e *evaluator) lookupFunc(ns, name string) *funcEntry {
+	name = normIdent(name)
 	if ns != "" {
 		if mod, ok := e.env.modules[ns]; ok {
 			if f, ok := mod.funcs[name]; ok {
@@ -161,6 +162,8 @@ func (e *evaluator) lookupFunc(ns, name string) *funcEntry {
 }
 
 func (e *evaluator) callUserFunc(fn *funcEntry, args *ArgList) (result Value) {
+	e.enter()
+	defer e.leave()
 	saved := e.env
 	e.env = fn.env
 	e.env.pushScope()

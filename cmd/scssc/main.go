@@ -43,6 +43,9 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	return 0
 }
 
+// osExit is a seam so main() is testable.
+var osExit = os.Exit
+
 func main() {
-	os.Exit(run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
+	osExit(run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
 }

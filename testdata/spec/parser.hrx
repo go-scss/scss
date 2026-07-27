@@ -1,0 +1,49 @@
+<===> case0/input.sass
+// Regression test for sass/dart-sass#1287
+a
+  b
+    c: d
+    
+  e
+    f: g
+  
+
+<===> case0/output.css
+a b {
+  c: d;
+}
+a e {
+  f: g;
+}
+
+<===> case1/input.scss
+// Regression test for scssphp/scssphp#435
+a {
+  b: true or 1 < 0 and false;
+}
+
+<===> case1/output.css
+a {
+  b: true;
+}
+
+<===> case2/input.scss
+// Regression test for sass/dart-sass#1855.
+\\{
+  b: c;
+}
+
+<===> case2/output.css
+\\ {
+  b: c;
+}
+
+<===> case3/input.sass
+a, b
+    c: d
+
+<===> case3/output.css
+a, b {
+  c: d;
+}
+

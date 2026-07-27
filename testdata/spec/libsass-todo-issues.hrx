@@ -1,0 +1,29 @@
+<===> case0/input.scss
+a  {
+  content: "#{ a /*#{"}*/ }";
+}
+
+<===> case0/output.css
+a {
+  content: "a";
+}
+
+<===> case1/input.scss
+@mixin foo() {
+  @import "https://foo";
+}
+@include foo;
+
+<===> case1/output.css
+@import "https://foo";
+
+<===> case2/input.scss
+@media all and (min-width: 100px) {
+  @import "https://example.org";
+}
+
+<===> case2/output.css
+@media all and (min-width: 100px) {
+  @import "https://example.org";
+}
+
