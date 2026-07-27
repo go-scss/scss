@@ -1,0 +1,13 @@
+@mixin border-radius($radius: 4px) {
+  border-radius: $radius;
+}
+@mixin flex($dir: row, $justify: center) {
+  display: flex;
+  flex-direction: $dir;
+  justify-content: $justify;
+}
+.card {
+  @include border-radius;
+  @include flex($justify: space-between);
+}
+.pill { @include border-radius(999px); }

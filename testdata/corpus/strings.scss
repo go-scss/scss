@@ -1,0 +1,8 @@
+@use "sass:string";
+.a {
+  x: quote(hello);
+  y: unquote("world");
+  z: to-upper-case("abc");
+  len: string.length("hello");
+  ins: string.insert("abc", "X", 2);
+}

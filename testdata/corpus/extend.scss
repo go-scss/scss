@@ -1,0 +1,8 @@
+%message {
+  border: 1px solid;
+  padding: 10px;
+  border-radius: 3px;
+}
+.success { @extend %message; border-color: green; }
+.error { @extend %message; border-color: red; }
+.warning { @extend %message; border-color: orange; }

@@ -1,0 +1,11 @@
+.swatch {
+  a: red;
+  b: #ff0000;
+  c: #F00;
+  d: rgb(255, 128, 0);
+  e: rgba(0, 0, 0, 0.5);
+  g: white;
+  h: transparent;
+  i: 171;
+  j: 0.4;
+}

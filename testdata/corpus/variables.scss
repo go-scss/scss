@@ -1,0 +1,9 @@
+$primary: #3498db;
+$spacing: 8px;
+$font-stack: "Helvetica Neue", Arial, sans-serif !default;
+.box {
+  color: $primary;
+  padding: $spacing * 2;
+  margin: $spacing / 2 + 1px;
+  font-family: $font-stack;
+}

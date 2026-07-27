@@ -1,0 +1,303 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) 2026, the go-scss/scss authors
+
+package scss
+
+import (
+	"math"
+	"strings"
+)
+
+func (e *evaluator) evalExpr(expr Expr) Value {
+	switch x := expr.(type) {
+	case *NumberLit:
+		return &Number{Val: x.Val, Numer: unitSlice(x.Unit)}
+	case *StringLit:
+		return e.evalString(x)
+	case *ColorLit:
+		return x.Color
+	case *BoolLit:
+		return boolean(x.V)
+	case *NullLit:
+		return sassNull
+	case *VarRef:
+		return e.evalVarRef(x)
+	case *Ident:
+		return e.evalIdent(x)
+	case *Parent:
+		if len(e.currentParent.complexes) == 0 {
+			return sassNull
+		}
+		return &SassString{Text: e.currentParent.serialize(false)}
+	case *Binary:
+		return e.evalBinary(x)
+	case *Unary:
+		return e.evalUnary(x)
+	case *FuncCall:
+		return e.evalCall(x)
+	case *ListExpr:
+		return e.evalList(x)
+	case *MapExpr:
+		return e.evalMap(x)
+	case *Paren:
+		return e.evalExpr(x.Expr)
+	case *InterpExpr:
+		return &SassString{Text: e.stringifyInterp(e.evalExpr(x.Expr))}
+	}
+	e.fail("Unsupported expression.")
+	return nil
+}
+
+func unitSlice(u string) []string {
+	if u == "" {
+		return nil
+	}
+	return []string{u}
+}
+
+func (e *evaluator) evalString(x *StringLit) Value {
+	var sb strings.Builder
+	for _, part := range x.Parts.Parts {
+		switch p := part.(type) {
+		case string:
+			sb.WriteString(p)
+		case *InterpExpr:
+			sb.WriteString(e.stringifyInterp(e.evalExpr(p.Expr)))
+		}
+	}
+	return &SassString{Text: sb.String(), Quoted: x.Quoted}
+}
+
+func (e *evaluator) evalVarRef(x *VarRef) Value {
+	if x.Namespace != "" {
+		if mod, ok := e.env.modules[x.Namespace]; ok {
+			if v, ok := mod.vars[x.Name]; ok {
+				return v
+			}
+		}
+		e.fail("Undefined variable.")
+	}
+	if v, ok := e.env.getVar(x.Name); ok {
+		return v
+	}
+	e.fail("Undefined variable.")
+	return nil
+}
+
+func (e *evaluator) evalIdent(x *Ident) Value {
+	lower := strings.ToLower(x.Name)
+	if lower == "transparent" {
+		return &SassColor{R: 0, G: 0, B: 0, A: 0, Original: x.Name}
+	}
+	if c, ok := lookupNamedColor(x.Name); ok {
+		return c
+	}
+	return &SassString{Text: x.Name, Quoted: false}
+}
+
+func (e *evaluator) evalList(x *ListExpr) Value {
+	elems := make([]Value, len(x.Elements))
+	for i, el := range x.Elements {
+		elems[i] = e.evalExpr(el)
+	}
+	return &List{Elements: elems, Sep: x.Sep, Bracketed: x.Bracketed}
+}
+
+func (e *evaluator) evalMap(x *MapExpr) Value {
+	m := &Map{}
+	for i := range x.Keys {
+		k := e.evalExpr(x.Keys[i])
+		v := e.evalExpr(x.Values[i])
+		if _, dup := m.get(k); dup {
+			e.fail("Duplicate key in map.")
+		}
+		m.set(k, v)
+	}
+	return m
+}
+
+func (e *evaluator) evalNumber(expr Expr) *Number {
+	v := e.evalExpr(expr)
+	n, ok := v.(*Number)
+	if !ok {
+		e.fail("%s is not a number.", serializeValue(v, false))
+	}
+	return n
+}
+
+func (e *evaluator) evalUnary(x *Unary) Value {
+	if x.Op == "not" {
+		return boolean(!e.evalExpr(x.Expr).isTruthy())
+	}
+	v := e.evalExpr(x.Expr)
+	if x.Op == "+" {
+		return v
+	}
+	// unary minus
+	if n, ok := v.(*Number); ok {
+		return &Number{Val: -n.Val, Numer: n.Numer, Denom: n.Denom}
+	}
+	return &SassString{Text: "-" + serializeValue(v, false), Quoted: false}
+}
+
+func (e *evaluator) evalBinary(x *Binary) Value {
+	switch x.Op {
+	case "and":
+		l := e.evalExpr(x.Left)
+		if !l.isTruthy() {
+			return l
+		}
+		return e.evalExpr(x.Right)
+	case "or":
+		l := e.evalExpr(x.Left)
+		if l.isTruthy() {
+			return l
+		}
+		return e.evalExpr(x.Right)
+	}
+	if x.Op == "/" && x.Slash {
+		l := e.evalExpr(x.Left)
+		r := e.evalExpr(x.Right)
+		if _, lok := l.(*Number); lok {
+			if _, rok := r.(*Number); rok {
+				return &List{Elements: []Value{l, r}, Sep: SepSlash}
+			}
+		}
+		return e.arith(x.Op, l, r)
+	}
+	l := e.evalExpr(x.Left)
+	r := e.evalExpr(x.Right)
+	switch x.Op {
+	case "==":
+		return boolean(l.equals(r))
+	case "!=":
+		return boolean(!l.equals(r))
+	case "<", ">", "<=", ">=":
+		return e.compare(x.Op, l, r)
+	default:
+		return e.arith(x.Op, l, r)
+	}
+}
+
+func (e *evaluator) compare(op string, l, r Value) Value {
+	ln, lok := l.(*Number)
+	rn, rok := r.(*Number)
+	if !lok || !rok {
+		e.fail("Undefined operation \"%s %s %s\".", serializeValue(l, false), op, serializeValue(r, false))
+	}
+	rv, ok := rn.compatConvert(ln)
+	if !ok {
+		e.fail("Incompatible units.")
+	}
+	a := ln.Val
+	b := rv
+	switch op {
+	case "<":
+		return boolean(a < b)
+	case ">":
+		return boolean(a > b)
+	case "<=":
+		return boolean(a <= b)
+	default:
+		return boolean(a >= b)
+	}
+}
+
+func (e *evaluator) arith(op string, l, r Value) Value {
+	ln, lok := l.(*Number)
+	rn, rok := r.(*Number)
+	if lok && rok {
+		return e.numberArith(op, ln, rn)
+	}
+	// string operations
+	switch op {
+	case "+":
+		return e.stringOp(l, r, "")
+	case "-":
+		return e.stringOp(l, r, "-")
+	case "/":
+		return e.stringOp(l, r, "/")
+	case "*":
+		e.fail("Undefined operation \"%s * %s\".", serializeValue(l, false), serializeValue(r, false))
+	case "%":
+		e.fail("Undefined operation \"%s %% %s\".", serializeValue(l, false), serializeValue(r, false))
+	}
+	return nil
+}
+
+func (e *evaluator) stringOp(l, r Value, sep string) Value {
+	quoted := false
+	if s, ok := l.(*SassString); ok && s.Quoted {
+		quoted = true
+	}
+	ls := unquotedInner(l)
+	rs := unquotedInner(r)
+	return &SassString{Text: ls + sep + rs, Quoted: quoted}
+}
+
+func unquotedInner(v Value) string {
+	if s, ok := v.(*SassString); ok {
+		return s.Text
+	}
+	return serializeValue(v, false)
+}
+
+func (e *evaluator) numberArith(op string, a, b *Number) Value {
+	switch op {
+	case "+", "-":
+		bv, num, den := e.alignForAdd(a, b)
+		val := a.Val
+		if op == "+" {
+			val += bv
+		} else {
+			val -= bv
+		}
+		return &Number{Val: val, Numer: num, Denom: den}
+	case "*":
+		val := a.Val * b.Val
+		num := append(append([]string(nil), a.Numer...), b.Numer...)
+		den := append(append([]string(nil), a.Denom...), b.Denom...)
+		val, num, den = simplifyUnits(val, num, den)
+		return &Number{Val: val, Numer: num, Denom: den}
+	case "/":
+		if b.Val == 0 {
+			return &Number{Val: math.Inf(sign(a.Val)), Numer: a.Numer, Denom: a.Denom}
+		}
+		val := a.Val / b.Val
+		num := append(append([]string(nil), a.Numer...), b.Denom...)
+		den := append(append([]string(nil), a.Denom...), b.Numer...)
+		val, num, den = simplifyUnits(val, num, den)
+		return &Number{Val: val, Numer: num, Denom: den}
+	case "%":
+		bv, num, _ := e.alignForAdd(a, b)
+		val := math.Mod(a.Val, bv)
+		if val != 0 && (val < 0) != (bv < 0) {
+			val += bv
+		}
+		return &Number{Val: val, Numer: num}
+	}
+	return nil
+}
+
+func sign(v float64) int {
+	if v < 0 {
+		return -1
+	}
+	return 1
+}
+
+// alignForAdd converts b into a's units for addition/subtraction, returning the
+// converted value and the result units.
+func (e *evaluator) alignForAdd(a, b *Number) (float64, []string, []string) {
+	if !a.hasUnits() {
+		return b.Val, b.Numer, b.Denom
+	}
+	if !b.hasUnits() {
+		return b.Val, a.Numer, a.Denom
+	}
+	v, ok := convertUnits(b.Val, b.Numer, b.Denom, a.Numer, a.Denom)
+	if !ok {
+		e.fail("%s and %s have incompatible units.", serializeValue(a, false), serializeValue(b, false))
+	}
+	return v, a.Numer, a.Denom
+}

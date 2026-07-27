@@ -1,0 +1,11 @@
+.container {
+  width: 100%;
+  @media (min-width: 768px) {
+    width: 750px;
+    .sidebar { width: 200px; }
+  }
+  @media (min-width: 992px) { width: 970px; }
+}
+@media screen and (max-width: 600px) {
+  body { font-size: 14px; }
+}

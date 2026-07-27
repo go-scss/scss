@@ -1,0 +1,16 @@
+@use "sass:math";
+$columns: 4;
+@for $i from 1 through $columns {
+  .col-#{$i} { width: math.div(100%, $columns) * $i; }
+}
+$theme: dark;
+.body {
+  @if $theme == dark { background: #111; color: #eee; }
+  @else if $theme == light { background: #fff; color: #111; }
+  @else { background: gray; }
+}
+$i: 0;
+@while $i < 3 {
+  .m-#{$i} { margin: $i * 4px; }
+  $i: $i + 1;
+}

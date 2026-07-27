@@ -1,0 +1,6 @@
+@use "colors";
+.a {
+  color: colors.$brand;
+  @include colors.box;
+  width: colors.triple(4px);
+}

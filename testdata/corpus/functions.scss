@@ -1,0 +1,13 @@
+@use "sass:math";
+@function rem($px, $base: 16px) {
+  @return math.div($px, $base) * 1rem;
+}
+@function sum($list) {
+  $acc: 0;
+  @each $n in $list { $acc: $acc + $n; }
+  @return $acc;
+}
+.a {
+  width: rem(32px);
+  height: sum(1 2 3 4 5) * 1px;
+}

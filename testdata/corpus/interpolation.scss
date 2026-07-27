@@ -1,0 +1,8 @@
+$side: left;
+$prop: margin;
+.a {
+  #{$prop}-#{$side}: 10px;
+  content: "value is #{1 + 1}";
+  background: url("images/#{$side}.png");
+}
+.icon-#{$side} { float: $side; }

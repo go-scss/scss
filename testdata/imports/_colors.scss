@@ -1,0 +1,3 @@
+$brand: #336699;
+@mixin box { display: block; }
+@function triple($n) { @return $n * 3; }

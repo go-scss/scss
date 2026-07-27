@@ -1,0 +1,12 @@
+.nav {
+  background: #fff;
+  ul { margin: 0; padding: 0; list-style: none; }
+  li { display: inline-block; }
+  a {
+    display: block;
+    padding: 6px 12px;
+    &:hover { color: red; }
+    &.active { font-weight: bold; }
+  }
+  > .brand { float: left; }
+}

@@ -1,0 +1,1 @@
+.container{width:100%}@media(min-width: 768px){.container{width:750px}.container .sidebar{width:200px}}@media(min-width: 992px){.container{width:970px}}@media screen and (max-width: 600px){body{font-size:14px}}
