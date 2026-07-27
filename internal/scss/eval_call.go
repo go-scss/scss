@@ -31,13 +31,6 @@ func (ci *callInfo) require(i int, name string) Value {
 	return v
 }
 
-func (ci *callInfo) opt(i int, name string, def Value) Value {
-	if v, ok := ci.get(i, name); ok {
-		return v
-	}
-	return def
-}
-
 func (ci *callInfo) num(i int, name string) *Number {
 	return ci.e.asNumber(ci.require(i, name))
 }

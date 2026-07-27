@@ -101,11 +101,6 @@ func (e *environment) setGlobalIfAbsent(name string, val Value) {
 	}
 }
 
-// child creates a nested environment sharing the same global scope and tables.
-func (e *environment) child() *environment {
-	return e
-}
-
 // module is a compiled @use/@forward stylesheet exposing members.
 type module struct {
 	vars   map[string]Value
