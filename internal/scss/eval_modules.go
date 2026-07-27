@@ -120,9 +120,7 @@ func (e *evaluator) loadModule(url string, config []ConfigVar) *module {
 	// include forwarded members
 	for _, fw := range sub.forwarded {
 		for k, v := range fw.mod.vars {
-			if _, ok := mod.vars[fw.prefix+k]; !ok {
-				mod.vars[fw.prefix+k] = v
-			}
+			mod.vars[fw.prefix+k] = v
 		}
 		for k, v := range fw.mod.mixins {
 			mod.mixins[fw.prefix+k] = v

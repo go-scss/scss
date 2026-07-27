@@ -12,9 +12,9 @@ permissions:
 
 env:
   GO_VERSION: "1.26.4"
-  # Coverage floor. Achieved 95.0%; the remainder is scattered parser/eval
-  # error-recovery and defensive branches. Do not lower to pass.
-  COVERAGE_MIN: "94"
+  # Coverage floor: the fleet standard is 100% of statements (achieved). Every
+  # parser/eval error-recovery and defensive branch is exercised. Do not lower.
+  COVERAGE_MIN: "100"
 
 jobs:
   lint:

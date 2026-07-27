@@ -32,16 +32,23 @@ func newParser(src string) *parser {
 func parseStylesheet(src string) (stmts []Stmt, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			if se, ok := r.(*SassError); ok {
-				err = se
-				return
-			}
-			panic(r)
+			err = rethrowIfNotSass(r)
 		}
 	}()
 	p := newParser(src)
 	stmts = p.parseStatements(true)
 	return stmts, nil
+}
+
+// rethrowIfNotSass classifies a recovered panic value: a *SassError is returned
+// so the caller can surface it as an error, while any other value (a genuine
+// runtime bug) is re-panicked. Centralising this keeps the recover guards in
+// Render, parseStylesheet and tryDeclaration identical and testable.
+func rethrowIfNotSass(r any) *SassError {
+	if se, ok := r.(*SassError); ok {
+		return se
+	}
+	panic(r)
 }
 
 func (p *parser) fail(format string, args ...any) {
@@ -344,11 +351,8 @@ func (p *parser) parseDeclarationOrStyleRule() Stmt {
 func (p *parser) tryDeclaration() (stmt Stmt, ok bool) {
 	defer func() {
 		if r := recover(); r != nil {
-			if _, isSass := r.(*SassError); isSass {
-				stmt, ok = nil, false
-				return
-			}
-			panic(r)
+			rethrowIfNotSass(r)
+			stmt, ok = nil, false
 		}
 	}()
 	name := p.parseInterpolatedText(func(pp *parser) bool {
@@ -437,9 +441,8 @@ func (p *parser) parseBlock() []Stmt {
 	}
 	p.next()
 	stmts := p.parseStatements(false)
-	if p.peek() != '}' {
-		p.fail("Expected \"}\".")
-	}
+	// parseStatements(false) only returns on '}' (it fails on EOF), so the closing
+	// brace is guaranteed here.
 	p.next()
 	return stmts
 }

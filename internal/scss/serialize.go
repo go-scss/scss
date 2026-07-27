@@ -98,11 +98,9 @@ func serialize(root *cssRoot, compressed bool) string {
 		}
 		return out
 	}
-	out = strings.TrimLeft(out, "\n")
-	if len(out) > 0 && !strings.HasSuffix(out, "\n") {
-		out += "\n"
-	}
-	return out
+	// Every emitted node ends in "\n" in expanded mode, so the result is already
+	// newline-terminated (or empty) after trimming leading blank lines.
+	return strings.TrimLeft(out, "\n")
 }
 
 func (s *serializer) indent(depth int) {

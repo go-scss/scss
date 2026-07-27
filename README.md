@@ -101,7 +101,7 @@ Dart Sass output is the source of truth; where this compiler intentionally diver
 - **`@extend` / `sass:selector` unification** — class/placeholder extension with dart-compatible ordering works; `selector.extend`, `selector.is-superselector`, `selector.parse`, and complex/compound selector unification are not implemented (`core_functions/selector/extend/*`).
 - **Modern media-query syntax** — range (`width < 100px`) and `and`/`or`/`not` logic merging/pruning are partial (`css/media/logic/*`, `css/media/range/*`).
 - **Parser edge cases** — interpolation with an adjacent literal suffix in a declaration value (`prop: val-#{$x}`) and a top-level `@return` are not yet handled gracefully.
-- **Coverage** is **95.0%** of statements (up from 79.3%); the remainder is scattered parser/eval error-recovery and defensive branches. The CI floor is **94%**.
+- **Coverage** is **100.0%** of statements (up from 79.3%); every parser/eval error-recovery and defensive branch is exercised, either through malformed-SCSS tests or via direct white-box drives of the defensive seams. The CI floor is **100%**.
 
 ## License
 

@@ -16,11 +16,7 @@ type Result struct {
 func Render(source string, indented bool, compressed bool, importer Importer) (res Result, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			if se, ok := r.(*SassError); ok {
-				err = se
-				return
-			}
-			panic(r)
+			err = rethrowIfNotSass(r)
 		}
 	}()
 	if indented {
