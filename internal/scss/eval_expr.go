@@ -87,7 +87,7 @@ func (e *evaluator) evalVarRef(x *VarRef) Value {
 func (e *evaluator) evalIdent(x *Ident) Value {
 	lower := strings.ToLower(x.Name)
 	if lower == "transparent" {
-		return &SassColor{R: 0, G: 0, B: 0, A: 0, Original: x.Name}
+		return &SassColor{Rf: 0, Gf: 0, Bf: 0, A: 0, Original: x.Name}
 	}
 	if c, ok := lookupNamedColor(x.Name); ok {
 		return c

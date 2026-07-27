@@ -138,3 +138,25 @@ func TestEmptyAndNullHandling(t *testing.T) {
 		t.Errorf("null in list: %q", got)
 	}
 }
+
+// TestNodeMarkers exercises the empty interface-tag methods so the AST node set
+// is fully covered and provably implements Stmt/Expr.
+func TestNodeMarkers(t *testing.T) {
+	stmts := []Stmt{
+		&StyleRule{}, &Declaration{}, &VarDecl{}, &MixinDef{}, &Include{},
+		&FunctionDef{}, &Return{}, &If{}, &Each{}, &For{}, &While{}, &AtRoot{},
+		&Media{}, &Supports{}, &Extend{}, &ContentStmt{}, &Import{}, &Use{},
+		&Forward{}, &Warn{}, &Debug{}, &ErrorStmt{}, &LoudComment{}, &AtRule{},
+	}
+	for _, s := range stmts {
+		s.stmt()
+	}
+	exprs := []Expr{
+		&NumberLit{}, &StringLit{}, &ColorLit{}, &BoolLit{}, &NullLit{}, &VarRef{},
+		&Ident{}, &Parent{}, &Binary{}, &Unary{}, &FuncCall{}, &ListExpr{},
+		&MapExpr{}, &Paren{}, &InterpExpr{},
+	}
+	for _, e := range exprs {
+		e.expr()
+	}
+}

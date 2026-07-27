@@ -1,0 +1,406 @@
+<===> case0/input.sass
+@function a($b, $c)
+  @return d
+
+e
+  f: a(g, h)
+
+<===> case0/output.css
+e {
+  f: d;
+}
+
+<===> case1/input.scss
+// TODO - https://github.com/sass/sass-spec/issues/2073: This will be an error in Dart Sass 2
+a {b: rgb([1, 2]..., $blue: 3)}
+
+<===> case1/output.css
+a {
+  b: rgb(1, 2, 3);
+}
+
+<===> case2/input.scss
+// TODO - https://github.com/sass/sass-spec/issues/2073: This will be an error in Dart Sass 2
+@mixin a($a, $b, $c) {}
+@include a([1, 2]..., $c: 3);
+
+<===> case2/output.css
+
+
+<===> case3/input.scss
+// TODO - https://github.com/sass/sass-spec/issues/2073: This will be an error in Dart Sass 2
+@mixin a($b, $args...) {}
+@include a([1, 2]..., 3);
+
+<===> case3/output.css
+
+
+<===> case4/input.scss
+@function a($b, $c: 1, ) {
+  @return $c;
+}
+
+d {e: a(2)}
+
+<===> case4/output.css
+d {
+  e: 1;
+}
+
+<===> case5/input.scss
+@function a($b: 1, ) {
+  @return $b;
+}
+
+c {d: a()}
+
+<===> case5/output.css
+c {
+  d: 1;
+}
+
+<===> case6/input.scss
+@function a($b, ) {
+  @return $b;
+}
+
+c {d: a(e)}
+
+<===> case6/output.css
+c {
+  d: e;
+}
+
+<===> case7/input.scss
+@function a($b, $c: 1, $d..., ) {
+  @return $d;
+}
+
+e {f: a(2, 3, 4)}
+
+<===> case7/output.css
+e {
+  f: 4;
+}
+
+<===> case8/input.scss
+@function a($b: 1, $c..., ) {
+  @return $c;
+}
+
+d {e: a(2, 3)}
+
+<===> case8/output.css
+d {
+  e: 3;
+}
+
+<===> case9/input.scss
+@function a($b, $c..., ) {
+  @return $c;
+}
+
+d {e: a(1, 2)}
+
+<===> case9/output.css
+d {
+  e: 2;
+}
+
+<===> case10/input.scss
+@function a($b..., ) {
+  @return $b;
+}
+
+c {d: a(1)}
+
+<===> case10/output.css
+c {
+  d: 1;
+}
+
+<===> case11/input.scss
+@mixin a($b, $c: 1, ) {
+  d: $c;
+}
+
+e {@include a(2)}
+
+<===> case11/output.css
+e {
+  d: 1;
+}
+
+<===> case12/input.scss
+@mixin a($b: 1, ) {
+  c: $b;
+}
+
+d {@include a}
+
+<===> case12/output.css
+d {
+  c: 1;
+}
+
+<===> case13/input.scss
+@mixin a($b, ) {
+  c: $b;
+}
+
+d {@include a(1)}
+
+<===> case13/output.css
+d {
+  c: 1;
+}
+
+<===> case14/input.scss
+@mixin a($b, $c: 1, $d..., ) {
+  d: $d;
+}
+
+e {@include a(2, 3, 4)}
+
+<===> case14/output.css
+e {
+  d: 4;
+}
+
+<===> case15/input.scss
+@mixin a($b: 1, $c..., ) {
+  d: $c;
+}
+
+e {@include a(2, 3)}
+
+<===> case15/output.css
+e {
+  d: 3;
+}
+
+<===> case16/input.scss
+@mixin a($b, $c..., ) {
+  d: $c;
+}
+
+e {@include a(1, 2)}
+
+<===> case16/output.css
+e {
+  d: 2;
+}
+
+<===> case17/input.scss
+@mixin a($b..., ) {
+  c: $b;
+}
+
+d {@include a(1)}
+
+<===> case17/output.css
+d {
+  c: 1;
+}
+
+<===> case18/input.scss
+@function a($b
+  , $c){}
+
+<===> case18/output.css
+
+
+<===> case19/input.scss
+@function a($b, $c:
+    d){}
+
+<===> case19/output.css
+
+
+<===> case20/input.scss
+@function a($b,
+  $c){}
+
+<===> case20/output.css
+
+
+<===> case21/input.scss
+@function a($b...
+  ){}
+
+<===> case21/output.css
+
+
+<===> case22/input.scss
+@function a(
+  $b, $c){}
+
+<===> case22/output.css
+
+
+<===> case23/input.scss
+@function a($b, $c
+    :d){}
+
+<===> case23/output.css
+
+
+<===> case24/input.scss
+@function a($b
+  ...){}
+
+<===> case24/output.css
+
+
+<===> case25/input.scss
+@function a(
+  $b...){}
+
+<===> case25/output.css
+
+
+<===> case26/input.scss
+@function a($b, $c
+  ){}
+
+<===> case26/output.css
+
+
+<===> case27/input.scss
+@function a($b, $c){@return null}
+$d: a(e
+  , f)
+
+<===> case27/output.css
+
+
+<===> case28/input.scss
+@function a($b, $c:d){@return null}
+$e: a(f, $c:
+  g)
+
+<===> case28/output.css
+
+
+<===> case29/input.scss
+@function a($b, $c){@return null}
+$d: a(e,
+  f)
+
+<===> case29/output.css
+
+
+<===> case30/input.scss
+@function a($b, $c){@return null}
+$d: e f;
+$g: a($d...
+  )
+
+<===> case30/output.css
+
+
+<===> case31/input.scss
+@function a($b, $c){@return null}
+$d: a(
+  e, f)
+
+<===> case31/output.css
+
+
+<===> case32/input.scss
+@function a($b, $c:d){@return null}
+$e: a(f, $c
+  :g)
+
+<===> case32/output.css
+
+
+<===> case33/input.scss
+@function a($b, $c){@return null}
+$d: e f;
+$g: a($d
+  ...)
+
+<===> case33/output.css
+
+
+<===> case34/input.scss
+@function a($b, $c){@return null}
+$d: e f;
+$g: a(
+  $d...)
+
+<===> case34/output.css
+
+
+<===> case35/input.scss
+@function a($b, $c:d){@return null}
+$e: a(f, $c: g
+  )
+
+<===> case35/output.css
+
+
+<===> case36/input.scss
+@mixin a($b
+  , $c){}
+
+<===> case36/output.css
+
+
+<===> case37/input.scss
+@mixin a($b, $c:
+    d){}
+
+<===> case37/output.css
+
+
+<===> case38/input.scss
+@mixin a($b,
+  $c){}
+
+<===> case38/output.css
+
+
+<===> case39/input.scss
+@mixin a($b...
+  ){}
+
+<===> case39/output.css
+
+
+<===> case40/input.scss
+@mixin a(
+  $b, $c){}
+
+<===> case40/output.css
+
+
+<===> case41/input.scss
+@mixin a($b, $c
+    :d){}
+
+<===> case41/output.css
+
+
+<===> case42/input.scss
+@mixin a($b
+  ...){}
+
+<===> case42/output.css
+
+
+<===> case43/input.scss
+@mixin a(
+  $b...){}
+
+<===> case43/output.css
+
+
+<===> case44/input.scss
+@mixin a($b, $c
+  ){}
+
+<===> case44/output.css
+
+

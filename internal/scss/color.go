@@ -103,7 +103,13 @@ func newHexColor(hex string) *SassColor {
 		b = hexPair(body[4:6])
 		a = float64(hexPair(body[6:8])) / 255.0
 	}
-	return &SassColor{R: r, G: g, B: b, A: a, Original: hex}
+	// A hex literal serializes verbatim in expanded output only when opaque;
+	// an alpha component forces the canonical rgba()/hex form dart-sass uses.
+	orig := hex
+	if a != 1 {
+		orig = ""
+	}
+	return &SassColor{Rf: float64(r), Gf: float64(g), Bf: float64(b), A: a, Original: orig}
 }
 
 func hexPair(s string) int {
@@ -124,17 +130,6 @@ func hexPair(s string) int {
 	return v
 }
 
-func clampChannel(v float64) int {
-	r := int(fuzzyRound(v))
-	if r < 0 {
-		return 0
-	}
-	if r > 255 {
-		return 255
-	}
-	return r
-}
-
 func clampAlpha(a float64) float64 {
 	if a < 0 {
 		return 0
@@ -145,41 +140,71 @@ func clampAlpha(a float64) float64 {
 	return a
 }
 
-// rgbColor builds a color from evaluated rgb()/rgba() arguments, recording the
-// canonical function representation for expanded output.
-func rgbColor(r, g, b int, a float64) *SassColor {
-	c := &SassColor{R: r, G: g, B: b, A: clampAlpha(a)}
-	c.Original = c.functionRepr(false)
-	return c
+// clampChannelF clamps a float channel to the 0..255 range without rounding.
+func clampChannelF(v float64) float64 {
+	if v < 0 {
+		return 0
+	}
+	if v > 255 {
+		return 255
+	}
+	return v
 }
 
-// computedColor builds a color with no functional original, so it serialises as
-// hex (opaque) or rgba() (translucent).
-func computedColor(r, g, b int, a float64) *SassColor {
-	c := &SassColor{R: r, G: g, B: b, A: clampAlpha(a)}
-	c.Original = ""
-	return c
+// fuzzyIsInt reports whether v is (within dart-sass tolerance) a whole number.
+func fuzzyIsInt(v float64) bool {
+	return math.Abs(v-math.Round(v)) < 1e-11
 }
 
-func (c *SassColor) functionRepr(compressed bool) string {
+// rgbColor builds a color from evaluated rgb()/rgba() arguments. It serializes in
+// rgb() form (never keyword-substituted) in expanded output.
+func rgbColor(r, g, b, a float64) *SassColor {
+	return &SassColor{Rf: clampChannelF(r), Gf: clampChannelF(g), Bf: clampChannelF(b), A: clampAlpha(a), rgbFmt: true}
+}
+
+// computedColor builds a color with no source format, so it serialises as a CSS
+// keyword or hex when its channels are integers, or rgb()/rgba() percentages when
+// any channel is fractional — matching modern dart-sass.
+func computedColor(r, g, b, a float64) *SassColor {
+	return &SassColor{Rf: clampChannelF(r), Gf: clampChannelF(g), Bf: clampChannelF(b), A: clampAlpha(a)}
+}
+
+func (c *SassColor) allInt() bool {
+	return fuzzyIsInt(c.Rf) && fuzzyIsInt(c.Gf) && fuzzyIsInt(c.Bf)
+}
+
+func hexOf(r, g, b int) string {
+	if r%17 == 0 && g%17 == 0 && b%17 == 0 {
+		return fmt.Sprintf("#%x%x%x", r/17, g/17, b/17)
+	}
+	return fmt.Sprintf("#%02x%02x%02x", r, g, b)
+}
+
+func pctChannel(v float64, compressed bool) string {
+	return formatFloat(v/255*100, compressed) + "%"
+}
+
+// rgbFuncRepr serializes the color in rgb()/rgba() form: integer channels as
+// integers, fractional channels as percentages.
+func (c *SassColor) rgbFuncRepr(compressed bool) string {
 	sp := " "
 	if compressed {
 		sp = ""
 	}
-	if c.A == 1 {
-		return fmt.Sprintf("rgb(%d,%s%d,%s%d)", c.R, sp, c.G, sp, c.B)
+	var rs, gs, bs string
+	if c.allInt() {
+		rs = fmt.Sprintf("%d", c.Ri())
+		gs = fmt.Sprintf("%d", c.Gi())
+		bs = fmt.Sprintf("%d", c.Bi())
+	} else {
+		rs = pctChannel(c.Rf, compressed)
+		gs = pctChannel(c.Gf, compressed)
+		bs = pctChannel(c.Bf, compressed)
 	}
-	return fmt.Sprintf("rgba(%d,%s%d,%s%d,%s%s)", c.R, sp, c.G, sp, c.B, sp, formatFloat(c.A, compressed))
-}
-
-func (c *SassColor) hexRepr() string {
 	if c.A == 1 {
-		if c.R%17 == 0 && c.G%17 == 0 && c.B%17 == 0 {
-			return fmt.Sprintf("#%x%x%x", c.R/17, c.G/17, c.B/17)
-		}
-		return fmt.Sprintf("#%02x%02x%02x", c.R, c.G, c.B)
+		return fmt.Sprintf("rgb(%s,%s%s,%s%s)", rs, sp, gs, sp, bs)
 	}
-	return c.functionRepr(false)
+	return fmt.Sprintf("rgba(%s,%s%s,%s%s,%s%s)", rs, sp, gs, sp, bs, sp, formatFloat(c.A, compressed))
 }
 
 // expandedRepr returns the expanded-mode serialization.
@@ -187,38 +212,41 @@ func (c *SassColor) expandedRepr() string {
 	if c.Original != "" {
 		return c.Original
 	}
-	if c.A == 1 {
-		if c.R%17 == 0 && c.G%17 == 0 && c.B%17 == 0 {
-			return fmt.Sprintf("#%x%x%x", c.R/17, c.G/17, c.B/17)
-		}
-		return fmt.Sprintf("#%02x%02x%02x", c.R, c.G, c.B)
+	if c.rgbFmt {
+		return c.rgbFuncRepr(false)
 	}
-	return c.functionRepr(false)
+	// computed color
+	if c.allInt() {
+		rgb := [3]int{c.Ri(), c.Gi(), c.Bi()}
+		if c.A == 1 {
+			if name, ok := rgbToName[rgb]; ok {
+				return name
+			}
+			return hexOf(rgb[0], rgb[1], rgb[2])
+		}
+	}
+	return c.rgbFuncRepr(false)
 }
 
-// compressedRepr returns the shortest valid serialization for compressed output.
+// compressedRepr returns the shortest valid serialization, independent of the
+// source format (dart-sass collapses every color to its canonical shortest form).
 func (c *SassColor) compressedRepr() string {
-	if c.A != 1 {
-		return c.functionRepr(true)
+	if c.allInt() && c.A == 1 {
+		hex := hexOf(c.Ri(), c.Gi(), c.Bi())
+		if name, ok := rgbToName[[3]int{c.Ri(), c.Gi(), c.Bi()}]; ok && len(name) <= len(hex) {
+			return name
+		}
+		return hex
 	}
-	var hex string
-	if c.R%17 == 0 && c.G%17 == 0 && c.B%17 == 0 {
-		hex = fmt.Sprintf("#%x%x%x", c.R/17, c.G/17, c.B/17)
-	} else {
-		hex = fmt.Sprintf("#%02x%02x%02x", c.R, c.G, c.B)
-	}
-	if name, ok := rgbToName[[3]int{c.R, c.G, c.B}]; ok && len(name) <= len(hex) {
-		return name
-	}
-	return hex
+	return c.rgbFuncRepr(true)
 }
 
 // hsl conversion helpers (used by hsl()/color functions).
 
-func rgbToHSL(r, g, b int) (h, s, l float64) {
-	rf := float64(r) / 255.0
-	gf := float64(g) / 255.0
-	bf := float64(b) / 255.0
+func rgbToHSL(r, g, b float64) (h, s, l float64) {
+	rf := r / 255.0
+	gf := g / 255.0
+	bf := b / 255.0
 	max := math.Max(rf, math.Max(gf, bf))
 	min := math.Min(rf, math.Min(gf, bf))
 	l = (max + min) / 2
@@ -246,7 +274,7 @@ func rgbToHSL(r, g, b int) (h, s, l float64) {
 	return h, s * 100, l * 100
 }
 
-func hslToRGB(h, s, l float64) (int, int, int) {
+func hslToRGB(h, s, l float64) (float64, float64, float64) {
 	h = math.Mod(h, 360)
 	if h < 0 {
 		h += 360
@@ -271,12 +299,12 @@ func hslToRGB(h, s, l float64) (int, int, int) {
 	default:
 		rf, gf, bf = c, 0, x
 	}
-	return clampChannel((rf + m) * 255), clampChannel((gf + m) * 255), clampChannel((bf + m) * 255)
+	return clampChannelF((rf + m) * 255), clampChannelF((gf + m) * 255), clampChannelF((bf + m) * 255)
 }
 
 func hslColor(h, s, l, a float64) *SassColor {
 	r, g, b := hslToRGB(h, s, l)
-	c := &SassColor{R: r, G: g, B: b, A: clampAlpha(a)}
+	c := &SassColor{Rf: r, Gf: g, Bf: b, A: clampAlpha(a)}
 	sp := " "
 	if a == 1 {
 		c.Original = fmt.Sprintf("hsl(%s,%s%s%%,%s%s%%)", formatFloat(normalizeHue(h), false), sp, formatFloat(s, false), sp, formatFloat(l, false))
@@ -316,5 +344,5 @@ func lookupNamedColor(name string) (*SassColor, bool) {
 	if !ok {
 		return nil, false
 	}
-	return &SassColor{R: rgb[0], G: rgb[1], B: rgb[2], A: 1, Original: name}, true
+	return &SassColor{Rf: float64(rgb[0]), Gf: float64(rgb[1]), Bf: float64(rgb[2]), A: 1, Original: name}, true
 }

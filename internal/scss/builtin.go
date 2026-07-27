@@ -13,7 +13,7 @@ type builtinFunc func(ci *callInfo) Value
 
 // lookupBuiltin resolves a namespaced or global built-in function.
 func (e *evaluator) lookupBuiltin(ns, name string) (builtinFunc, bool) {
-	name = strings.ToLower(name)
+	name = normIdent(strings.ToLower(name))
 	if ns != "" {
 		alias, ok := e.env.builtinAliases[ns]
 		if !ok {
@@ -553,28 +553,40 @@ func selectorToValue(sl selectorList) Value {
 
 // --- meta module (subset) ---
 
+// knownFeatures are the feature strings meta.feature-exists() reports as
+// supported, matching dart-sass.
+var knownFeatures = map[string]bool{
+	"global-builtin":              true,
+	"extend-selector-pseudoclass": true,
+	"units-level-3":               true,
+	"at-error":                    true,
+	"custom-property":             true,
+}
+
 var metaFns = map[string]builtinFunc{
-	"type-of":        fnTypeOf,
-	"inspect":        fnInspect,
-	"keywords":       fnKeywords,
-	"feature-exists": func(ci *callInfo) Value { return boolean(false) },
+	"type-of":  fnTypeOf,
+	"inspect":  fnInspect,
+	"keywords": fnKeywords,
+	"feature-exists": func(ci *callInfo) Value {
+		return boolean(knownFeatures[ci.str(0, "feature").Text])
+	},
 	"variable-exists": func(ci *callInfo) Value {
 		return boolean(ci.e.env.hasVar(ci.str(0, "name").Text))
 	},
 	"global-variable-exists": func(ci *callInfo) Value {
-		_, ok := ci.e.env.scopes[0][ci.str(0, "name").Text]
+		_, ok := ci.e.env.scopes[0][normIdent(ci.str(0, "name").Text)]
 		return boolean(ok)
 	},
 	"function-exists": func(ci *callInfo) Value {
-		name := ci.str(0, "name").Text
+		name := normIdent(ci.str(0, "name").Text)
 		_, ok := ci.e.env.funcs[name]
 		if !ok {
-			_, ok = globalFns[strings.ToLower(name)]
+			_, ok = globalFns[normIdent(strings.ToLower(name))]
 		}
 		return boolean(ok)
 	},
 	"mixin-exists": func(ci *callInfo) Value {
-		_, ok := ci.e.env.mixins[ci.str(0, "name").Text]
+		_, ok := ci.e.env.mixins[normIdent(ci.str(0, "name").Text)]
 		return boolean(ok)
 	},
 	"content-exists": func(ci *callInfo) Value {

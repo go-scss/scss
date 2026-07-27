@@ -1,0 +1,129 @@
+<===> case0/input.scss
+a {b: (c)-/**/d}
+
+<===> case0/output.css
+a {
+  b: c-d;
+}
+
+<===> case1/input.scss
+a {b: c - d}
+
+<===> case1/output.css
+a {
+  b: c-d;
+}
+
+<===> case2/input.scss
+a {b: (c)-(d)}
+
+<===> case2/output.css
+a {
+  b: c-d;
+}
+
+<===> case3/input.scss
+a {b: (c)- d}
+
+<===> case3/output.css
+a {
+  b: c-d;
+}
+
+<===> case4/input.scss
+a {b: c/**/+/**/d}
+
+<===> case4/output.css
+a {
+  b: cd;
+}
+
+<===> case5/input.scss
+a {b: c/**/+d}
+
+<===> case5/output.css
+a {
+  b: cd;
+}
+
+<===> case6/input.scss
+a {b: c+/**/d}
+
+<===> case6/output.css
+a {
+  b: cd;
+}
+
+<===> case7/input.scss
+a {b: c + d}
+
+<===> case7/output.css
+a {
+  b: cd;
+}
+
+<===> case8/input.scss
+a {b: c
++d}
+
+<===> case8/output.css
+a {
+  b: cd;
+}
+
+<===> case9/input.scss
+a {b: c +d}
+
+<===> case9/output.css
+a {
+  b: cd;
+}
+
+<===> case10/input.scss
+a {b: c	+d}
+
+<===> case10/output.css
+a {
+  b: cd;
+}
+
+<===> case11/input.scss
+a {b: c+d}
+
+<===> case11/output.css
+a {
+  b: cd;
+}
+
+<===> case12/input.scss
+a {b: c+ d}
+
+<===> case12/output.css
+a {
+  b: cd;
+}
+
+<===> case13/input.scss
+a {b: calc(1px + 1%)/calc(2px + 2%)}
+
+<===> case13/output.css
+a {
+  b: calc(1px + 1%)/calc(2px + 2%);
+}
+
+<===> case14/input.scss
+a {b: calc(1px + 1%)/2}
+
+<===> case14/output.css
+a {
+  b: calc(1px + 1%)/2;
+}
+
+<===> case15/input.scss
+a {b: 2/calc(1px + 1%)}
+
+<===> case15/output.css
+a {
+  b: 2/calc(1px + 1%);
+}
+

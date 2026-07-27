@@ -4,8 +4,28 @@
 package scss
 
 import (
+	"math"
 	"strings"
 )
+
+// numberCalcRepr serializes a non-finite number the way dart-sass does: wrapped
+// in a calc() expression (calc(infinity), calc(-infinity), calc(NaN)), with the
+// unit expressed as a multiplication when present.
+func numberCalcRepr(n *Number) string {
+	var core string
+	switch {
+	case math.IsNaN(n.Val):
+		core = "NaN"
+	case n.Val > 0:
+		core = "infinity"
+	default:
+		core = "-infinity"
+	}
+	if unit := unitOutput(n); unit != "" {
+		return "calc(" + core + " * 1" + unit + ")"
+	}
+	return "calc(" + core + ")"
+}
 
 // --- output tree ---
 
@@ -267,6 +287,9 @@ func (s *serializer) emitDecl(d *cssDeclaration, depth int) {
 func serializeValue(v Value, compressed bool) string {
 	switch x := v.(type) {
 	case *Number:
+		if math.IsInf(x.Val, 0) || math.IsNaN(x.Val) {
+			return numberCalcRepr(x)
+		}
 		return formatFloat(x.Val, compressed) + unitOutput(x)
 	case *SassColor:
 		if compressed {

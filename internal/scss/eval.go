@@ -22,7 +22,23 @@ type evaluator struct {
 	loaded        map[string]*module
 	currentParent selectorList
 	forwarded     []forwardedMod
+	callDepth     int
 }
+
+// maxCallDepth bounds mixin/content/function recursion. Dart Sass terminates on
+// its native stack; this guard converts what would be an unrecoverable Go stack
+// overflow into a normal Sass error for pathological (effectively infinite)
+// recursion, well above any depth real stylesheets reach.
+const maxCallDepth = 4000
+
+func (e *evaluator) enter() {
+	e.callDepth++
+	if e.callDepth > maxCallDepth {
+		e.fail("Recursion depth limit exceeded (%d).", maxCallDepth)
+	}
+}
+
+func (e *evaluator) leave() { e.callDepth-- }
 
 type extendRule struct {
 	target    string // compound selector being extended (e.g. ".foo" or "%bar")
@@ -115,9 +131,9 @@ func (e *evaluator) evalStmt(s Stmt, fr *frame) {
 	case *StyleRule:
 		e.evalStyleRule(n, fr)
 	case *MixinDef:
-		e.env.mixins[n.Name] = &mixinEntry{def: n, env: e.env}
+		e.env.mixins[normIdent(n.Name)] = &mixinEntry{def: n, env: e.env}
 	case *FunctionDef:
-		e.env.funcs[n.Name] = &funcEntry{def: n, env: e.env}
+		e.env.funcs[normIdent(n.Name)] = &funcEntry{def: n, env: e.env}
 	case *Include:
 		e.evalInclude(n, fr)
 	case *If:
@@ -274,6 +290,8 @@ func (e *evaluator) evalInclude(n *Include, fr *frame) {
 	if m == nil {
 		e.fail("Undefined mixin.")
 	}
+	e.enter()
+	defer e.leave()
 	callEnv := e.env
 	defEnv := m.env
 	saved := e.env
@@ -301,6 +319,8 @@ func (e *evaluator) evalContent(n *ContentStmt, fr *frame) {
 	if content == nil {
 		return
 	}
+	e.enter()
+	defer e.leave()
 	saved := e.env
 	e.env = contentEnv
 	e.env.pushScope()
@@ -314,6 +334,7 @@ func (e *evaluator) evalContent(n *ContentStmt, fr *frame) {
 }
 
 func (e *evaluator) lookupMixin(ns, name string) *mixinEntry {
+	name = normIdent(name)
 	if ns != "" {
 		if mod, ok := e.env.modules[ns]; ok {
 			if m, ok := mod.mixins[name]; ok {

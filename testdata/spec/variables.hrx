@@ -1,0 +1,123 @@
+<===> case0/input.scss
+$a: /**/ b
+
+<===> case0/output.css
+
+
+<===> case1/input.scss
+$a: //
+  b
+
+<===> case1/output.css
+
+
+<===> case2/input.scss
+$a: b /**/
+
+<===> case2/output.css
+
+
+<===> case3/input.scss
+$a: b //
+
+<===> case3/output.css
+
+
+<===> case4/input.scss
+$a /**/: b
+
+<===> case4/output.css
+
+
+<===> case5/input.scss
+$a //
+  : b
+
+<===> case5/output.css
+
+
+<===> case6/input.scss
+$a: b !default !default;
+
+c {d: $a}
+
+<===> case6/output.css
+c {
+  d: b;
+}
+
+<===> case7/input.scss
+$a: b;
+c {
+  $a: d !global !global;
+  e: $a
+}
+
+<===> case7/output.css
+c {
+  e: d;
+}
+
+<===> case8/input.scss
+// Regression test for sass/dart-sass#1250
+$a: global;
+b {
+  @if true {
+    @if true {
+      $a: local;
+    }
+  }
+}
+
+c {d: $a}
+
+<===> case8/output.css
+c {
+  d: global;
+}
+
+<===> case9/input.sass
+$a: b;
+c
+  d: $a
+
+<===> case9/output.css
+c {
+  d: b;
+}
+
+<===> case10/input.scss
+$a:
+  b
+
+<===> case10/output.css
+
+
+<===> case11/input.scss
+$a
+  : b
+
+<===> case11/output.css
+
+
+<===> case12/input.scss
+$a: b
+  !default;
+
+<===> case12/output.css
+
+
+<===> case13/input.scss
+$a: b
+  !global;
+
+<===> case13/output.css
+
+
+<===> case14/input.scss
+$a: b !default
+  !default;
+
+<===> case14/output.css
+
+

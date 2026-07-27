@@ -1,0 +1,21 @@
+<===> case0/input.sass
+a
+  b: c /* d */ e
+
+<===> case0/output.css
+a {
+  b: c e;
+}
+
+<===> case1/input.sass
+/* a */
+
+<===> case1/output.css
+/* a */
+
+<===> case2/input.sass
+// a
+
+<===> case2/output.css
+
+
