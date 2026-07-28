@@ -180,6 +180,17 @@ func needsBlankBefore(prev, cur cssNode, top bool) bool {
 	return blankBeforeOf(cur)
 }
 
+func setBlankBefore(n cssNode, b bool) {
+	switch v := n.(type) {
+	case *cssStyleRule:
+		v.blankBefore = b
+	case *cssAtRule:
+		v.blankBefore = b
+	case *cssComment:
+		v.blankBefore = b
+	}
+}
+
 func blankBeforeOf(n cssNode) bool {
 	switch v := n.(type) {
 	case *cssStyleRule:

@@ -525,6 +525,7 @@ func (e *evaluator) loadCSSInto(url string, config []ConfigVar, fr *frame) {
 	sub := newEvaluator(e.importer)
 	sub.loadStack = append(append([]string(nil), e.loadStack...), resolved)
 	sub.loadedURLs = e.loadedURLs
+	sub.sharedLoaded = e.sharedLoaded
 	for _, c := range config {
 		sub.env.scopes[0][normIdent(c.Name)] = e.evalExpr(c.Value)
 	}

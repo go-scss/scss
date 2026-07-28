@@ -13,7 +13,7 @@ var builtinModuleNames = map[string]bool{
 	"map": true, "selector": true, "meta": true,
 }
 
-func (e *evaluator) evalUse(n *Use) {
+func (e *evaluator) evalUse(n *Use, fr *frame) {
 	ns := e.namespaceFor(n.URL, n.Namespace)
 	if strings.HasPrefix(n.URL, "sass:") {
 		modName := strings.TrimPrefix(n.URL, "sass:")
@@ -30,12 +30,42 @@ func (e *evaluator) evalUse(n *Use) {
 		}
 		return
 	}
-	mod := e.loadModule(n.URL, n.Config)
+	mod := e.loadModule(n.URL, e.buildConfig(nil, n.Config), fr)
 	if n.NoNS {
 		e.mergeModuleGlobally(mod, "")
 	} else {
 		e.env.modules[ns] = mod
 	}
+}
+
+// buildConfig evaluates a `with (...)` clause in the current context and merges
+// it onto a base configuration (the importing module's own incoming config, for
+// @forward; nil for @use). A guarded (`!default`) entry is applied only when the
+// base does not already configure that variable with a non-null value, so a
+// downstream configuration wins over an upstream `@forward ... with (... !default)`;
+// a plain entry always overrides. Names are canonicalised so configuration is
+// hyphen/underscore-insensitive. Returns nil when the result is empty.
+func (e *evaluator) buildConfig(base map[string]Value, cfg []ConfigVar) map[string]Value {
+	out := map[string]Value{}
+	for k, v := range base {
+		out[k] = v
+	}
+	for _, c := range cfg {
+		name := normIdent(c.Name)
+		v := e.evalExpr(c.Value)
+		if c.Default {
+			if existing, ok := out[name]; ok {
+				if _, isNull := existing.(*Null); !isNull {
+					continue
+				}
+			}
+		}
+		out[name] = v
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }
 
 func (e *evaluator) namespaceFor(url, explicit string) string {
@@ -53,11 +83,11 @@ func (e *evaluator) namespaceFor(url, explicit string) string {
 	return base
 }
 
-func (e *evaluator) evalForward(n *Forward) {
+func (e *evaluator) evalForward(n *Forward, fr *frame) {
 	if strings.HasPrefix(n.URL, "sass:") {
 		return
 	}
-	mod := filterForwarded(e.loadModule(n.URL, n.Config), n, n.Prefix)
+	mod := filterForwarded(e.loadModule(n.URL, e.buildConfig(e.incomingConfig, n.Config), fr), n, n.Prefix)
 	e.mergeModuleGlobally(mod, n.Prefix)
 	// track for downstream @use of THIS stylesheet
 	e.forwarded = append(e.forwarded, forwardedMod{mod: mod, prefix: n.Prefix})
@@ -136,13 +166,46 @@ type forwardedMod struct {
 	prefix string
 }
 
-func (e *evaluator) loadModule(url string, config []ConfigVar) *module {
+// emitModuleCSS appends a loaded module's top-level CSS to the output as a
+// single chunk that takes part in the importing stylesheet's blank-line
+// grouping. dart-sass separates a module's emitted CSS from surrounding
+// top-level statements exactly as it separates ordinary source groups: a blank
+// line precedes the chunk when the previous group was a style rule, and the
+// chunk counts (for what follows) as its own last visible node.
+func (e *evaluator) emitModuleCSS(nodes []cssNode, fr *frame) {
+	var firstVisible, lastVisible cssNode
+	for _, n := range nodes {
+		if isEmptyContainer(n) {
+			continue
+		}
+		if firstVisible == nil {
+			firstVisible = n
+		}
+		lastVisible = n
+	}
+	if firstVisible != nil {
+		_, lastIsRule := lastVisible.(*cssStyleRule)
+		fr.group.curIsStyleRule = lastIsRule
+		setBlankBefore(firstVisible, e.consumeGroup(fr))
+	}
+	for _, n := range nodes {
+		e.root.appendNode(n)
+	}
+}
+
+func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *module {
 	if m, ok := e.loaded[url]; ok {
 		return m
 	}
 	src, resolved, ok := e.resolve(url)
 	if !ok {
 		e.fail("Can't find stylesheet to import: %s", url)
+	}
+	// A module reached through more than one path (a diamond) is loaded once for
+	// the whole compilation: reuse the singleton and do NOT re-emit its CSS.
+	if m, ok := e.sharedLoaded[resolved]; ok {
+		e.loaded[url] = m
+		return m
 	}
 	for _, s := range e.loadStack {
 		if s == resolved {
@@ -156,17 +219,19 @@ func (e *evaluator) loadModule(url string, config []ConfigVar) *module {
 	sub := newEvaluator(e.importer)
 	sub.loadStack = append(append([]string(nil), e.loadStack...), resolved)
 	sub.loadedURLs = e.loadedURLs
-	// apply configuration
-	for _, c := range config {
-		sub.env.scopes[0][c.Name] = e.evalExpr(c.Value)
+	sub.sharedLoaded = e.sharedLoaded
+	// Seed the module's globals with the incoming configuration and remember it
+	// so this module's own @forward rules can propagate it downstream.
+	sub.incomingConfig = config
+	for name, v := range config {
+		sub.env.scopes[0][name] = v
 	}
 	sub.runModule(stmts)
 	e.warnings = append(e.warnings, sub.warnings...)
 	e.loadedURLs = append(e.loadedURLs, resolved)
-	// include used module CSS in our output
-	for _, node := range sub.root.children() {
-		e.root.appendNode(node)
-	}
+	// include used module CSS in our output, as a chunk that participates in
+	// the importing stylesheet's top-level blank-line grouping.
+	e.emitModuleCSS(sub.root.children(), fr)
 	mod := &module{
 		vars:   sub.env.scopes[0],
 		mixins: sub.env.mixins,
@@ -186,6 +251,7 @@ func (e *evaluator) loadModule(url string, config []ConfigVar) *module {
 		}
 	}
 	e.loaded[url] = mod
+	e.sharedLoaded[resolved] = mod
 	return mod
 }
 

@@ -236,14 +236,38 @@ func (p *parser) parseStatement() Stmt {
 	c := p.peek()
 	switch {
 	case c == '$':
-		return p.parseVariableDecl()
+		return p.parseVariableDecl("")
 	case c == '@':
 		return p.parseAtRule()
 	case c == '/' && p.peekAt(1) == '*':
 		return p.parseLoudComment()
 	default:
+		if ns, ok := p.atNamespacedVarDecl(); ok {
+			p.scanIdentifier() // namespace
+			p.next()           // '.'
+			return p.parseVariableDecl(ns)
+		}
 		return p.parseDeclarationOrStyleRule()
 	}
+}
+
+// atNamespacedVarDecl reports, without consuming input, whether the upcoming
+// tokens form a namespaced variable assignment `ns.$var:` (a write to a module
+// member). The `.$` sequence after a leading identifier is unambiguous: a
+// selector cannot contain `$` and Sass has no bare expression statements.
+func (p *parser) atNamespacedVarDecl() (string, bool) {
+	i := p.pos
+	if i >= len(p.src) || !(isNameStart(p.src[i]) || p.src[i] == '-') {
+		return "", false
+	}
+	start := i
+	for i < len(p.src) && isNameChar(p.src[i]) {
+		i++
+	}
+	if i+1 >= len(p.src) || p.src[i] != '.' || p.src[i+1] != '$' {
+		return "", false
+	}
+	return p.src[start:i], true
 }
 
 func (p *parser) parseLoudComment() Stmt {
@@ -298,7 +322,7 @@ func commentInterp(text string) *Interp {
 	return &Interp{Parts: parts}
 }
 
-func (p *parser) parseVariableDecl() Stmt {
+func (p *parser) parseVariableDecl(ns string) Stmt {
 	p.next() // $
 	name := p.scanIdentifier()
 	p.ws()
@@ -321,7 +345,7 @@ func (p *parser) parseVariableDecl() Stmt {
 		}
 	}
 	p.consumeStatementEnd()
-	return &VarDecl{Name: name, Value: val, Default: def, Global: glob}
+	return &VarDecl{Name: name, Namespace: ns, Value: val, Default: def, Global: glob}
 }
 
 func (p *parser) consumeStatementEnd() {
