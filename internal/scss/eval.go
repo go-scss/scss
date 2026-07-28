@@ -285,6 +285,11 @@ func isBlankValue(v Value) bool {
 	if str, isStr := v.(*SassString); isStr && !str.Quoted && str.Text == "" {
 		return true
 	}
+	// dart-sass omits a declaration whose value serializes to nothing, such as a
+	// list made up entirely of nulls: `h: (null null null)` produces no output.
+	if _, isList := v.(*List); isList && serializeValue(v, false) == "" {
+		return true
+	}
 	return false
 }
 
@@ -741,10 +746,9 @@ func (e *evaluator) stringify(v Value) string {
 	return serializeValue(v, false)
 }
 
-// stringifyInterp renders a value for #{} interpolation (unquoted strings).
+// stringifyInterp renders a value for #{} interpolation. Strings lose their
+// quotes, and dart-sass propagates that unquoting recursively into list and map
+// elements, so `#{"a" "b"}` yields `a b`.
 func (e *evaluator) stringifyInterp(v Value) string {
-	if s, ok := v.(*SassString); ok {
-		return s.Text
-	}
-	return serializeValue(v, false)
+	return serializeValueQ(v, false, false)
 }

@@ -329,6 +329,14 @@ func (s *serializer) emitDecl(d *cssDeclaration, depth int) {
 // --- value serialization ---
 
 func serializeValue(v Value, compressed bool) string {
+	return serializeValueQ(v, compressed, true)
+}
+
+// serializeValueQ serializes v, threading a `quote` flag that controls whether
+// quoted strings keep their quotes. Interpolation (`#{}`) serializes with
+// quote=false, and dart-sass propagates that recursively through list and map
+// elements, so `#{"a" "b"}` becomes `a b` rather than `"a" "b"`.
+func serializeValueQ(v Value, compressed, quote bool) string {
 	switch x := v.(type) {
 	case *Number:
 		if math.IsInf(x.Val, 0) || math.IsNaN(x.Val) {
@@ -338,10 +346,10 @@ func serializeValue(v Value, compressed bool) string {
 	case *SassColor:
 		return serializeColor(x, compressed, false)
 	case *SassString:
-		if x.Quoted {
+		if x.Quoted && quote {
 			return serializeQuoted(x.Text)
 		}
-		return x.Text
+		return serializeUnquoted(x.Text, compressed, quote)
 	case *Boolean:
 		if x.V {
 			return "true"
@@ -350,9 +358,9 @@ func serializeValue(v Value, compressed bool) string {
 	case *Null:
 		return ""
 	case *List:
-		return serializeList(x, compressed)
+		return serializeList(x, compressed, quote)
 	case *Map:
-		return serializeMap(x, compressed)
+		return serializeMap(x, compressed, quote)
 	case *SassCalculation:
 		return serializeCalculation(x, compressed)
 	}
@@ -366,13 +374,13 @@ func unitOutput(n *Number) string {
 	return n.unitString()
 }
 
-func serializeList(l *List, compressed bool) string {
+func serializeList(l *List, compressed, quote bool) string {
 	elems := make([]string, 0, len(l.Elements))
 	for _, e := range l.Elements {
 		if _, isNull := e.(*Null); isNull {
 			continue
 		}
-		s := serializeValue(e, compressed)
+		s := serializeValueQ(e, compressed, quote)
 		if _, isList := e.(*List); isList {
 			if sub := e.(*List); sub.Sep == l.Sep && !sub.Bracketed && len(sub.Elements) > 1 {
 				s = "(" + s + ")"
@@ -404,7 +412,7 @@ func serializeList(l *List, compressed bool) string {
 	return body
 }
 
-func serializeMap(m *Map, compressed bool) string {
+func serializeMap(m *Map, compressed, quote bool) string {
 	parts := make([]string, len(m.Keys))
 	kvsep := ": "
 	sep := ", "
@@ -413,16 +421,17 @@ func serializeMap(m *Map, compressed bool) string {
 		sep = ","
 	}
 	for i := range m.Keys {
-		parts[i] = serializeValue(m.Keys[i], compressed) + kvsep + serializeValue(m.Values[i], compressed)
+		parts[i] = serializeValueQ(m.Keys[i], compressed, quote) + kvsep + serializeValueQ(m.Values[i], compressed, quote)
 	}
 	return "(" + strings.Join(parts, sep) + ")"
 }
 
 // stringNeedsCharEscape reports whether a code point must be written as a hex
 // escape inside a quoted string: the control characters and the private-use
-// areas, as dart-sass does.
+// areas, as dart-sass does. Tab (U+0009) is the one control character dart
+// leaves literal inside quoted strings, so it is excluded here.
 func stringNeedsCharEscape(r rune) bool {
-	if r < 0x20 || r == 0x7F {
+	if (r < 0x20 && r != '\t') || r == 0x7F {
 		return true
 	}
 	return (r >= 0xE000 && r <= 0xF8FF) ||
@@ -432,6 +441,57 @@ func stringNeedsCharEscape(r rune) bool {
 
 func isHexRune(r rune) bool {
 	return (r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')
+}
+
+// isPrivateUseRune reports whether r is in a Unicode Private Use Area.
+func isPrivateUseRune(r rune) bool {
+	return (r >= 0xE000 && r <= 0xF8FF) ||
+		(r >= 0xF0000 && r <= 0xFFFFD) ||
+		(r >= 0x100000 && r <= 0x10FFFD)
+}
+
+// serializeUnquoted renders an unquoted string. When final (i.e. emitted as a
+// CSS value rather than woven into a `#{}` interpolation), dart-sass collapses a
+// newline to a space, swallowing the whitespace that follows it, and — in
+// expanded mode — writes Private Use Area characters as hex escapes since there
+// is no useful way to render them directly. Interpolation instead keeps the raw
+// text, so a string's newlines survive to be re-escaped by an enclosing quoted
+// string. (The fast path skips the rune walk when nothing can change.)
+func serializeUnquoted(text string, compressed, final bool) string {
+	hasNewline := strings.ContainsRune(text, '\n')
+	hasPUA := !compressed && strings.ContainsFunc(text, isPrivateUseRune)
+	if !final || (!hasNewline && !hasPUA) {
+		return text
+	}
+	var sb strings.Builder
+	runes := []rune(text)
+	afterNewline := false
+	for i := 0; i < len(runes); i++ {
+		r := runes[i]
+		switch {
+		case r == '\n':
+			sb.WriteByte(' ')
+			afterNewline = true
+		case r == ' ':
+			if !afterNewline {
+				sb.WriteByte(' ')
+			}
+		default:
+			afterNewline = false
+			if !compressed && isPrivateUseRune(r) {
+				sb.WriteByte('\\')
+				sb.WriteString(strconv.FormatInt(int64(r), 16))
+				if i+1 < len(runes) {
+					if n := runes[i+1]; isHexRune(n) || n == ' ' || n == '\t' {
+						sb.WriteByte(' ')
+					}
+				}
+			} else {
+				sb.WriteRune(r)
+			}
+		}
+	}
+	return sb.String()
 }
 
 func serializeQuoted(text string) string {

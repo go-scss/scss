@@ -49,7 +49,19 @@ func (p *parser) parseSpaceList(stop func(*parser) bool) Expr {
 	for {
 		save := p.pos
 		had := p.ws()
-		if !had || stop(p) || p.stopChar() || p.peek() == ',' || !p.canStartValue() {
+		// dart-sass separates space-list elements at token boundaries even without
+		// intervening whitespace: `"x"foo"y"` -> `"x" foo "y"`, `literal$input` ->
+		// `literal $input`. A quote or a `$` always starts a fresh token, so a run
+		// of values is adjacent when the previous element ended in a quote or the
+		// next one opens with a quote or a variable.
+		prev := byte(0)
+		if save > 0 {
+			prev = p.src[save-1]
+		}
+		adjacentBoundary := prev == '"' || prev == '\'' ||
+			p.peek() == '"' || p.peek() == '\'' || p.peek() == '$' ||
+			(p.peek() == '#' && p.peekAt(1) == '{')
+		if (!had && !adjacentBoundary) || stop(p) || p.stopChar() || p.peek() == ',' || !p.canStartValue() {
 			p.pos = save
 			break
 		}
@@ -310,7 +322,10 @@ func (p *parser) parsePrimary() Expr {
 		p.next()
 		return &Parent{}
 	case c == '!':
+		// A `!` flag (e.g. `!important`) may carry whitespace after the bang;
+		// dart-sass normalises `! important` to `!important`.
 		p.next()
+		p.ws()
 		id := p.scanIdentifier()
 		return &Ident{Name: "!" + id}
 	case c == '#':
@@ -508,6 +523,11 @@ func (p *parser) parseHashValue() Expr {
 			p.fail("Expected \"}\".")
 		}
 		p.next()
+		// `#{1}bar` / `#{1}#{2}`: interpolation immediately followed by more
+		// identifier text is a single interpolated identifier.
+		if isNameChar(p.peek()) || p.peek() == '\\' || (p.peek() == '#' && p.peekAt(1) == '{') {
+			return p.continueInterpIdent([]any{&InterpExpr{Expr: e}})
+		}
 		return &InterpExpr{Expr: e}
 	}
 	start := p.pos
@@ -526,8 +546,55 @@ func isHexDigit(c byte) bool {
 	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
 }
 
+// continueInterpIdent finishes an interpolated identifier value whose leading
+// pieces are already parsed. It keeps consuming adjacent name characters,
+// escapes, and `#{}` interpolations — with no intervening whitespace — into a
+// single unquoted string expression, matching how dart-sass lexes an identifier
+// that embeds interpolation (e.g. `foo#{1}bar` -> the unquoted string `foo1bar`).
+func (p *parser) continueInterpIdent(parts []any) Expr {
+	var sb strings.Builder
+	flush := func() {
+		if sb.Len() > 0 {
+			parts = append(parts, sb.String())
+			sb.Reset()
+		}
+	}
+	for {
+		if p.peek() == '#' && p.peekAt(1) == '{' {
+			flush()
+			p.pos += 2
+			p.ws()
+			e := p.parseExpression()
+			p.ws()
+			if p.peek() != '}' {
+				p.fail("Expected \"}\".")
+			}
+			p.next()
+			parts = append(parts, &InterpExpr{Expr: e})
+			continue
+		}
+		c := p.peek()
+		if c == '\\' {
+			sb.WriteString(p.scanEscape(false))
+			continue
+		}
+		if isNameChar(c) {
+			sb.WriteByte(p.next())
+			continue
+		}
+		break
+	}
+	flush()
+	return &StringLit{Parts: &Interp{Parts: parts}, Quoted: false}
+}
+
 func (p *parser) parseIdentValue() Expr {
 	name := p.scanIdentifier()
+	// An identifier that embeds interpolation (`foo#{1}bar`) is an unquoted
+	// interpolated string, not a bare identifier / function / namespace access.
+	if p.peek() == '#' && p.peekAt(1) == '{' {
+		return p.continueInterpIdent([]any{name})
+	}
 	// IE progid:...() special function (uses ":" rather than "("); the name may
 	// be vendor-prefixed (e.g. -c-progid).
 	if p.peek() == ':' && unvendor(strings.ToLower(name)) == "progid" {

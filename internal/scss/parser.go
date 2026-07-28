@@ -6,6 +6,7 @@ package scss
 import (
 	"fmt"
 	"strings"
+	"unicode/utf8"
 )
 
 // SassError is a compilation error with a message.
@@ -159,7 +160,7 @@ func (p *parser) scanIdentifier() string {
 		sb.WriteByte(p.next())
 	}
 	if p.peek() == '\\' {
-		sb.WriteString(p.scanEscape())
+		sb.WriteString(p.scanEscape(sb.Len() == 0))
 	} else if isNameStart(p.peek()) || isDigit(p.peek()) && sb.Len() > 0 {
 		sb.WriteByte(p.next())
 	} else if p.eof() || !isNameStart(p.peek()) {
@@ -170,7 +171,7 @@ func (p *parser) scanIdentifier() string {
 	for !p.eof() {
 		c := p.peek()
 		if c == '\\' {
-			sb.WriteString(p.scanEscape())
+			sb.WriteString(p.scanEscape(false))
 		} else if isNameChar(c) {
 			sb.WriteByte(p.next())
 		} else {
@@ -180,14 +181,80 @@ func (p *parser) scanIdentifier() string {
 	return sb.String()
 }
 
-func (p *parser) scanEscape() string {
-	// Preserve escape verbatim (sufficient for round-tripping identifiers).
-	var sb strings.Builder
-	sb.WriteByte(p.next()) // backslash
-	if !p.eof() {
-		sb.WriteByte(p.next())
+// scanEscape consumes a "\" escape and returns dart-sass's canonical rendering
+// of it. dart decodes the escape to a code point and re-serializes: a valid name
+// character becomes the bare character (`\r` -> `r`), a control character or a
+// leading digit becomes a lowercase-hex escape with a trailing space
+// (`\1` -> `\1 `), and anything else keeps a backslash before the literal
+// character (`\\` -> `\\`, `\.` -> `\.`). identifierStart selects the stricter
+// name-start / leading-digit rules that apply to the first character.
+func (p *parser) scanEscape(identifierStart bool) string {
+	p.next() // backslash
+	if p.eof() || isNewlineByte(p.peek()) {
+		p.fail("Expected escape sequence.")
 	}
-	return sb.String()
+	var value rune
+	if isHexByte(p.peek()) {
+		var v int
+		for i := 0; i < 6; i++ {
+			if p.eof() || !isHexByte(p.peek()) {
+				break
+			}
+			v = v*16 + hexDigitValue(p.next())
+		}
+		if !p.eof() && isWhitespaceByte(p.peek()) {
+			p.next()
+		}
+		value = rune(v)
+	} else {
+		value = p.nextRune()
+	}
+	return canonicalEscape(value, identifierStart)
+}
+
+// nextRune consumes one UTF-8 code point at the cursor. Callers guarantee the
+// cursor is not at EOF, so the decode always advances by at least one byte.
+func (p *parser) nextRune() rune {
+	r, size := utf8.DecodeRuneInString(p.src[p.pos:])
+	p.pos += size
+	return r
+}
+
+func hexDigitValue(c byte) int {
+	switch {
+	case c >= '0' && c <= '9':
+		return int(c - '0')
+	case c >= 'a' && c <= 'f':
+		return int(c-'a') + 10
+	default:
+		return int(c-'A') + 10
+	}
+}
+
+func isNameStartRune(r rune) bool {
+	return r == '_' || (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || r >= 0x80
+}
+
+func isNameRune(r rune) bool {
+	return isNameStartRune(r) || (r >= '0' && r <= '9') || r == '-'
+}
+
+// canonicalEscape renders a decoded escape code point the way dart-sass does.
+func canonicalEscape(value rune, identifierStart bool) string {
+	if (identifierStart && isNameStartRune(value)) || (!identifierStart && isNameRune(value)) {
+		return string(value)
+	}
+	if value <= 0x1F || value == 0x7F || (identifierStart && value >= '0' && value <= '9') {
+		var sb strings.Builder
+		sb.WriteByte('\\')
+		if value > 0xF {
+			sb.WriteByte(hexCharFor(int(value >> 4)))
+		}
+		sb.WriteByte(hexCharFor(int(value & 0xF)))
+		sb.WriteByte(' ')
+		return sb.String()
+	}
+	return "\\" + string(value)
 }
 
 // looksLikeIdentifier reports whether an identifier starts at the current pos.
