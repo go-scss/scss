@@ -77,9 +77,16 @@ func (ci *callInfo) str(i int, name string) *SassString {
 
 var mathFns = map[string]builtinFunc{
 	"div": func(ci *callInfo) Value {
-		a := ci.num(0, "number1")
-		b := ci.num(1, "number2")
-		return ci.e.numberArith("/", a, b)
+		a := ci.require(0, "number1")
+		b := ci.require(1, "number2")
+		an, aok := a.(*Number)
+		bn, bok := b.(*Number)
+		if !aok || !bok {
+			// Non-numeric operands fall back to the legacy "a/b" slash string,
+			// matching dart-sass (which emits a deprecation warning here).
+			return &SassString{Text: serializeValue(a, false) + "/" + serializeValue(b, false), Quoted: false}
+		}
+		return ci.e.numberArith("/", an, bn)
 	},
 	"percentage":  fnPercentage,
 	"round":       unaryMath(fuzzyRound),
@@ -214,23 +221,40 @@ func fnHypot(ci *callInfo) Value {
 func fnLog(ci *callInfo) Value {
 	n := ci.num(0, "number")
 	if b, ok := ci.get(1, "base"); ok {
-		return numOut(math.Log(n.Val) / math.Log(ci.e.asNumber(b).Val))
+		// A null base means the natural logarithm.
+		if _, isNull := b.(*Null); !isNull {
+			return numOut(math.Log(n.Val) / math.Log(ci.e.asNumber(b).Val))
+		}
 	}
 	return numOut(math.Log(n.Val))
+}
+
+// numGE reports whether a >= b once b is converted into a's units, with Sass's
+// fuzzy tolerance. Incompatible units are an error.
+func (e *evaluator) numGE(a, b *Number) bool {
+	bv, ok := b.compatConvert(a)
+	if !ok {
+		e.fail("%s and %s have incompatible units.", serializeValue(a, false), serializeValue(b, false))
+	}
+	return a.Val > bv || fuzzyEquals(a.Val, bv)
 }
 
 func fnClamp(ci *callInfo) Value {
 	min := ci.num(0, "min")
 	n := ci.num(1, "number")
 	max := ci.num(2, "max")
-	v := n.Val
-	if v < min.Val {
-		v = min.Val
+	// dart-sass's clamp: an inverted range collapses to min, and each branch
+	// returns the winning argument with its own units preserved.
+	switch {
+	case ci.e.numGE(min, max):
+		return min
+	case ci.e.numGE(min, n):
+		return min
+	case ci.e.numGE(n, max):
+		return max
+	default:
+		return n
 	}
-	if v > max.Val {
-		v = max.Val
-	}
-	return &Number{Val: v, Numer: n.Numer, Denom: n.Denom}
 }
 
 func fnUnit(ci *callInfo) Value {
@@ -420,13 +444,15 @@ func fnSlashList(ci *callInfo) Value {
 // --- map module ---
 
 var mapFns = map[string]builtinFunc{
-	"get":     fnMapGet,
-	"has-key": fnMapHasKey,
-	"keys":    fnMapKeys,
-	"values":  fnMapValues,
-	"merge":   fnMapMerge,
-	"remove":  fnMapRemove,
-	"set":     fnMapSet,
+	"get":         fnMapGet,
+	"has-key":     fnMapHasKey,
+	"keys":        fnMapKeys,
+	"values":      fnMapValues,
+	"merge":       fnMapMerge,
+	"remove":      fnMapRemove,
+	"set":         fnMapSet,
+	"deep-merge":  fnMapDeepMerge,
+	"deep-remove": fnMapDeepRemove,
 }
 
 func asMapVal(ci *callInfo, v Value) *Map {
@@ -466,9 +492,11 @@ func fnMapGet(ci *callInfo) Value {
 }
 
 func fnMapHasKey(ci *callInfo) Value {
-	m := asMapVal(ci, ci.require(0, "map"))
-	_, ok := m.get(ci.require(1, "key"))
-	return boolean(ok)
+	m, keys := mapKeyArgs(ci)
+	if len(keys) == 0 {
+		ci.e.fail("Missing argument $key.")
+	}
+	return boolean(mapHasKeyPath(m, keys))
 }
 
 func fnMapKeys(ci *callInfo) Value {
@@ -483,30 +511,42 @@ func fnMapValues(ci *callInfo) Value {
 
 func fnMapMerge(ci *callInfo) Value {
 	m1 := asMapVal(ci, ci.require(0, "map1"))
-	m2 := asMapVal(ci, ci.require(1, "map2"))
-	out := &Map{Keys: append([]Value(nil), m1.Keys...), Values: append([]Value(nil), m1.Values...)}
-	for i := range m2.Keys {
-		out.set(m2.Keys[i], m2.Values[i])
+	// Simple form: map.merge($map1, $map2).
+	if m2v, ok := ci.named["map2"]; ok {
+		return mapMergeShallow(m1, asMapVal(ci, m2v))
 	}
-	return out
+	// Nested form: map.merge($map1, $keys..., $map2).
+	n := len(ci.positional)
+	if n < 2 {
+		ci.e.fail("Missing argument $map2.")
+	}
+	m2 := asMapVal(ci, ci.positional[n-1])
+	keys := ci.positional[1 : n-1]
+	return mapMergePath(m1, keys, m2)
 }
 
 func fnMapSet(ci *callInfo) Value {
 	m := asMapVal(ci, ci.require(0, "map"))
-	key := ci.require(1, "key")
-	val := ci.require(2, "value")
-	out := &Map{Keys: append([]Value(nil), m.Keys...), Values: append([]Value(nil), m.Values...)}
-	out.set(key, val)
-	return out
+	// Simple named form: map.set($map, $key, $value).
+	if val, ok := ci.named["value"]; ok {
+		return mapSetPath(m, []Value{ci.require(1, "key")}, val)
+	}
+	// Positional form: map.set($map, $key, $keys..., $value).
+	n := len(ci.positional)
+	if n < 3 {
+		ci.e.fail("Missing argument $value.")
+	}
+	keys := ci.positional[1 : n-1]
+	return mapSetPath(m, keys, ci.positional[n-1])
 }
 
 func fnMapRemove(ci *callInfo) Value {
-	m := asMapVal(ci, ci.require(0, "map"))
+	m, keys := mapKeyArgs(ci)
 	out := &Map{}
 	for i := range m.Keys {
 		remove := false
-		for j := 1; j < len(ci.positional); j++ {
-			if m.Keys[i].equals(ci.positional[j]) {
+		for _, k := range keys {
+			if m.Keys[i].equals(k) {
 				remove = true
 				break
 			}
@@ -516,6 +556,20 @@ func fnMapRemove(ci *callInfo) Value {
 		}
 	}
 	return out
+}
+
+func fnMapDeepMerge(ci *callInfo) Value {
+	m1 := asMapVal(ci, ci.require(0, "map1"))
+	m2 := asMapVal(ci, ci.require(1, "map2"))
+	return mapDeepMerge(m1, m2)
+}
+
+func fnMapDeepRemove(ci *callInfo) Value {
+	m, keys := mapKeyArgs(ci)
+	if len(keys) == 0 {
+		ci.e.fail("Missing argument $key.")
+	}
+	return mapDeepRemove(m, keys)
 }
 
 // --- sass:selector module ---
@@ -740,6 +794,7 @@ var knownFeatures = map[string]bool{
 	"units-level-3":               true,
 	"at-error":                    true,
 	"custom-property":             true,
+	"global-variable-shadowing":   true,
 }
 
 var metaFns = map[string]builtinFunc{
@@ -751,22 +806,6 @@ var metaFns = map[string]builtinFunc{
 	},
 	"variable-exists": func(ci *callInfo) Value {
 		return boolean(ci.e.env.hasVar(ci.str(0, "name").Text))
-	},
-	"global-variable-exists": func(ci *callInfo) Value {
-		_, ok := ci.e.env.scopes[0][normIdent(ci.str(0, "name").Text)]
-		return boolean(ok)
-	},
-	"function-exists": func(ci *callInfo) Value {
-		name := normIdent(ci.str(0, "name").Text)
-		_, ok := ci.e.env.funcs[name]
-		if !ok {
-			_, ok = globalFns[normIdent(strings.ToLower(name))]
-		}
-		return boolean(ok)
-	},
-	"mixin-exists": func(ci *callInfo) Value {
-		_, ok := ci.e.env.mixins[normIdent(ci.str(0, "name").Text)]
-		return boolean(ok)
 	},
 	"content-exists": func(ci *callInfo) Value {
 		return boolean(ci.e.env.content != nil)
@@ -820,7 +859,9 @@ func typeName(v Value) string {
 	case *Map:
 		return "map"
 	case *List:
-		_ = x
+		if x.IsArgList {
+			return "arglist"
+		}
 		return "list"
 	case *SassCalculation:
 		return "calculation"
@@ -844,28 +885,11 @@ func inspect(v Value) string {
 		}
 		return x.Text
 	case *List:
-		if len(x.Elements) == 0 {
-			return "()"
-		}
-		parts := make([]string, len(x.Elements))
-		for i, e := range x.Elements {
-			parts[i] = inspect(e)
-		}
-		sep := " "
-		if x.Sep == SepComma {
-			sep = ", "
-		} else if x.Sep == SepSlash {
-			sep = " / "
-		}
-		body := strings.Join(parts, sep)
-		if x.Bracketed {
-			return "[" + body + "]"
-		}
-		return body
+		return inspectList(x)
 	case *Map:
 		parts := make([]string, len(x.Keys))
 		for i := range x.Keys {
-			parts[i] = inspect(x.Keys[i]) + ": " + inspect(x.Values[i])
+			parts[i] = inspectMapElement(x.Keys[i]) + ": " + inspectMapElement(x.Values[i])
 		}
 		return "(" + strings.Join(parts, ", ") + ")"
 	case *Null:
@@ -878,12 +902,93 @@ func inspect(v Value) string {
 	return serializeValue(v, false)
 }
 
-func fnKeywords(ci *callInfo) Value {
-	l := ci.require(0, "args")
-	if m, ok := l.(*Map); ok {
-		return m
+// inspectList renders a list the way dart-sass's inspect serializer does,
+// including single-element comma/slash trailing separators and the parenthesis
+// rules for nested lists.
+func inspectList(x *List) string {
+	if len(x.Elements) == 0 {
+		if x.Bracketed {
+			return "[]"
+		}
+		return "()"
 	}
-	return &Map{}
+	sepStr := " "
+	switch x.Sep {
+	case SepComma:
+		sepStr = ", "
+	case SepSlash:
+		sepStr = " / "
+	}
+	parts := make([]string, len(x.Elements))
+	for i, e := range x.Elements {
+		s := inspect(e)
+		if listElementNeedsParens(x.Sep, e) {
+			s = "(" + s + ")"
+		}
+		parts[i] = s
+	}
+	var sb strings.Builder
+	if x.Bracketed {
+		sb.WriteByte('[')
+	}
+	singleton := len(x.Elements) == 1 && (x.Sep == SepComma || x.Sep == SepSlash)
+	if singleton && !x.Bracketed {
+		sb.WriteByte('(')
+	}
+	sb.WriteString(strings.Join(parts, sepStr))
+	if singleton {
+		if x.Sep == SepSlash {
+			sb.WriteByte('/')
+		} else {
+			sb.WriteByte(',')
+		}
+		if !x.Bracketed {
+			sb.WriteByte(')')
+		}
+	}
+	if x.Bracketed {
+		sb.WriteByte(']')
+	}
+	return sb.String()
+}
+
+// listElementNeedsParens reports whether a nested list element must be
+// parenthesised when inspected inside a parent list of the given separator.
+func listElementNeedsParens(parent Separator, v Value) bool {
+	l, ok := v.(*List)
+	if !ok || len(l.Elements) < 2 || l.Bracketed {
+		return false
+	}
+	switch parent {
+	case SepComma:
+		return l.Sep == SepComma
+	case SepSlash:
+		return l.Sep == SepComma || l.Sep == SepSlash
+	default:
+		return l.Sep != SepUndecided
+	}
+}
+
+// inspectMapElement renders a map key or value, parenthesising an unbracketed
+// comma-separated list as dart-sass does.
+func inspectMapElement(v Value) string {
+	if l, ok := v.(*List); ok && l.Sep == SepComma && !l.Bracketed {
+		return "(" + inspect(v) + ")"
+	}
+	return inspect(v)
+}
+
+func fnKeywords(ci *callInfo) Value {
+	v := ci.require(0, "args")
+	l, ok := v.(*List)
+	if !ok || !l.IsArgList {
+		ci.e.fail("$args: %s is not an argument list.", serializeValue(v, false))
+	}
+	out := &Map{}
+	for _, k := range sortedKeys(l.Keywords) {
+		out.set(&SassString{Text: k, Quoted: false}, l.Keywords[k])
+	}
+	return out
 }
 
 // --- string module ---
@@ -918,14 +1023,36 @@ func fnStrLength(ci *callInfo) Value {
 	return numOut(float64(len([]rune(ci.str(0, "string").Text))))
 }
 
+// asciiMap applies f to the ASCII letters of s only; Sass case conversion is
+// defined over US-ASCII and leaves all other code points untouched.
+func asciiMap(s string, f func(byte) byte) string {
+	b := []byte(s)
+	for i := 0; i < len(b); i++ {
+		if b[i] < 0x80 {
+			b[i] = f(b[i])
+		}
+	}
+	return string(b)
+}
+
 func fnUpper(ci *callInfo) Value {
 	s := ci.str(0, "string")
-	return &SassString{Text: strings.ToUpper(s.Text), Quoted: s.Quoted}
+	return &SassString{Text: asciiMap(s.Text, func(c byte) byte {
+		if c >= 'a' && c <= 'z' {
+			return c - 32
+		}
+		return c
+	}), Quoted: s.Quoted}
 }
 
 func fnLower(ci *callInfo) Value {
 	s := ci.str(0, "string")
-	return &SassString{Text: strings.ToLower(s.Text), Quoted: s.Quoted}
+	return &SassString{Text: asciiMap(s.Text, func(c byte) byte {
+		if c >= 'A' && c <= 'Z' {
+			return c + 32
+		}
+		return c
+	}), Quoted: s.Quoted}
 }
 
 func fnStrInsert(ci *callInfo) Value {
@@ -959,47 +1086,94 @@ func fnStrIndex(ci *callInfo) Value {
 	return numOut(float64(len([]rune(s.Text[:idx])) + 1))
 }
 
+// codepointForIndex maps a 1-based Sass string index (which may be negative,
+// counting from the end) to a 0-based code-point offset, mirroring dart-sass's
+// _codepointForIndex.
+func codepointForIndex(index, length int, allowNegative bool) int {
+	if index == 0 {
+		return 0
+	}
+	if index > 0 {
+		if index-1 < length {
+			return index - 1
+		}
+		return length
+	}
+	result := length + index
+	if result < 0 && !allowNegative {
+		return 0
+	}
+	return result
+}
+
 func fnStrSlice(ci *callInfo) Value {
 	s := ci.str(0, "string")
 	runes := []rune(s.Text)
-	start := normalizeStrIndex(int(ci.num(1, "start-at").Val), len(runes))
-	end := len(runes)
+	n := len(runes)
+	start := int(ci.num(1, "start-at").Val)
+	end := n
 	if v, ok := ci.get(2, "end-at"); ok {
-		end = normalizeStrIndex(int(ci.e.asNumber(v).Val), len(runes)) + 1
+		end = int(ci.e.asNumber(v).Val)
 	}
-	if start < 1 {
-		start = 1
-	}
-	if end > len(runes) {
-		end = len(runes)
-	}
-	if start > end {
+	// An end index of 0 always yields the empty string, regardless of start.
+	if end == 0 {
 		return &SassString{Text: "", Quoted: s.Quoted}
 	}
-	return &SassString{Text: string(runes[start-1 : end]), Quoted: s.Quoted}
+	startIdx := codepointForIndex(start, n, false)
+	endIdx := codepointForIndex(end, n, true)
+	if endIdx == n {
+		endIdx--
+	}
+	// codepointForIndex clamps a non-negative request to [0, n], so startIdx is
+	// always in range here; an out-of-range or inverted span yields "".
+	if endIdx < startIdx || startIdx >= n {
+		return &SassString{Text: "", Quoted: s.Quoted}
+	}
+	return &SassString{Text: string(runes[startIdx : endIdx+1]), Quoted: s.Quoted}
 }
 
 func fnStrSplit(ci *callInfo) Value {
 	s := ci.str(0, "string")
 	sep := ci.str(1, "separator")
+	limit := -1
+	if v, ok := ci.get(2, "limit"); ok {
+		if _, isNull := v.(*Null); !isNull {
+			limit = int(ci.e.asNumber(v).Val)
+			if limit < 1 {
+				ci.e.fail("$limit: Must be 1 or greater, was %d.", limit)
+			}
+		}
+	}
+	// An empty string always yields an empty (comma-separated, bracketed) list.
+	if s.Text == "" {
+		return &List{Sep: SepComma, Bracketed: true}
+	}
 	var parts []string
 	if sep.Text == "" {
-		parts = []string{s.Text}
+		// An empty separator splits into individual code points.
+		for _, r := range s.Text {
+			parts = append(parts, string(r))
+		}
 	} else {
-		parts = strings.Split(s.Text, sep.Text)
+		lastEnd := 0
+		for {
+			if limit >= 0 && len(parts) == limit {
+				break
+			}
+			idx := strings.Index(s.Text[lastEnd:], sep.Text)
+			if idx < 0 {
+				break
+			}
+			parts = append(parts, s.Text[lastEnd:lastEnd+idx])
+			lastEnd += idx + len(sep.Text)
+		}
+		parts = append(parts, s.Text[lastEnd:])
 	}
 	elems := make([]Value, len(parts))
 	for i, p := range parts {
-		elems[i] = &SassString{Text: p, Quoted: true}
+		elems[i] = &SassString{Text: p, Quoted: s.Quoted}
 	}
 	return &List{Elements: elems, Sep: SepComma, Bracketed: true}
-}
-
-func normalizeStrIndex(idx, length int) int {
-	if idx < 0 {
-		return length + idx + 1
-	}
-	return idx
 }
 
 // sort helper for deterministic iteration where needed.

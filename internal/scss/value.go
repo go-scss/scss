@@ -140,6 +140,13 @@ type List struct {
 	// division syntax, which serializes without spaces ("a/b"); constructed
 	// slash lists (list.slash) serialize with spaces ("a / b").
 	SlashLit bool
+	// IsArgList marks a list produced by binding a rest parameter ($args...);
+	// such a list also carries the call's trailing keyword arguments and reports
+	// its type as "arglist".
+	IsArgList bool
+	// Keywords holds the keyword (named) arguments captured by a rest parameter,
+	// keyed by their dash-normalised name (without the leading "$").
+	Keywords map[string]Value
 }
 
 func (l *List) isTruthy() bool  { return true }

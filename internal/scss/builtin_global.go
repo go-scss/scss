@@ -100,14 +100,17 @@ func registerGlobals() {
 		"selector-unify":  selectorFns["unify"],
 
 		// meta
-		"type-of":                metaFns["type-of"],
-		"inspect":                metaFns["inspect"],
-		"keywords":               metaFns["keywords"],
-		"feature-exists":         metaFns["feature-exists"],
-		"variable-exists":        metaFns["variable-exists"],
-		"global-variable-exists": metaFns["global-variable-exists"],
-		"function-exists":        metaFns["function-exists"],
-		"mixin-exists":           metaFns["mixin-exists"],
+		"type-of":         metaFns["type-of"],
+		"inspect":         metaFns["inspect"],
+		"keywords":        metaFns["keywords"],
+		"feature-exists":  metaFns["feature-exists"],
+		"variable-exists": metaFns["variable-exists"],
+		// These reference the functions directly rather than through metaFns
+		// because they are registered in meta.go's init(), whose ordering relative
+		// to this init() is not guaranteed.
+		"global-variable-exists": fnGlobalVariableExists,
+		"function-exists":        fnFunctionExists,
+		"mixin-exists":           fnMixinExists,
 		"content-exists":         metaFns["content-exists"],
 	}
 	for k, v := range m {

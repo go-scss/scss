@@ -132,7 +132,7 @@ func TestBuiltinBranches(t *testing.T) {
 		".a{v: nth((a:1,b:2), 1)}":                                            "a",     // asListVal on map
 		".a{v: join((), ())}":                                                 "",      // join undecided sep -> space
 		".a{v: join(1, 2, comma, true)}":                                      "",      // join bracketed arg
-		".a{v: inspect(keywords((a: 1)))}":                                    "a: 1",  // keywords on a map arg
+		"@function kw($a...){@return inspect(keywords($a))} .a{v: kw($x: 1)}": "x: 1",  // keywords on an arglist
 		".a{v: length(map.get((), x))}":                                       "",      // asMapVal empty list
 		".a{v: map.get((a: (b: 1)), a, c)}":                                   "",      // nested map key not found
 		".a{v: map.get((a: 1), a, b)}":                                        "",      // nested cur not a map

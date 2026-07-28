@@ -186,22 +186,44 @@ a {
   --1: b;
 }
 
-<===> case17/input.scss
-a {---: b}
+<===> case17/input.sass
+a
+  --b: [c
+    d]
 
 <===> case17/output.css
+a {
+  --b: [c
+    d];
+}
+
+<===> case18/input.sass
+a
+  --b: (c
+    d)
+
+<===> case18/output.css
+a {
+  --b: (c
+    d);
+}
+
+<===> case19/input.scss
+a {---: b}
+
+<===> case19/output.css
 a {
   ---: b;
 }
 
-<===> case18/input.sass
+<===> case20/input.sass
 a
   --b: c
 
 d
   --e: f
 
-<===> case18/output.css
+<===> case20/output.css
 a {
   --b: c;
 }
@@ -210,134 +232,145 @@ d {
   --e: f;
 }
 
-<===> case19/input.sass
+<===> case21/input.sass
 a
   --b: c
 
   --d: e
 
-<===> case19/output.css
+<===> case21/output.css
 a {
   --b: c;
   --d: e;
 }
 
-<===> case20/input.sass
+<===> case22/input.sass
 a
   --b: c 
 
-<===> case20/output.css
-a {
-  --b: c;
-}
-
-<===> case21/input.sass
-a
-  --b: c	
-
-<===> case21/output.css
-a {
-  --b: c;
-}
-
-<===> case22/input.sass
-a
-  --b: #{1 + 2}
-
 <===> case22/output.css
 a {
-  --b: 3;
+  --b: c;
 }
 
 <===> case23/input.sass
 a
-  --b: c#{1 + 2}d
+  --b: c	
 
 <===> case23/output.css
 a {
-  --b: c3d;
+  --b: c;
 }
 
 <===> case24/input.sass
 a
-  --b: c #{1 + 2} d
+  --b: #{1 + 2}
 
 <===> case24/output.css
-a {
-  --b: c 3 d;
-}
-
-<===> case25/input.sass
-a
-  --b: uri(c#{1 + 2}d)
-
-<===> case25/output.css
-a {
-  --b: uri(c3d);
-}
-
-<===> case26/input.scss
-a{
-  --b: #{1 + 2};
-}
-
-<===> case26/output.css
 a {
   --b: 3;
 }
 
-<===> case27/input.scss
-a{
-  --b: c#{1 + 2}d;
-}
+<===> case25/input.sass
+a
+  --b: c#{1 + 2}d
 
-<===> case27/output.css
+<===> case25/output.css
 a {
   --b: c3d;
 }
 
-<===> case28/input.scss
-a{
-  --b: c #{1 + 2} d;
-}
+<===> case26/input.sass
+a
+  --b: c #{1 + 2} d
 
-<===> case28/output.css
+<===> case26/output.css
 a {
   --b: c 3 d;
 }
 
-<===> case29/input.scss
-a{
-  --b: uri(c#{1 + 2}d);
-}
+<===> case27/input.sass
+a
+  --b: uri(c#{1 + 2}d)
 
-<===> case29/output.css
+<===> case27/output.css
 a {
   --b: uri(c3d);
 }
 
+<===> case28/input.sass
+a
+  --b: #{1 
+    + 
+    2}
+
+<===> case28/output.css
+a {
+  --b: 3;
+}
+
+<===> case29/input.scss
+a{
+  --b: #{1 + 2};
+}
+
+<===> case29/output.css
+a {
+  --b: 3;
+}
+
 <===> case30/input.scss
+a{
+  --b: c#{1 + 2}d;
+}
+
+<===> case30/output.css
+a {
+  --b: c3d;
+}
+
+<===> case31/input.scss
+a{
+  --b: c #{1 + 2} d;
+}
+
+<===> case31/output.css
+a {
+  --b: c 3 d;
+}
+
+<===> case32/input.scss
+a{
+  --b: uri(c#{1 + 2}d);
+}
+
+<===> case32/output.css
+a {
+  --b: uri(c3d);
+}
+
+<===> case33/input.scss
 a{
   --b: #{1 
     + 
     2};
 }
 
-<===> case30/output.css
+<===> case33/output.css
 a {
   --b: 3;
 }
 
-<===> case31/input.scss
+<===> case34/input.scss
 @foo "bar";
 
-<===> case31/output.css
+<===> case34/output.css
 @foo "bar";
 
-<===> case32/input.scss
+<===> case35/input.scss
 a { b { c { @font-face { e: f } g: h; } } }
 
-<===> case32/output.css
+<===> case35/output.css
 @font-face {
   e: f;
 }
@@ -345,7 +378,7 @@ a b c {
   g: h;
 }
 
-<===> case33/input.scss
+<===> case36/input.scss
 @mixin a {
   @font-face { b: c }
 }
@@ -354,7 +387,7 @@ d {
   @include a;
 }
 
-<===> case33/output.css
+<===> case36/output.css
 d {
   e: f;
 }
@@ -362,13 +395,13 @@ d {
   b: c;
 }
 
-<===> case34/input.scss
+<===> case37/input.scss
 a {
   b: c;
   @font-face { d: e }
 }
 
-<===> case34/output.css
+<===> case37/output.css
 a {
   b: c;
 }
@@ -376,27 +409,27 @@ a {
   d: e;
 }
 
-<===> case35/input.scss
+<===> case38/input.scss
 .a {
   result: #{1 + 1};
 }
 
-<===> case35/output.css
+<===> case38/output.css
 .a {
   result: 2;
 }
 
-<===> case36/input.scss
+<===> case39/input.scss
 .a {
   result: 1 + 1;
 }
 
-<===> case36/output.css
+<===> case39/output.css
 .a {
   result: 2;
 }
 
-<===> case37/input.scss
+<===> case40/input.scss
 a {
   b: url;
   c: calc;
@@ -405,7 +438,7 @@ a {
   f: progid;
 }
 
-<===> case37/output.css
+<===> case40/output.css
 a {
   b: url;
   c: calc;
@@ -414,181 +447,173 @@ a {
   f: progid;
 }
 
-<===> case38/input.scss
+<===> case41/input.sass
+a
+  b: c(d,
+      e)
+
+<===> case41/output.css
+a {
+  b: c(d, e);
+}
+
+<===> case42/input.sass
+a
+  b: c(d
+      ,e)
+
+<===> case42/output.css
+a {
+  b: c(d, e);
+}
+
+<===> case43/input.sass
+a
+  b: c(d /
+      e)
+
+<===> case43/output.css
+a {
+  b: c(d/e);
+}
+
+<===> case44/input.sass
+a
+  b: c(d
+      / e)
+
+<===> case44/output.css
+a {
+  b: c(d/e);
+}
+
+<===> case45/input.sass
+a
+  b: c(d,
+      )
+
+<===> case45/output.css
+a {
+  b: c(d);
+}
+
+<===> case46/input.sass
+a
+  b: c(d
+      ,)
+
+<===> case46/output.css
+a {
+  b: c(d);
+}
+
+<===> case47/input.sass
+a
+  b: c(d
+      )
+
+<===> case47/output.css
+a {
+  b: c(d);
+}
+
+<===> case48/input.sass
+a
+  b: c(
+     d)
+
+<===> case48/output.css
+a {
+  b: c(d);
+}
+
+<===> case49/input.sass
+a
+  b: c(d
+      e)
+
+<===> case49/output.css
+a {
+  b: c(d e);
+}
+
+<===> case50/input.scss
 a {b: -c-and(1 + 1)}
 
-<===> case38/output.css
+<===> case50/output.css
 a {
   b: -c-and(2);
 }
 
-<===> case39/input.scss
+<===> case51/input.scss
 a {b: -c-not(1 + 1)}
 
-<===> case39/output.css
+<===> case51/output.css
 a {
   b: -c-not(2);
 }
 
-<===> case40/input.scss
+<===> case52/input.scss
 a {b: -c-or(1 + 1)}
 
-<===> case40/output.css
+<===> case52/output.css
 a {
   b: -c-or(2);
 }
 
-<===> case41/input.scss
+<===> case53/input.scss
 a {b: -c-type(1 + 1)}
 
-<===> case41/output.css
+<===> case53/output.css
 a {
   b: -c-type(2);
 }
 
-<===> case42/input.scss
+<===> case54/input.scss
 a {b: -C-AND(1 + 1)}
 
-<===> case42/output.css
+<===> case54/output.css
 a {
   b: -C-AND(2);
 }
 
-<===> case43/input.scss
+<===> case55/input.scss
 a {b: -C-NOT(1 + 1)}
 
-<===> case43/output.css
+<===> case55/output.css
 a {
   b: -C-NOT(2);
 }
 
-<===> case44/input.scss
+<===> case56/input.scss
 a {b: -C-OR(1 + 1)}
 
-<===> case44/output.css
+<===> case56/output.css
 a {
   b: -C-OR(2);
 }
 
-<===> case45/input.scss
+<===> case57/input.scss
 a {b: -C-TYPE(1 + 1)}
 
-<===> case45/output.css
+<===> case57/output.css
 a {
   b: -C-TYPE(2);
 }
 
-<===> case46/input.scss
-a {b: -a-calc(#{0})}
-
-<===> case46/output.css
-a {
-  b: -a-calc(0);
-}
-
-<===> case47/input.scss
-a {b: -a-calc(0)}
-
-<===> case47/output.css
-a {
-  b: -a-calc(0);
-}
-
-<===> case48/input.scss
-a {b: -c-element(#{0})}
-
-<===> case48/output.css
-a {
-  b: -c-element(0);
-}
-
-<===> case49/input.scss
-a {b: -c-element(0)}
-
-<===> case49/output.css
-a {
-  b: -c-element(0);
-}
-
-<===> case50/input.scss
-a {b: -c-expression(#{0})}
-
-<===> case50/output.css
-a {
-  b: -c-expression(0);
-}
-
-<===> case51/input.scss
-a {b: -c-expression(0)}
-
-<===> case51/output.css
-a {
-  b: -c-expression(0);
-}
-
-<===> case52/input.scss
-$a: b;
-c {d: -e-url($a)}
-
-<===> case52/output.css
-c {
-  d: -e-url(b);
-}
-
-<===> case53/input.scss
-$a: b;
-c {d: -E-URL($a)}
-
-<===> case53/output.css
-c {
-  d: -E-URL(b);
-}
-
-<===> case54/input.scss
-a {b: type(#{0})}
-
-<===> case54/output.css
-a {
-  b: type(0);
-}
-
-<===> case55/input.scss
-a {b: type(0)}
-
-<===> case55/output.css
-a {
-  b: type(0);
-}
-
-<===> case56/input.scss
-a {b: rgb(attr(c))}
-
-<===> case56/output.css
-a {
-  b: rgb(attr(c));
-}
-
-<===> case57/input.scss
-a {b: rgb(var(--c))}
-
-<===> case57/output.css
-a {
-  b: rgb(var(--c));
-}
-
 <===> case58/input.scss
-a {b: var(--c)}
+a {b: -a-calc(/**/ c)}
 
 <===> case58/output.css
 a {
-  b: var(--c);
+  b: -a-calc(/**/ c);
 }
 
 <===> case59/input.scss
-a {b: var(--c, d, e)}
+a {b: -a-calc(c /**/)}
 
 <===> case59/output.css
 a {
-  b: var(--c, d, e);
+  b: -a-calc(c /**/);
 }
 

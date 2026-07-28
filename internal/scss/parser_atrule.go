@@ -92,6 +92,11 @@ func (p *parser) parseInclude() Stmt {
 			inc.ContentParams = &ParamList{}
 		}
 		inc.Content = p.parseBlock()
+		if inc.Content == nil {
+			// An empty "{}" block is still a content block: keep it non-nil so
+			// meta.content-exists() reports true.
+			inc.Content = []Stmt{}
+		}
 	} else {
 		p.consumeStatementEnd()
 	}

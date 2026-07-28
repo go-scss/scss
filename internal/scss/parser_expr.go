@@ -233,6 +233,36 @@ func isSpaceByte(c byte) bool {
 	return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f'
 }
 
+// consumeStringEscape decodes a CSS escape sequence in a quoted string, with the
+// leading backslash already consumed. A run of 1-6 hex digits denotes a code
+// point (with one optional trailing whitespace consumed); a backslash before a
+// newline is a line continuation; any other escaped character is literal.
+func (p *parser) consumeStringEscape() string {
+	if p.eof() {
+		return "�"
+	}
+	c := p.peek()
+	if isHexDigit(c) {
+		hex := make([]byte, 0, 6)
+		for len(hex) < 6 && !p.eof() && isHexDigit(p.peek()) {
+			hex = append(hex, p.next())
+		}
+		if !p.eof() && isSpaceByte(p.peek()) {
+			p.next()
+		}
+		cp, _ := strconv.ParseInt(string(hex), 16, 32)
+		if cp == 0 || cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF) {
+			return "�"
+		}
+		return string(rune(cp))
+	}
+	if c == '\n' {
+		p.next()
+		return ""
+	}
+	return string(p.next())
+}
+
 func isLiteralNumberish(e Expr) bool {
 	switch v := e.(type) {
 	case *NumberLit:
@@ -446,10 +476,7 @@ func (p *parser) parseStringLiteral() Expr {
 		}
 		if c == '\\' {
 			p.next()
-			if !p.eof() {
-				sb.WriteByte('\\')
-				sb.WriteByte(p.next())
-			}
+			sb.WriteString(p.consumeStringEscape())
 			continue
 		}
 		if c == '#' && p.peekAt(1) == '{' {

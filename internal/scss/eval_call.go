@@ -90,6 +90,10 @@ func (e *evaluator) evalArgs(args *ArgList) ([]Value, map[string]Value) {
 			switch s := val.(type) {
 			case *List:
 				pos = append(pos, s.Elements...)
+				// An argument list re-spreads its captured keyword arguments too.
+				for k, v := range s.Keywords {
+					named[k] = v
+				}
 			case *Map:
 				for i := range s.Keys {
 					if ks, ok := s.Keys[i].(*SassString); ok {
@@ -237,11 +241,18 @@ func (e *evaluator) bindResolved(params *ParamList, pos []Value, named map[strin
 	pi := 0
 	for _, p := range params.Params {
 		if p.Rest {
-			rest := &List{Sep: SepComma}
+			rest := &List{Sep: SepComma, IsArgList: true}
 			for ; pi < len(pos); pi++ {
 				rest.Elements = append(rest.Elements, pos[pi])
 			}
-			// attach named args as a map on an arglist (simplified)
+			// Capture the call's trailing keyword arguments, keyed dash-normalised
+			// without the leading "$", so meta.keywords and re-spreading work.
+			if len(named) > 0 {
+				rest.Keywords = map[string]Value{}
+				for k, v := range named {
+					rest.Keywords[normIdent(k)] = v
+				}
+			}
 			e.env.defineVar(p.Name, rest)
 			return
 		}

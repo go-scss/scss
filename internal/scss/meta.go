@@ -17,6 +17,40 @@ func init() {
 	metaFns["module-variables"] = fnModuleVariables
 	metaFns["module-mixins"] = fnModuleMixins
 	metaFns["accepts-content"] = fnAcceptsContent
+	// These reflection built-ins consult the module tables (moduleHas*), which
+	// transitively reference metaFns; registering them here rather than in the
+	// map literal breaks the static initialisation cycle.
+	metaFns["global-variable-exists"] = fnGlobalVariableExists
+	metaFns["function-exists"] = fnFunctionExists
+	metaFns["mixin-exists"] = fnMixinExists
+}
+
+func fnGlobalVariableExists(ci *callInfo) Value {
+	if mv, ok := ci.get(1, "module"); ok {
+		return boolean(ci.e.moduleHasVar(ci.e.asString(mv).Text, ci.str(0, "name").Text))
+	}
+	_, ok := ci.e.env.scopes[0][normIdent(ci.str(0, "name").Text)]
+	return boolean(ok)
+}
+
+func fnFunctionExists(ci *callInfo) Value {
+	name := normIdent(ci.str(0, "name").Text)
+	if mv, ok := ci.get(1, "module"); ok {
+		return boolean(ci.e.moduleHasFunc(ci.e.asString(mv).Text, name))
+	}
+	if _, ok := ci.e.env.funcs[name]; ok {
+		return sassTrue
+	}
+	_, ok := globalFns[normIdent(strings.ToLower(name))]
+	return boolean(ok)
+}
+
+func fnMixinExists(ci *callInfo) Value {
+	if mv, ok := ci.get(1, "module"); ok {
+		return boolean(ci.e.moduleHasMixin(ci.e.asString(mv).Text, ci.str(0, "name").Text))
+	}
+	_, ok := ci.e.env.mixins[normIdent(ci.str(0, "name").Text)]
+	return boolean(ok)
 }
 
 // This file implements the first-class function and mixin value types and the
@@ -77,6 +111,48 @@ func (e *evaluator) moduleByName(name string) (*module, bool) {
 		return m, true
 	}
 	return nil, false
+}
+
+// moduleHasVar reports whether the module named by namespace exports a global
+// variable with the given (dash-insensitive) name.
+func (e *evaluator) moduleHasVar(namespace, name string) bool {
+	if m, ok := e.moduleByName(namespace); ok {
+		_, ok := m.vars[normIdent(name)]
+		return ok
+	}
+	if _, real, ok := e.builtinModule(namespace); ok {
+		_, ok := builtinModuleVar(real, name)
+		return ok
+	}
+	return false
+}
+
+// moduleHasFunc reports whether the module named by namespace exports a function
+// with the given name.
+func (e *evaluator) moduleHasFunc(namespace, name string) bool {
+	if m, ok := e.moduleByName(namespace); ok {
+		_, ok := m.funcs[normIdent(name)]
+		return ok
+	}
+	if reg, _, ok := e.builtinModule(namespace); ok {
+		_, ok := reg[normIdent(name)]
+		return ok
+	}
+	return false
+}
+
+// moduleHasMixin reports whether the module named by namespace exports a mixin
+// with the given name.
+func (e *evaluator) moduleHasMixin(namespace, name string) bool {
+	if m, ok := e.moduleByName(namespace); ok {
+		_, ok := m.mixins[normIdent(name)]
+		return ok
+	}
+	if _, real, ok := e.builtinModule(namespace); ok {
+		n := normIdent(name)
+		return real == "meta" && (n == "apply" || n == "load-css")
+	}
+	return false
 }
 
 func (e *evaluator) getFunctionValue(name string, css bool, moduleName string) Value {
@@ -241,8 +317,14 @@ func fnModuleMixins(ci *callInfo) Value {
 
 func fnModuleVariables(ci *callInfo) Value {
 	ns := ci.str(0, "module").Text
-	if _, _, ok := ci.e.builtinModule(ns); ok {
-		return &Map{}
+	if _, real, ok := ci.e.builtinModule(ns); ok {
+		out := &Map{}
+		if real == "math" {
+			for _, name := range sortedKeys(mathModuleVars) {
+				out.set(&SassString{Text: name, Quoted: true}, mathModuleVars[name])
+			}
+		}
+		return out
 	}
 	m := ci.e.requireModule(ns)
 	out := &Map{}

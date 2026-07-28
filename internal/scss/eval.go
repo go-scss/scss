@@ -72,6 +72,10 @@ type frame struct {
 	block         *cssStyleRule
 	group         *groupInfo
 	atContainer   bool
+	// declPrefix is the nested-property namespace ("name-") in effect; every
+	// declaration emitted in this frame — including those produced by an
+	// @include or @content inside a nested property block — is prefixed with it.
+	declPrefix string
 }
 
 // groupInfo tracks source-statement grouping for blank-line insertion.
@@ -141,7 +145,7 @@ func (e *evaluator) evalStmt(s Stmt, fr *frame) {
 	case *VarDecl:
 		e.evalVarDecl(n)
 	case *Declaration:
-		e.evalDeclaration(n, fr, "")
+		e.evalDeclaration(n, fr)
 	case *StyleRule:
 		e.evalStyleRule(n, fr)
 	case *MixinDef:
@@ -207,8 +211,8 @@ func (e *evaluator) evalVarDecl(n *VarDecl) {
 	e.env.setVar(n.Name, val, n.Global)
 }
 
-func (e *evaluator) evalDeclaration(n *Declaration, fr *frame, prefix string) {
-	name := prefix + e.resolveInterp(n.Name)
+func (e *evaluator) evalDeclaration(n *Declaration, fr *frame) {
+	name := fr.declPrefix + e.resolveInterp(n.Name)
 	if n.Custom {
 		raw := strings.TrimRight(e.resolveInterp(n.RawValue), " \t\n\r\f")
 		e.addDecl(fr, &cssDeclaration{name: name, raw: raw, custom: true})
@@ -220,12 +224,13 @@ func (e *evaluator) evalDeclaration(n *Declaration, fr *frame, prefix string) {
 			e.addDecl(fr, &cssDeclaration{name: name, value: val})
 		}
 	}
-	// nested properties use a "name-" prefix
-	for _, sub := range n.Body {
-		if d, ok := sub.(*Declaration); ok {
-			e.evalDeclaration(d, fr, name+"-")
-		} else {
-			e.evalStmt(sub, fr)
+	// Nested properties use a "name-" prefix that applies to every declaration
+	// emitted in the block, including those produced by @include or @content.
+	if len(n.Body) > 0 {
+		child := *fr
+		child.declPrefix = name + "-"
+		for _, sub := range n.Body {
+			e.evalStmt(sub, &child)
 		}
 	}
 }
