@@ -259,11 +259,9 @@ func (e *evaluator) builtinModule(ns string) (map[string]builtinFunc, string, bo
 	if !ok {
 		return nil, "", false
 	}
-	reg := moduleRegistry(real)
-	if reg == nil {
-		return nil, "", false
-	}
-	return reg, real, true
+	// A built-in alias always names one of the known modules, so its registry is
+	// never nil.
+	return moduleRegistry(real), real, true
 }
 
 func (e *evaluator) requireModule(name string) *module {

@@ -29,12 +29,28 @@ type IfCssBranch struct {
 func (*IfCssExpr) expr() {}
 
 // ifCond is a node in a CSS if() condition tree.
-type ifCond interface {
-	ifCond()
-	// isArbitrarySubstitution reports whether this clause may expand to multiple
-	// CSS tokens at render time (if()/var()/attr()/custom properties, or raw
-	// interpolation), which governs whether adjacent clauses may be juxtaposed.
-	isArbitrarySubstitution() bool
+type ifCond interface{ ifCond() }
+
+// isArbitrarySubstitution reports whether a clause may expand to multiple CSS
+// tokens at render time (if()/var()/attr()/custom properties, or raw
+// interpolation), which governs whether adjacent clauses may be juxtaposed. Only
+// function clauses (var/attr/if/--x) and raw clauses qualify.
+func isArbitrarySubstitution(c ifCond) bool {
+	switch n := c.(type) {
+	case *ifCondRaw:
+		return true
+	case *ifCondFunc:
+		plain, ok := plainParts(n.name)
+		if !ok {
+			return false
+		}
+		switch strings.ToLower(plain) {
+		case "if", "var", "attr":
+			return true
+		}
+		return strings.HasPrefix(plain, "--")
+	}
+	return false
 }
 
 type ifCondParen struct{ inner ifCond }
@@ -56,23 +72,6 @@ func (*ifCondOp) ifCond()    {}
 func (*ifCondFunc) ifCond()  {}
 func (*ifCondSass) ifCond()  {}
 func (*ifCondRaw) ifCond()   {}
-
-func (*ifCondParen) isArbitrarySubstitution() bool { return false }
-func (*ifCondNot) isArbitrarySubstitution() bool   { return false }
-func (*ifCondOp) isArbitrarySubstitution() bool    { return false }
-func (*ifCondSass) isArbitrarySubstitution() bool  { return false }
-func (*ifCondRaw) isArbitrarySubstitution() bool   { return true }
-func (f *ifCondFunc) isArbitrarySubstitution() bool {
-	plain, ok := plainParts(f.name)
-	if !ok {
-		return false
-	}
-	switch strings.ToLower(plain) {
-	case "if", "var", "attr":
-		return true
-	}
-	return strings.HasPrefix(plain, "--")
-}
 
 // plainParts returns the concatenated literal text of an interpolation part
 // list, and false if any part is a dynamic interpolation.
@@ -175,7 +174,7 @@ func (p *parser) ifConditionExpression() ifCond {
 				op = "or"
 			}
 			groups = append(groups, p.ifGroup())
-		case ifJuxtaposable(p.peek()) && groups[len(groups)-1].isArbitrarySubstitution():
+		case ifJuxtaposable(p.peek()) && isArbitrarySubstitution(groups[len(groups)-1]):
 			return p.ifConditionRaw(collapseGroups(groups, op), p.ifGroup())
 		default:
 			if sub := p.tryArbitrarySubstitution(); sub != nil {
@@ -230,7 +229,7 @@ func (p *parser) ifConditionRaw(preceding, next ifCond) ifCond {
 			g := p.ifGroup()
 			buf = appendPart(buf, " or ")
 			buf = append(buf, p.condToInterp(g)...)
-		case ifJuxtaposable(p.peek()) && lastGroup.isArbitrarySubstitution():
+		case ifJuxtaposable(p.peek()) && isArbitrarySubstitution(lastGroup):
 			g := p.ifGroup()
 			lastGroup = g
 			buf = appendPart(buf, " ")

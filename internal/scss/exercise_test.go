@@ -36,6 +36,8 @@ func TestValueMethods(t *testing.T) {
 		&List{Elements: []Value{newNumber(1), newNumber(2)}, Sep: SepComma},
 		&List{Elements: []Value{newNumber(1)}, Sep: SepSpace, Bracketed: true},
 		&Map{Keys: []Value{&SassString{Text: "k"}}, Values: []Value{newNumber(1)}},
+		&SassFunction{name: "f", key: "global:f"},
+		&SassMixin{name: "m", builtin: "meta.apply"},
 	}
 	for _, v := range vals {
 		_ = v.isTruthy()

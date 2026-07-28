@@ -18,9 +18,7 @@ import "strings"
 // It reports whether it consumed a special function; the scanner is unchanged on
 // a false return so the caller can parse an ordinary function call.
 func (p *parser) trySpecialFunction(name string) (Expr, bool) {
-	if p.peek() != '(' {
-		return nil, false
-	}
+	// The caller only invokes this at an opening "(".
 	lower := strings.ToLower(name)
 	if lower == "type" || lower == "attr" {
 		return p.parseCalc(lower), true
