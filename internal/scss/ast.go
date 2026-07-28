@@ -111,9 +111,54 @@ type Media struct {
 
 // Supports is @supports.
 type Supports struct {
-	Condition *Interp
-	Body      []Stmt
+	Cond SupportsCond
+	Body []Stmt
 }
+
+// SupportsCond is a parsed @supports condition tree. It mirrors dart-sass's
+// SupportsCondition hierarchy so the condition can be re-serialized canonically
+// (comments and redundant whitespace dropped, SassScript in declaration values
+// evaluated) rather than passed through as raw text.
+type SupportsCond interface{ supportsCond() }
+
+// SupportsOperation is `left and right` or `left or right`. Op is "and"/"or".
+type SupportsOperation struct {
+	Left, Right SupportsCond
+	Op          string
+}
+
+// SupportsNegation is `not <cond>`.
+type SupportsNegation struct{ Cond SupportsCond }
+
+// SupportsInterp is a lone `#{...}` interpolation used as a whole condition.
+type SupportsInterp struct{ Expr Expr }
+
+// SupportsDecl is a declaration condition `(name: value)`. For a custom
+// property the raw value interpolation is kept in RawValue and Custom is set.
+type SupportsDecl struct {
+	Name     Expr
+	Value    Expr    // non-custom: an evaluated expression
+	RawValue *Interp // custom property: raw interpolated value (leading space kept)
+	Custom   bool
+}
+
+// SupportsFunc is a function condition `name(args)`, both interpolated raw text.
+type SupportsFunc struct {
+	Name *Interp
+	Args *Interp
+}
+
+// SupportsAnything is a parenthesized fallback `(contents)` whose contents are
+// preserved as raw interpolated text (loud comments kept, silent comments and
+// redundant whitespace dropped).
+type SupportsAnything struct{ Contents *Interp }
+
+func (*SupportsOperation) supportsCond() {}
+func (*SupportsNegation) supportsCond()  {}
+func (*SupportsInterp) supportsCond()    {}
+func (*SupportsDecl) supportsCond()      {}
+func (*SupportsFunc) supportsCond()      {}
+func (*SupportsAnything) supportsCond()  {}
 
 // Extend is @extend.
 type Extend struct {

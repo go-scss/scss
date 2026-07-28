@@ -241,12 +241,6 @@ func (p *parser) parseMedia() Stmt {
 	return &Media{Query: trimInterp(q), Body: body}
 }
 
-func (p *parser) parseSupports() Stmt {
-	q := p.parseInterpolatedText(func(pp *parser) bool { return pp.peek() == '{' })
-	body := p.parseBlock()
-	return &Supports{Condition: trimInterp(q), Body: body}
-}
-
 func (p *parser) parseExtend() Stmt {
 	sel := p.parseInterpolatedText(func(pp *parser) bool {
 		c := pp.peek()

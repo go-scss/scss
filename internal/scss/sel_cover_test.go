@@ -490,7 +490,7 @@ func TestMediaMergeNesting(t *testing.T) {
 			t.Errorf("media merge case failed: %q: %v", src, err)
 		}
 	}
-	// parseMediaQueryList trailing error, normalizeMediaQuery double space via @supports.
+	// parseMediaQueryList trailing error; structured @supports raw-condition path.
 	if _, err := Render(`@media a b c d {x {y: z}}`, false, false, nil); err == nil {
 		// may or may not error depending on grammar; ignore result.
 		_ = err

@@ -33,6 +33,11 @@ type evaluator struct {
 	// this module's own @forward rules (a @forward propagates its importer's
 	// configuration to the module it forwards, merged with its own `with`).
 	incomingConfig map[string]Value
+	// inSupportsDecl is set while evaluating the name/value of a @supports
+	// declaration condition. In that context calculations are left unsimplified
+	// (dart-sass's _inSupportsDeclaration), so `(a: calc(1 + 2))` keeps its
+	// `calc(1 + 2)` text rather than reducing to `3`.
+	inSupportsDecl bool
 }
 
 // maxCallDepth bounds mixin/content/function recursion. Dart Sass terminates on
@@ -571,7 +576,7 @@ func (e *evaluator) evalMedia(n *Media, fr *frame) {
 }
 
 func (e *evaluator) evalSupports(n *Supports, fr *frame) {
-	cond := normalizeMediaQuery(e.resolveInterp(n.Condition))
+	cond := e.serializeSupportsCond(n.Cond)
 	at := &cssAtRule{name: "supports", params: cond, hasBody: true}
 	at.blankBefore = e.consumeGroup(fr)
 	fr.mediaParent.appendNode(at)

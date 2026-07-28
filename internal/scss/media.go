@@ -384,32 +384,3 @@ func mediaQuerySet(qs []mediaQuery) map[string]bool {
 	}
 	return set
 }
-
-// normalizeMediaQuery reproduces dart-sass condition spacing for @supports and
-// other resolved condition strings that don't use the structural media model.
-func normalizeMediaQuery(q string) string {
-	q = strings.TrimSpace(q)
-	var sb strings.Builder
-	for i := 0; i < len(q); i++ {
-		c := q[i]
-		if c == ':' {
-			sb.WriteByte(':')
-			for i+1 < len(q) && q[i+1] == ' ' {
-				i++
-			}
-			if i+1 < len(q) && q[i+1] != ')' {
-				sb.WriteByte(' ')
-			}
-			continue
-		}
-		if c == ' ' {
-			sb.WriteByte(' ')
-			for i+1 < len(q) && q[i+1] == ' ' {
-				i++
-			}
-			continue
-		}
-		sb.WriteByte(c)
-	}
-	return sb.String()
-}
