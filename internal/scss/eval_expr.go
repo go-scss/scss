@@ -206,6 +206,10 @@ func (e *evaluator) evalBinary(x *Binary) Value {
 	l := e.evalExpr(x.Left)
 	r := e.evalExpr(x.Right)
 	switch x.Op {
+	case "=":
+		// Microsoft-filter singleEquals: joins the serialised operands with "="
+		// into an unquoted string (e.g. alpha(c=d) -> the string "c=d").
+		return &SassString{Text: serializeValue(l, false) + "=" + serializeValue(r, false), Quoted: false}
 	case "==":
 		return boolean(l.equals(r))
 	case "!=":

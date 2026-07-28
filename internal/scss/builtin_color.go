@@ -19,7 +19,7 @@ var colorFns = map[string]builtinFunc{
 	"whiteness":    fnWhiteness,
 	"blackness":    fnBlackness,
 	"alpha":        fnAlpha,
-	"opacity":      fnAlpha,
+	"opacity":      fnOpacity,
 	"mix":          fnMix,
 	"grayscale":    fnGrayscale,
 	"invert":       fnInvert,
@@ -110,6 +110,13 @@ func (e *evaluator) channelFromValue(ch channelInfo, n *Number, clamp bool) *flo
 	if ch.upperClamped {
 		hi = ch.max
 	}
+	if math.IsNaN(v) {
+		// A clamped channel collapses a NaN to its lower bound, matching dart:
+		// rgb(0, 0, calc(NaN)) -> rgb(0, 0, 0), saturation/chroma -> 0. Every
+		// channel that reaches here is lower-clamped (unclamped channels keep NaN,
+		// serialized as calc(NaN), and return early above), so lo is finite.
+		return pf(lo)
+	}
 	return pf(clampLikeCss(v, lo, hi))
 }
 
@@ -187,6 +194,32 @@ func fnBlackness(ci *callInfo) Value {
 	return numOut(ci.color(0).toSpace(spaceHWB, true).c2, "%")
 }
 func fnAlpha(ci *callInfo) Value {
+	// Microsoft-filter overload: alpha(c=d) / alpha(c=d, e=f, g=h). Every argument
+	// is an unquoted "x=y" string; the call is preserved verbatim as plain CSS.
+	if len(ci.positional) > 0 && len(ci.named) == 0 {
+		allFilter := true
+		for _, a := range ci.positional {
+			if s, ok := a.(*SassString); !ok || s.Quoted || !strings.Contains(s.Text, "=") {
+				allFilter = false
+				break
+			}
+		}
+		if allFilter {
+			return &SassString{Text: functionString("alpha", ci.positional), Quoted: false}
+		}
+	}
+	return numOut(ci.color(0).alpha)
+}
+
+// fnOpacity implements the opacity()/color.opacity() overload. Unlike alpha(),
+// opacity() doubles as the CSS `opacity()` filter function, so a numeric or
+// special-value argument is preserved as a plain CSS function call.
+func fnOpacity(ci *callInfo) Value {
+	if len(ci.positional) == 1 && len(ci.named) == 0 {
+		if a := ci.positional[0]; isCssFilterArg(a) {
+			return &SassString{Text: functionString("opacity", []Value{a}), Quoted: false}
+		}
+	}
 	return numOut(ci.color(0).alpha)
 }
 
@@ -197,12 +230,31 @@ func alphaFromValue(e *evaluator, v Value) *float64 {
 		return nil
 	}
 	n := e.asNumber(v)
-	return pf(clampLikeCss(e.percentageOrUnitless(n, 1, "alpha"), 0, 1))
+	a := e.percentageOrUnitless(n, 1, "alpha")
+	if math.IsNaN(a) {
+		// dart-sass carries a non-finite alpha through clamping to [0, 1]; a NaN
+		// alpha collapses to 0 (the lower bound), unlike a NaN *color* channel,
+		// which is preserved as calc(NaN).
+		return pf(0)
+	}
+	return pf(clampLikeCss(a, 0, 1))
 }
 
 func isNone(v Value) bool {
 	s, ok := v.(*SassString)
 	return ok && !s.Quoted && strings.EqualFold(s.Text, "none")
+}
+
+// isCssFilterArg reports whether a single-argument colour filter overload
+// (grayscale/invert/opacity/saturate) should be emitted as a plain CSS function
+// rather than treated as a colour operation. Dart-sass does this when the sole
+// argument is a plain number (e.g. opacity(10%)) or a special CSS value such as
+// var(--c) or an unquoted calc string.
+func isCssFilterArg(v Value) bool {
+	if _, ok := v.(*Number); ok {
+		return true
+	}
+	return isSpecialValue(v)
 }
 
 // isSpecialValue reports whether v is an unquoted CSS math/reference function
@@ -265,16 +317,48 @@ func fnHSL(ci *callInfo) Value {
 
 func rgbLike(ci *callInfo, space ColorSpace, names [3]string) Value {
 	e := ci.e
-	// Two-argument form: rgb($color, $alpha).
-	if len(ci.positional) == 2 {
-		if c, ok := ci.positional[0].(*SassColor); ok {
-			a := alphaFromValue(e, ci.positional[1])
+	// Named single $channels form: rgb($channels: 0 255 127).
+	if ch, ok := ci.named["channels"]; ok && len(ci.positional) == 0 && len(ci.named) == 1 {
+		return e.parseChannels(string(space), ch, &space)
+	}
+	// Two-argument $color/$alpha form, positional or named:
+	// rgb($color, $alpha) / rgb($color: #123, $alpha: 0.5).
+	cv, okColor := ci.named["color"]
+	if !okColor && len(ci.positional) == 2 {
+		cv, okColor = ci.positional[0], true
+	}
+	if okColor {
+		av, hasAlpha := ci.get(1, "alpha")
+		if c, isColor := cv.(*SassColor); isColor {
+			// A special-value alpha (var(--foo), an unquoted calc string) can't be
+			// resolved to a number. For rgb() dart expands the colour into its
+			// legacy channels and appends the special alpha; for hsl() it leaves
+			// the whole call verbatim.
+			if hasAlpha && isSpecialValue(av) {
+				if space == spaceRGB {
+					rgb := c.toSpace(spaceRGB, true)
+					args := []Value{
+						numOut(math.Round(rgb.c0)), numOut(math.Round(rgb.c1)),
+						numOut(math.Round(rgb.c2)), av,
+					}
+					return &SassString{Text: functionString(ci.fn, args), Quoted: false}
+				}
+				return &SassString{Text: functionString(ci.fn, []Value{cv, av}), Quoted: false}
+			}
+			a := pf(1.0)
+			if hasAlpha {
+				a = alphaFromValue(e, av)
+			}
 			return c.toSpace(spaceRGB, true).changeAlpha(a)
 		}
 		// A special CSS value ($color or $alpha) makes the call unresolvable, so
 		// it is emitted as a plain-CSS function verbatim.
-		if anySpecialValue(ci.positional[0], ci.positional[1]) {
-			return &SassString{Text: functionString(ci.fn, ci.positional), Quoted: false}
+		if isSpecialValue(cv) || (hasAlpha && isSpecialValue(av)) {
+			args := []Value{cv}
+			if hasAlpha {
+				args = append(args, av)
+			}
+			return &SassString{Text: functionString(ci.fn, args), Quoted: false}
 		}
 	}
 	// Single $channels argument.
@@ -305,9 +389,13 @@ func rgbLike(ci *callInfo, space ColorSpace, names [3]string) Value {
 
 func fnHWB(ci *callInfo) Value {
 	e := ci.e
-	// color.hwb($hue, $whiteness, $blackness, $alpha) 3-4 positional form.
-	if len(ci.positional) >= 3 {
-		inner := &List{Elements: []Value{ci.positional[0], ci.positional[1], ci.positional[2]}, Sep: SepSpace}
+	// color.hwb($hue, $whiteness, $blackness, $alpha) 3-4 argument form, positional
+	// or named (color.hwb($hue: 0, $whiteness: 30%, $blackness: 40%)).
+	h, okH := ci.get(0, "hue")
+	w, okW := ci.get(1, "whiteness")
+	bl, okB := ci.get(2, "blackness")
+	if okH && okW && okB {
+		inner := &List{Elements: []Value{h, w, bl}, Sep: SepSpace}
 		var input Value = inner
 		if av, ok := ci.get(3, "alpha"); ok {
 			input = &List{Elements: []Value{inner, av}, Sep: SepSlash}
@@ -315,6 +403,7 @@ func fnHWB(ci *callInfo) Value {
 		sp := spaceHWB
 		return e.parseChannels("hwb", input, &sp)
 	}
+	// Single $channels argument (space-separated list), e.g. color.hwb(0 30% 40%).
 	sp := spaceHWB
 	return e.parseChannels("hwb", ci.require(0, "channels"), &sp)
 }
@@ -859,8 +948,8 @@ func mixLegacy(c1, c2 *SassColor, weightPct float64) *SassColor {
 
 func fnGrayscale(ci *callInfo) Value {
 	arg := ci.require(0, "color")
-	if n, ok := arg.(*Number); ok {
-		return &SassString{Text: functionString("grayscale", []Value{n}), Quoted: false}
+	if isCssFilterArg(arg) {
+		return &SassString{Text: functionString("grayscale", []Value{arg}), Quoted: false}
 	}
 	color := ci.color(0)
 	if color.isLegacy() {
@@ -914,8 +1003,8 @@ func fnInvert(ci *callInfo) Value {
 	if w, ok := ci.get(1, "weight"); ok {
 		weightNumber = e.asNumber(w)
 	}
-	if n, ok := ci.require(0, "color").(*Number); ok {
-		return &SassString{Text: functionString("invert", []Value{n}), Quoted: false}
+	if arg := ci.require(0, "color"); isCssFilterArg(arg) {
+		return &SassString{Text: functionString("invert", []Value{arg}), Quoted: false}
 	}
 	color := ci.color(0)
 	var spaceV Value = sassNull
@@ -1010,9 +1099,21 @@ func fnDarken(ci *callInfo) Value {
 }
 
 func fnSaturate(ci *callInfo) Value {
-	if len(ci.positional) == 1 {
-		n := ci.num(0, "amount")
-		return &SassString{Text: "saturate(" + serializeValue(n, false) + ")", Quoted: false}
+	// Single-argument CSS filter overload: saturate(<number|special>), including
+	// the named form saturate($amount: 50%). The two-argument form is the legacy
+	// colour modifier, so this only applies when exactly one argument is passed.
+	if len(ci.positional)+len(ci.named) == 1 {
+		var a Value
+		if len(ci.positional) == 1 {
+			a = ci.positional[0]
+		} else {
+			for _, v := range ci.named {
+				a = v
+			}
+		}
+		if isCssFilterArg(a) {
+			return &SassString{Text: functionString("saturate", []Value{a}), Quoted: false}
+		}
 	}
 	c := ci.color(0)
 	amt := ci.num(1, "amount").Val
