@@ -12,17 +12,27 @@ import (
 type Importer func(url string) (source string, resolvedURL string, ok bool)
 
 type evaluator struct {
-	env           *environment
-	root          *cssRoot
-	importer      Importer
-	loadedURLs    []string
-	warnings      []string
-	extendEvents  []extendEvent
-	loadStack     []string
-	loaded        map[string]*module
+	env          *environment
+	root         *cssRoot
+	importer     Importer
+	loadedURLs   []string
+	warnings     []string
+	extendEvents []extendEvent
+	loadStack    []string
+	loaded       map[string]*module
+	// sharedLoaded deduplicates module loads across the WHOLE compilation
+	// (keyed by resolved path), so a module reached through several paths — a
+	// diamond dependency — is evaluated and emitted exactly once. It is shared
+	// by reference with every sub-evaluator spawned during the compile.
+	sharedLoaded  map[string]*module
 	currentParent selectorList
 	forwarded     []forwardedMod
 	callDepth     int
+	// incomingConfig is the evaluated `with (...)` configuration passed into
+	// this module by the @use/@forward that loaded it. It flows onward through
+	// this module's own @forward rules (a @forward propagates its importer's
+	// configuration to the module it forwards, merged with its own `with`).
+	incomingConfig map[string]Value
 }
 
 // maxCallDepth bounds mixin/content/function recursion. Dart Sass terminates on
@@ -88,10 +98,11 @@ type groupInfo struct {
 
 func newEvaluator(importer Importer) *evaluator {
 	return &evaluator{
-		env:      newEnvironment(),
-		root:     &cssRoot{},
-		importer: importer,
-		loaded:   map[string]*module{},
+		env:          newEnvironment(),
+		root:         &cssRoot{},
+		importer:     importer,
+		loaded:       map[string]*module{},
+		sharedLoaded: map[string]*module{},
 	}
 }
 
@@ -185,9 +196,9 @@ func (e *evaluator) evalStmt(s Stmt, fr *frame) {
 	case *AtRule:
 		e.evalGenericAtRule(n, fr)
 	case *Use:
-		e.evalUse(n)
+		e.evalUse(n, fr)
 	case *Forward:
-		e.evalForward(n)
+		e.evalForward(n, fr)
 	case *Import:
 		e.evalImport(n, fr)
 	}
@@ -200,6 +211,10 @@ func (e *evaluator) fail(format string, args ...any) {
 // --- declarations & variables ---
 
 func (e *evaluator) evalVarDecl(n *VarDecl) {
+	if n.Namespace != "" {
+		e.assignNamespacedVar(n)
+		return
+	}
 	if n.Default {
 		if v, ok := e.env.getVar(n.Name); ok {
 			if _, isNull := v.(*Null); !isNull {
@@ -209,6 +224,29 @@ func (e *evaluator) evalVarDecl(n *VarDecl) {
 	}
 	val := e.evalExpr(n.Value)
 	e.env.setVar(n.Name, val, n.Global)
+}
+
+// assignNamespacedVar writes to a variable of another module (`ns.$var: value`).
+// The module's own members share the very map exposed as mod.vars, so the write
+// is visible to that module's functions and mixins. dart-sass forbids assigning
+// to a variable the module does not already define.
+func (e *evaluator) assignNamespacedVar(n *VarDecl) {
+	mod, ok := e.env.modules[n.Namespace]
+	if !ok {
+		e.fail("There is no module with the namespace \"%s\".", n.Namespace)
+	}
+	name := normIdent(n.Name)
+	if _, exists := mod.vars[name]; !exists {
+		e.fail("Undefined variable.")
+	}
+	if n.Default {
+		if v, ok := mod.vars[name]; ok {
+			if _, isNull := v.(*Null); !isNull {
+				return
+			}
+		}
+	}
+	mod.vars[name] = e.evalExpr(n.Value)
 }
 
 func (e *evaluator) evalDeclaration(n *Declaration, fr *frame) {
@@ -430,15 +468,27 @@ func destructure(v Value, n int) []Value {
 func (e *evaluator) evalFor(n *For, fr *frame) {
 	from := e.evalNumber(n.From)
 	to := e.evalNumber(n.To)
+	// The loop variable inherits `from`'s units; `to` is coerced into those
+	// units to obtain the numeric bound, matching dart-sass exactly (e.g.
+	// `@for $i from 5mm through 1cm` iterates 5mm..10mm).
 	start := int(from.Val)
-	end := int(to.Val)
+	var endVal float64
+	if len(from.Numer) == 1 && len(from.Denom) == 0 {
+		endVal = to.coerceValueToUnit(from.Numer[0])
+	} else {
+		endVal = to.Val
+	}
+	end := int(endVal)
+	mkVar := func(i int) *Number {
+		return &Number{Val: float64(i), Numer: from.Numer, Denom: from.Denom}
+	}
 	if start <= end {
 		last := end
 		if !n.Through {
 			last = end - 1
 		}
 		for i := start; i <= last; i++ {
-			e.env.defineVar(n.Var, newNumber(float64(i)))
+			e.env.defineVar(n.Var, mkVar(i))
 			e.evalBody(n.Body, fr, fr.atContainer)
 		}
 	} else {
@@ -447,7 +497,7 @@ func (e *evaluator) evalFor(n *For, fr *frame) {
 			last = end + 1
 		}
 		for i := start; i >= last; i-- {
-			e.env.defineVar(n.Var, newNumber(float64(i)))
+			e.env.defineVar(n.Var, mkVar(i))
 			e.evalBody(n.Body, fr, fr.atContainer)
 		}
 	}

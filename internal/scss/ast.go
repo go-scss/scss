@@ -29,10 +29,11 @@ type Declaration struct {
 
 // VarDecl assigns a variable.
 type VarDecl struct {
-	Name    string
-	Value   Expr
-	Default bool
-	Global  bool
+	Name      string
+	Namespace string // non-empty for `ns.$var: value` assignments to a module
+	Value     Expr
+	Default   bool
+	Global    bool
 }
 
 // MixinDef defines an @mixin.
