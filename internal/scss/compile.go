@@ -33,8 +33,67 @@ func Render(source string, indented bool, compressed bool, importer Importer) (r
 }
 
 // convertIndented converts indented (.sass) syntax to bracketed SCSS.
+// bracketDelta returns the net change in (){}[] nesting depth on a line,
+// ignoring brackets inside strings and comments.
+func bracketDelta(s string) int {
+	depth := 0
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		switch c {
+		case '"', '\'':
+			q := c
+			i++
+			for i < len(s) {
+				if s[i] == '\\' {
+					i++
+				} else if s[i] == q {
+					break
+				}
+				i++
+			}
+		case '/':
+			if i+1 < len(s) && s[i+1] == '/' {
+				return depth
+			}
+			if i+1 < len(s) && s[i+1] == '*' {
+				i += 2
+				for i+1 < len(s) && !(s[i] == '*' && s[i+1] == '/') {
+					i++
+				}
+				i++
+			}
+		case '(', '[', '{':
+			depth++
+		case ')', ']', '}':
+			depth--
+		}
+	}
+	return depth
+}
+
+// joinBracketContinuations merges physical lines that continue a logical line
+// because an earlier line left brackets open (e.g. a multi-line CSS if()). The
+// indented syntax treats such newlines as insignificant whitespace.
+func joinBracketContinuations(raw []string) []string {
+	var lines []string
+	depth := 0
+	for _, ln := range raw {
+		if depth > 0 && len(lines) > 0 {
+			lines[len(lines)-1] += "\n" + ln
+			depth += bracketDelta(ln)
+		} else {
+			lines = append(lines, ln)
+			depth = bracketDelta(ln)
+		}
+		if depth < 0 {
+			depth = 0
+		}
+	}
+	return lines
+}
+
 func convertIndented(src string) string {
-	lines := strings.Split(src, "\n")
+	lines := joinBracketContinuations(strings.Split(src, "\n"))
 	type entry struct{ indent int }
 	var stack []entry
 	var out []string

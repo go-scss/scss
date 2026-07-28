@@ -518,6 +518,17 @@ func (p *parser) parseIdentValue() Expr {
 		if isCalcLike(name) {
 			return p.parseCalc(name)
 		}
+		// if() is ambiguous between the legacy Sass control function and the
+		// modern CSS if() syntax. Try the legacy argument list first and fall
+		// back to the modern grammar (which uses ":"/";" branch separators).
+		if strings.EqualFold(name, "if") {
+			save := p.pos
+			if al, ok := p.tryParseArgList(); ok {
+				return &FuncCall{Name: name, Args: al}
+			}
+			p.pos = save
+			return p.parseModernIf()
+		}
 		return &FuncCall{Name: name, Args: p.parseArgList()}
 	}
 	switch strings.ToLower(name) {
