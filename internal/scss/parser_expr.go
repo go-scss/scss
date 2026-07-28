@@ -565,7 +565,7 @@ func (p *parser) parseIdentValue() Expr {
 			p.pos = save
 			return p.parseModernIf()
 		}
-		return &FuncCall{Name: name, Args: p.parseArgList()}
+		return &FuncCall{Name: name, Args: p.parseArgListOpt(strings.EqualFold(name, "var"))}
 	}
 	switch strings.ToLower(name) {
 	case "true":
@@ -605,6 +605,19 @@ func (p *parser) parseCalc(name string) Expr {
 	}
 	for !p.eof() && depth > 0 {
 		c := p.peek()
+		// A silent comment is stripped and, together with any adjacent
+		// whitespace, collapsed to a single space, as dart-sass does inside a
+		// special function's argument text.
+		if c == '/' && p.peekAt(1) == '/' {
+			for !p.eof() && p.peek() != '\n' {
+				p.pos++
+			}
+			for isSpaceByte(p.peek()) {
+				p.pos++
+			}
+			sb.WriteByte(' ')
+			continue
+		}
 		if c == '#' && p.peekAt(1) == '{' {
 			flush()
 			p.pos += 2
@@ -693,7 +706,13 @@ func (p *parser) parseParamList() *ParamList {
 	return pl
 }
 
-func (p *parser) parseArgList() *ArgList {
+func (p *parser) parseArgList() *ArgList { return p.parseArgListOpt(false) }
+
+// parseArgListOpt parses a call's argument list. When allowEmptySecondArg is
+// set (dart-sass permits this only for var()), a trailing empty second argument
+// after a single real argument is preserved as an empty unquoted string rather
+// than discarded, so `var(--c,)` round-trips as `var(--c, )`.
+func (p *parser) parseArgListOpt(allowEmptySecondArg bool) *ArgList {
 	// Function arguments are their own arithmetic context: a "/" between literal
 	// numbers here forms a slash-separated list (e.g. the alpha in
 	// `hsl(180 60% 50% / 0.4)`), even when the call is nested in parentheses.
@@ -735,6 +754,14 @@ func (p *parser) parseArgList() *ArgList {
 		al.Args = append(al.Args, arg)
 		if p.peek() == ',' {
 			p.next()
+			if allowEmptySecondArg && len(al.Args) == 1 && al.Args[0].Name == "" && !al.Args[0].Spread {
+				save := p.pos
+				p.ws()
+				if p.peek() == ')' {
+					al.Args = append(al.Args, Arg{Value: &StringLit{Parts: literalInterp("")}})
+				}
+				p.pos = save
+			}
 			continue
 		}
 		if p.peek() == ')' {
