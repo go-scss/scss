@@ -561,34 +561,34 @@ a {
 }
 
 <===> case56/input.scss
-a {b: var(--c)}
+a {b: rgb(attr(c))}
 
 <===> case56/output.css
+a {
+  b: rgb(attr(c));
+}
+
+<===> case57/input.scss
+a {b: rgb(var(--c))}
+
+<===> case57/output.css
+a {
+  b: rgb(var(--c));
+}
+
+<===> case58/input.scss
+a {b: var(--c)}
+
+<===> case58/output.css
 a {
   b: var(--c);
 }
 
-<===> case57/input.scss
-a {b: var(--c, d, e)}
-
-<===> case57/output.css
-a {
-  b: var(--c, d, e);
-}
-
-<===> case58/input.scss
-a {b: var(--c, 1 + 2)}
-
-<===> case58/output.css
-a {
-  b: var(--c, 3);
-}
-
 <===> case59/input.scss
-a {b: var(--c, d)}
+a {b: var(--c, d, e)}
 
 <===> case59/output.css
 a {
-  b: var(--c, d);
+  b: var(--c, d, e);
 }
 

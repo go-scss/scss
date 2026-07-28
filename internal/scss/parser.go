@@ -360,7 +360,15 @@ func (p *parser) tryDeclaration() (stmt Stmt, ok bool) {
 		return c == ':' || c == '{' || c == '}' || c == ';' || c == 0
 	})
 	plain, isPlain := name.isPlain()
-	custom := isPlain && strings.HasPrefix(strings.TrimSpace(plain), "--")
+	trimmedPlain := strings.TrimSpace(plain)
+	custom := isPlain && strings.HasPrefix(trimmedPlain, "--")
+	// A plain name that is empty (leading `:`/`::` pseudo) or that starts with a
+	// character that can't begin a CSS property is actually a selector.
+	if isPlain && !custom {
+		if trimmedPlain == "" || isSelectorLeadByte(trimmedPlain[0]) {
+			return nil, false
+		}
+	}
 	if p.peek() != ':' {
 		return nil, false
 	}
@@ -393,13 +401,21 @@ func (p *parser) tryDeclaration() (stmt Stmt, ok bool) {
 	}
 }
 
+// isSelectorLeadByte reports whether c can begin a selector but not a CSS
+// property name, so a statement starting with it must be a style rule.
+func isSelectorLeadByte(c byte) bool {
+	switch c {
+	case '.', '%', '[', '*', '&', '>', '+', '~', ':':
+		return true
+	}
+	return false
+}
+
 // selectorLike reports whether a parsed value is better understood as part of a
 // selector (identifiers/combinators only, no numbers/strings/colors/operators).
 func selectorLike(e Expr) bool {
 	switch v := e.(type) {
 	case *Ident:
-		return true
-	case *Parent:
 		return true
 	case *ListExpr:
 		if v.Sep == SepComma {

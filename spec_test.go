@@ -290,15 +290,41 @@ func TestSassSpecFull(t *testing.T) {
 	}
 }
 
+// goldenBucket groups a case for freezing. The selector module, the @extend
+// engine and the media-query subtree get dedicated buckets so the frozen corpus
+// exercises them thoroughly; everything else buckets by top-level directory.
+func goldenBucket(name string) string {
+	switch {
+	case strings.Contains(name, "core_functions/selector/"):
+		return "selector"
+	case strings.Contains(name, "/extend/") || strings.HasPrefix(name, "directives/extend"):
+		return "extend"
+	case strings.Contains(name, "css/media"):
+		return "media"
+	default:
+		return strings.SplitN(name, "/", 2)[0]
+	}
+}
+
 // freezeGolden writes a representative, self-contained, passing subset of the
 // suite into dir as per-bucket HRX archives, forming the in-repo golden corpus.
 func freezeGolden(t *testing.T, dir string, cases []specCase) {
 	t.Helper()
-	const perBucket = 60
+	// The selector/extend/media buckets get a high cap so the frozen corpus
+	// covers the full ported algorithms (superselector, unify, weave, extend and
+	// media merge); other buckets stay representative.
+	cap := func(bucket string) int {
+		switch bucket {
+		case "selector", "extend", "media":
+			return 100000
+		default:
+			return 60
+		}
+	}
 	byBucket := map[string][]specCase{}
 	for _, c := range cases {
-		top := strings.SplitN(c.name, "/", 2)[0]
-		if len(byBucket[top]) >= perBucket {
+		top := goldenBucket(c.name)
+		if len(byBucket[top]) >= cap(top) {
 			continue
 		}
 		if !selfContained(c) {

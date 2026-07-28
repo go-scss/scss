@@ -5,194 +5,273 @@ package scss
 
 import "strings"
 
-// component is one compound selector plus the combinator that precedes it.
-type component struct {
-	combinator string // "", ">", "+", "~"
-	compound   string
+// selectorList is the evaluator-facing wrapper around the ported Dart Sass
+// selector AST (*selList). It carries the resolved selector for a style rule and
+// bridges to serialization and @extend. A nil list represents an empty selector.
+type selectorList struct {
+	list *selList
 }
 
-// complexSelector is a sequence of components.
-type complexSelector struct{ parts []component }
+// isEmpty reports whether this selector has no complex selectors.
+func (s selectorList) isEmpty() bool {
+	return s.list == nil || len(s.list.components) == 0
+}
 
-// selectorList is a comma-separated list of complex selectors.
-type selectorList struct{ complexes []complexSelector }
-
-// parseSelectorList parses a resolved selector string into structured form.
-func parseSelectorList(s string) selectorList {
-	var out selectorList
-	for _, part := range splitTopLevel(s, ',') {
-		part = strings.TrimSpace(part)
-		if part == "" {
-			continue
-		}
-		out.complexes = append(out.complexes, parseComplex(part))
+// serialize renders the selector list for CSS output.
+func (s selectorList) serialize(compressed bool) string {
+	if s.list == nil {
+		return ""
 	}
-	return out
+	var sb strings.Builder
+	s.list.write(&sb, compressed)
+	return sb.String()
 }
 
-func parseComplex(s string) complexSelector {
-	var cs complexSelector
-	i := 0
-	n := len(s)
-	pendingComb := ""
-	for i < n {
-		// skip whitespace
-		for i < n && isSpaceByte(s[i]) {
-			i++
-		}
-		if i >= n {
-			break
-		}
-		c := s[i]
-		if c == '>' || c == '+' || c == '~' {
-			pendingComb = string(c)
-			i++
-			continue
-		}
-		// read a compound (until whitespace or top-level combinator)
-		start := i
-		depth := 0
-		for i < n {
-			ch := s[i]
-			if ch == '[' || ch == '(' {
-				depth++
-			} else if ch == ']' || ch == ')' {
-				depth--
-			} else if depth == 0 && (isSpaceByte(ch) || ch == '>' || ch == '+' || ch == '~') {
-				break
-			}
-			i++
-		}
-		cs.parts = append(cs.parts, component{combinator: pendingComb, compound: s[start:i]})
-		pendingComb = ""
-	}
-	return cs
+func (s selectorList) String() string { return s.serialize(false) }
+
+// parseSelectorList parses a resolved selector string (interpolation already
+// substituted) into structured form, keeping parent selectors for later
+// nesting resolution.
+func parseSelectorList(str string) selectorList {
+	return selectorList{list: mustParseSelectorList(str)}
 }
 
-// splitTopLevel splits s on sep at bracket/paren depth zero.
-func splitTopLevel(s string, sep byte) []string {
-	var out []string
-	depth := 0
-	start := 0
-	for i := 0; i < len(s); i++ {
-		switch s[i] {
-		case '[', '(':
-			depth++
-		case ']', ')':
-			depth--
-		case sep:
-			if depth == 0 {
-				out = append(out, s[start:i])
-				start = i + 1
-			}
-		}
-	}
-	out = append(out, s[start:])
-	return out
-}
-
-func (cs complexSelector) hasParent() bool {
-	for _, p := range cs.parts {
-		if strings.Contains(p.compound, "&") {
-			return true
-		}
-	}
-	return false
-}
-
-// resolveNesting combines a child selector list with the parent selector list.
+// resolveNesting resolves child's parent selectors (&) against parent, matching
+// Dart Sass's SelectorList.nestWithin with implicitParent = true.
 func resolveNesting(child, parent selectorList) selectorList {
-	if len(parent.complexes) == 0 {
+	if child.list == nil {
 		return child
 	}
-	var out selectorList
-	for _, childCx := range child.complexes {
-		if childCx.hasParent() {
-			for _, parentCx := range parent.complexes {
-				out.complexes = append(out.complexes, spliceParent(childCx, parentCx))
+	return selectorList{list: child.list.nestWithin(parent.list, true, false)}
+}
+
+// nestWithin returns a new selector list representing sl nested within parent.
+// See Dart Sass lib/src/ast/selector/list.dart.
+func (sl *selList) nestWithin(parent *selList, implicitParent, preserveParent bool) *selList {
+	if parent == nil {
+		if preserveParent {
+			return sl
+		}
+		if p := selListFirstParentWithSuffix(sl); p != nil {
+			panic(selErr("A top-level selector may not contain a parent selector with a suffix."))
+		}
+		return sl
+	}
+
+	var rows [][]*selComplex
+	for _, complex := range sl.components {
+		if preserveParent || !complexContainsParent(complex) {
+			if !implicitParent {
+				rows = append(rows, []*selComplex{complex})
+				continue
 			}
-		} else {
-			for _, parentCx := range parent.complexes {
-				merged := complexSelector{}
-				merged.parts = append(merged.parts, parentCx.parts...)
-				merged.parts = append(merged.parts, childCx.parts...)
-				out.complexes = append(out.complexes, merged)
+			var row []*selComplex
+			for _, parentComplex := range parent.components {
+				row = append(row, parentComplex.concatenate(complex, false))
+			}
+			rows = append(rows, row)
+			continue
+		}
+
+		var newComplexes []*selComplex
+		for _, component := range complex.components {
+			resolved := nestWithinCompound(component, parent)
+			if resolved == nil {
+				if len(newComplexes) == 0 {
+					newComplexes = append(newComplexes, &selComplex{
+						leadingCombinators: complex.leadingCombinators,
+						components:         []complexComponent{component},
+					})
+				} else {
+					for i := range newComplexes {
+						newComplexes[i] = newComplexes[i].withAdditionalComponent(component, false)
+					}
+				}
+			} else if len(newComplexes) == 0 {
+				if len(complex.leadingCombinators) == 0 {
+					newComplexes = append(newComplexes, resolved...)
+				} else {
+					for _, rc := range resolved {
+						lead := complex.leadingCombinators
+						if len(rc.leadingCombinators) != 0 {
+							lead = append(append([]combinator{}, complex.leadingCombinators...), rc.leadingCombinators...)
+						}
+						newComplexes = append(newComplexes, &selComplex{
+							leadingCombinators: lead,
+							components:         rc.components,
+							lineBreak:          rc.lineBreak,
+						})
+					}
+				}
+			} else {
+				prev := newComplexes
+				newComplexes = nil
+				for _, nc := range prev {
+					for _, rc := range resolved {
+						newComplexes = append(newComplexes, nc.concatenate(rc, false))
+					}
+				}
 			}
 		}
+		rows = append(rows, newComplexes)
+	}
+
+	return &selList{components: flattenVertically(rows)}
+}
+
+// nestWithinCompound resolves parent selectors within a single component.
+func nestWithinCompound(component complexComponent, parent *selList) []*selComplex {
+	simples := component.selector.components
+	containsSelectorPseudo := false
+	for _, simple := range simples {
+		if ps, ok := simple.(*pseudoSel); ok && ps.selector != nil && selListContainsParent(ps.selector) {
+			containsSelectorPseudo = true
+			break
+		}
+	}
+	_, firstIsParent := simples[0].(*parentSel)
+	if !containsSelectorPseudo && !firstIsParent {
+		return nil
+	}
+
+	resolvedSimples := simples
+	if containsSelectorPseudo {
+		resolvedSimples = make([]simpleSel, len(simples))
+		for i, simple := range simples {
+			if ps, ok := simple.(*pseudoSel); ok && ps.selector != nil && selListContainsParent(ps.selector) {
+				resolvedSimples[i] = ps.withSelector(ps.selector.nestWithin(parent, false, false))
+			} else {
+				resolvedSimples[i] = simple
+			}
+		}
+	}
+
+	parentSelector, firstIsParent := simples[0].(*parentSel)
+	if !firstIsParent {
+		return []*selComplex{{
+			components: []complexComponent{{
+				selector:    &compoundSel{components: resolvedSimples},
+				combinators: component.combinators,
+			}},
+		}}
+	} else if len(simples) == 1 && parentSelector.suffix == nil {
+		return parent.withAdditionalCombinators(component.combinators).components
+	}
+
+	out := make([]*selComplex, 0, len(parent.components))
+	for _, complex := range parent.components {
+		lastComponent := complex.components[len(complex.components)-1]
+		if len(lastComponent.combinators) != 0 {
+			panic(selErr("Selector \"" + complex.String() + "\" can't be used as a parent in a compound selector."))
+		}
+		suffix := parentSelector.suffix
+		lastSimples := lastComponent.selector.components
+		var lastComponents []simpleSel
+		if suffix == nil {
+			lastComponents = append(append([]simpleSel{}, lastSimples...), resolvedSimples[1:]...)
+		} else {
+			suffixed, err := lastSimples[len(lastSimples)-1].addSuffix(*suffix)
+			if err != nil {
+				panic(err)
+			}
+			lastComponents = append(lastComponents, lastSimples[:len(lastSimples)-1]...)
+			lastComponents = append(lastComponents, suffixed)
+			lastComponents = append(lastComponents, resolvedSimples[1:]...)
+		}
+		last := &compoundSel{components: lastComponents}
+		comps := append([]complexComponent{}, complex.components[:len(complex.components)-1]...)
+		comps = append(comps, complexComponent{selector: last, combinators: component.combinators})
+		out = append(out, &selComplex{
+			leadingCombinators: complex.leadingCombinators,
+			components:         comps,
+			lineBreak:          complex.lineBreak,
+		})
 	}
 	return out
 }
 
-// spliceParent replaces every "&" in childCx with parentCx.
-func spliceParent(childCx, parentCx complexSelector) complexSelector {
-	var result complexSelector
-	for _, part := range childCx.parts {
-		if !strings.Contains(part.compound, "&") {
-			result.parts = append(result.parts, part)
-			continue
-		}
-		before, after := splitAmp(part.compound)
-		// parent components: first inherits this part's combinator; last gets suffix.
-		for i, pp := range parentCx.parts {
-			comb := pp.combinator
-			compound := pp.compound
-			if i == 0 {
-				comb = part.combinator
-				compound = before + compound
+// unify returns a selector list matching both sl and other, or nil.
+func (sl *selList) unify(other *selList) *selList {
+	var contents []*selComplex
+	for _, complex1 := range sl.components {
+		for _, complex2 := range other.components {
+			if unified, ok := unifyComplex([]*selComplex{complex1, complex2}); ok {
+				contents = append(contents, unified...)
 			}
-			if i == len(parentCx.parts)-1 {
-				compound = compound + after
-			}
-			result.parts = append(result.parts, component{combinator: comb, compound: compound})
 		}
+	}
+	if len(contents) == 0 {
+		return nil
+	}
+	return &selList{components: contents}
+}
+
+func (cx *selComplex) String() string {
+	var sb strings.Builder
+	cx.write(&sb, false)
+	return sb.String()
+}
+
+// flattenVertically interleaves rows column-first: [[1a,1b],[2a,2b]] -> 1a,2a,1b,2b.
+func flattenVertically(rows [][]*selComplex) []*selComplex {
+	queues := make([][]*selComplex, 0, len(rows))
+	for _, r := range rows {
+		if len(r) > 0 {
+			queues = append(queues, r)
+		}
+	}
+	if len(queues) == 1 {
+		return queues[0]
+	}
+	var result []*selComplex
+	for len(queues) > 0 {
+		var kept [][]*selComplex
+		for _, q := range queues {
+			result = append(result, q[0])
+			if len(q) > 1 {
+				kept = append(kept, q[1:])
+			}
+		}
+		queues = kept
 	}
 	return result
 }
 
-// splitAmp splits a compound at its first "&" into prefix/suffix.
-func splitAmp(compound string) (before, after string) {
-	idx := strings.Index(compound, "&")
-	return compound[:idx], compound[idx+1:]
-}
-
-// serialize renders the selector list for output.
-func (sl selectorList) serialize(compressed bool) string {
-	parts := make([]string, len(sl.complexes))
-	for i, cx := range sl.complexes {
-		parts[i] = cx.serialize(compressed)
+// isIdentifierString reports whether s is a valid CSS identifier (Dart Sass's
+// Parser.isIdentifier), used to decide attribute-value quoting.
+func isIdentifierString(s string) bool {
+	if s == "" {
+		return false
 	}
-	sep := ", "
-	if compressed {
-		sep = ","
-	}
-	return strings.Join(parts, sep)
-}
-
-func (cx complexSelector) serialize(compressed bool) string {
-	var sb strings.Builder
-	for i, p := range cx.parts {
-		if i > 0 {
-			if p.combinator != "" {
-				if compressed {
-					sb.WriteString(p.combinator)
-				} else {
-					sb.WriteString(" ")
-					sb.WriteString(p.combinator)
-					sb.WriteString(" ")
-				}
-			} else {
-				sb.WriteString(" ")
-			}
-		} else if p.combinator != "" {
-			// leading combinator (rare at top level)
-			sb.WriteString(p.combinator)
-			if !compressed {
-				sb.WriteString(" ")
-			}
+	i := 0
+	if s[i] == '-' {
+		i++
+		if i < len(s) && s[i] == '-' {
+			return identBodyOnly(s[i+1:])
 		}
-		sb.WriteString(p.compound)
 	}
-	return sb.String()
+	if i >= len(s) {
+		return false
+	}
+	c := s[i]
+	if c == '\\' {
+		return true
+	}
+	if !isNameStart(c) {
+		return false
+	}
+	return identBodyOnly(s[i+1:])
 }
 
-func (sl selectorList) String() string { return sl.serialize(false) }
+func identBodyOnly(s string) bool {
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c == '\\' {
+			return true
+		}
+		if !isNameChar(c) {
+			return false
+		}
+	}
+	return true
+}

@@ -3,172 +3,769 @@
 
 package scss
 
-import "strings"
+// This file ports Dart Sass's lib/src/extend/extension_store.dart: the @extend
+// engine that tracks selectors and extensions and applies the latter to the
+// former, including transitive extension, unification and trimming. The
+// selector.extend()/selector.replace() module functions reuse the same core via
+// extendOrReplace.
 
-// walkRules visits every style rule in the tree.
-func walkRules(c cssContainer, fn func(*cssStyleRule)) {
-	for _, n := range c.children() {
-		switch v := n.(type) {
-		case *cssStyleRule:
-			fn(v)
-			walkRules(v, fn)
-		case *cssAtRule:
-			walkRules(v, fn)
-		}
-	}
+type extendMode int
+
+const (
+	extendNormal extendMode = iota
+	extendReplace
+	extendAllTargets
+)
+
+// extender wraps a complex selector participating in an extension.
+type extender struct {
+	selector    *selComplex
+	specificity int
+	isOriginal  bool
+	ext         *extension // back-reference for media-context checks
 }
 
-func (e *evaluator) applyExtends() {
-	if len(e.extends) == 0 {
+func (e *extender) assertCompatibleMediaContext(mc []string) {
+	if e.ext == nil {
 		return
 	}
-	// Iterate to a fixpoint (bounded) so transitive extends resolve.
-	for iter := 0; iter < len(e.extends)+2; iter++ {
-		changed := false
-		walkRules(e.root, func(r *cssStyleRule) {
-			for ei := len(e.extends) - 1; ei >= 0; ei-- {
-				ex := e.extends[ei]
-				var additions []complexSelector
-				for _, cx := range r.selector.complexes {
-					for _, extCx := range ex.extenders.complexes {
-						if nc, ok := extendComplex(cx, ex.target, extCx); ok {
-							if !containsComplex(r.selector.complexes, nc) && !containsComplex(additions, nc) {
-								additions = append(additions, nc)
-							}
-						}
-					}
+	expected := e.ext.mediaContext
+	if expected == nil {
+		return
+	}
+	if mc != nil && strSliceEqual(expected, mc) {
+		return
+	}
+	panic(selErr("You may not @extend selectors across media queries."))
+}
+
+type extension struct {
+	extender     *extender
+	target       simpleSel
+	mediaContext []string
+	optional     bool
+}
+
+// box holds a selector list that extension may update in place.
+type box struct{ value *selList }
+
+// selectorSet tracks a simple selector and the boxes that contain it.
+type selectorSet struct {
+	simple simpleSel
+	boxes  []*box
+}
+
+// targetExtensions groups all extensions targeting a single simple selector.
+type targetExtensions struct {
+	target  simpleSel
+	sources map[string]*extension // key: complexKey(extender.selector)
+	order   []string              // deterministic iteration order
+}
+
+func (t *targetExtensions) put(key string, ext *extension) {
+	if _, ok := t.sources[key]; !ok {
+		t.order = append(t.order, key)
+	}
+	t.sources[key] = ext
+}
+
+func (t *targetExtensions) values() []*extension {
+	out := make([]*extension, 0, len(t.order))
+	for _, k := range t.order {
+		out = append(out, t.sources[k])
+	}
+	return out
+}
+
+// extensionStore is the Go port of Dart Sass's ExtensionStore.
+type extensionStore struct {
+	selectors            map[string]*selectorSet      // key: simpleKey
+	extensions           map[string]*targetExtensions // key: simpleKey(target)
+	extensionsByExtender map[string][]*extension      // key: simpleKey
+	mediaContexts        map[*box][]string
+	sourceSpecificity    map[string]int // key: simpleKey
+	originals            map[string]bool
+	mode                 extendMode
+}
+
+func newExtensionStore(mode extendMode) *extensionStore {
+	return &extensionStore{
+		selectors:            map[string]*selectorSet{},
+		extensions:           map[string]*targetExtensions{},
+		extensionsByExtender: map[string][]*extension{},
+		mediaContexts:        map[*box][]string{},
+		sourceSpecificity:    map[string]int{},
+		originals:            map[string]bool{},
+		mode:                 mode,
+	}
+}
+
+func simpleKey(s simpleSel) string    { return selSimpleString(s) }
+func complexKey(c *selComplex) string { return c.String() }
+
+func strSliceEqual(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// --- static extend / replace (selector.extend / selector.replace) ---
+
+func extendOrReplace(selector, source, targets *selList, mode extendMode) *selList {
+	store := newExtensionStore(mode)
+	if !selector.isInvisible() {
+		for _, c := range selector.components {
+			store.originals[complexKey(c)] = true
+		}
+	}
+
+	for _, complex := range targets.components {
+		compound := complex.singleCompound()
+		if compound == nil {
+			panic(selErr("Can't extend complex selector " + complex.String() + "."))
+		}
+		extensions := map[string]*targetExtensions{}
+		for _, simple := range compound.components {
+			te := &targetExtensions{target: simple, sources: map[string]*extension{}}
+			for _, sc := range source.components {
+				e := &extension{target: simple, optional: true}
+				e.extender = &extender{selector: sc, specificity: sc.specificity(), ext: e}
+				te.put(complexKey(sc), e)
+			}
+			extensions[simpleKey(simple)] = te
+		}
+		selector = store.extendList(selector, extensions, nil)
+	}
+	return selector
+}
+
+// --- incremental API used by the evaluator ---
+
+func (s *extensionStore) addSelector(selector *selList, mediaContext []string) *box {
+	if !selector.isInvisible() {
+		for _, c := range selector.components {
+			s.originals[complexKey(c)] = true
+		}
+	}
+	if len(s.extensions) != 0 {
+		selector = s.extendList(selector, s.extensions, mediaContext)
+	}
+	b := &box{value: selector}
+	if mediaContext != nil {
+		s.mediaContexts[b] = mediaContext
+	}
+	s.registerSelector(selector, b)
+	return b
+}
+
+func (s *extensionStore) registerSelector(list *selList, b *box) {
+	for _, complex := range list.components {
+		for _, component := range complex.components {
+			for _, simple := range component.selector.components {
+				k := simpleKey(simple)
+				set := s.selectors[k]
+				if set == nil {
+					set = &selectorSet{simple: simple}
+					s.selectors[k] = set
 				}
-				if len(additions) > 0 {
-					r.selector.complexes = append(r.selector.complexes, additions...)
-					changed = true
+				if !boxIn(set.boxes, b) {
+					set.boxes = append(set.boxes, b)
+				}
+				if ps, ok := simple.(*pseudoSel); ok && ps.selector != nil {
+					s.registerSelector(ps.selector, b)
 				}
 			}
-		})
-		if !changed {
-			break
 		}
 	}
 }
 
-func containsComplex(list []complexSelector, c complexSelector) bool {
-	cs := c.serialize(false)
+func boxIn(list []*box, b *box) bool {
 	for _, x := range list {
-		if x.serialize(false) == cs {
+		if x == b {
 			return true
 		}
 	}
 	return false
 }
 
-// extendComplex returns cx with target replaced by the extender ext, if present.
-func extendComplex(cx complexSelector, target string, ext complexSelector) (complexSelector, bool) {
-	for i, part := range cx.parts {
-		before, after, ok := compoundSplit(part.compound, target)
-		if !ok {
+func (s *extensionStore) addExtension(extenderList *selList, target simpleSel, optional bool, mediaContext []string) {
+	targetK := simpleKey(target)
+	set := s.selectors[targetK]
+	existingExtensions := s.extensionsByExtender[targetK]
+
+	var newExtensions map[string]*targetExtensions
+	sources := s.extensions[targetK]
+	if sources == nil {
+		sources = &targetExtensions{target: target, sources: map[string]*extension{}}
+		s.extensions[targetK] = sources
+	}
+
+	for _, complex := range extenderList.components {
+		if complex.isUseless() {
 			continue
 		}
-		var np complexSelector
-		np.parts = append(np.parts, cx.parts[:i]...)
-		for j, ep := range ext.parts {
-			comb := ep.combinator
-			comp := ep.compound
-			if j == 0 {
-				comb = part.combinator
-				comp = before + comp
+		e := &extension{target: target, mediaContext: mediaContext, optional: optional}
+		e.extender = &extender{selector: complex, specificity: complex.specificity(), ext: e}
+
+		ck := complexKey(complex)
+		if _, ok := sources.sources[ck]; ok {
+			// Extension already present; nothing new to compute for output.
+			continue
+		}
+		sources.put(ck, e)
+
+		for _, simple := range simpleSelectorsIn(complex) {
+			sk := simpleKey(simple)
+			s.extensionsByExtender[sk] = append(s.extensionsByExtender[sk], e)
+			if _, ok := s.sourceSpecificity[sk]; !ok {
+				s.sourceSpecificity[sk] = complex.specificity()
 			}
-			if j == len(ext.parts)-1 {
-				comp = comp + after
+		}
+
+		if set != nil || existingExtensions != nil {
+			if newExtensions == nil {
+				newExtensions = map[string]*targetExtensions{}
 			}
-			np.parts = append(np.parts, component{combinator: comb, compound: comp})
+			te := newExtensions[targetK]
+			if te == nil {
+				te = &targetExtensions{target: target, sources: map[string]*extension{}}
+				newExtensions[targetK] = te
+			}
+			te.put(ck, e)
 		}
-		np.parts = append(np.parts, cx.parts[i+1:]...)
-		return np, true
 	}
-	return complexSelector{}, false
+
+	if newExtensions == nil {
+		return
+	}
+
+	if existingExtensions != nil {
+		additional := s.extendExistingExtensions(existingExtensions, newExtensions)
+		// extendExistingExtensions only ever keys `additional` by targets it has
+		// already confirmed present in newExtensions, so dst is always non-nil.
+		for k, te := range additional {
+			dst := newExtensions[k]
+			for _, ck := range te.order {
+				dst.put(ck, te.sources[ck])
+			}
+		}
+	}
+
+	if set != nil {
+		s.extendExistingSelectors(set.boxes, newExtensions)
+	}
 }
 
-// compoundSplit finds target as a discrete unit in compound, returning the text
-// before and after it. ok is false when target is not present as a unit.
-func compoundSplit(compound, target string) (before, after string, ok bool) {
-	from := 0
-	for {
-		idx := strings.Index(compound[from:], target)
-		if idx < 0 {
-			return "", "", false
-		}
-		idx += from
-		end := idx + len(target)
-		nextOK := end >= len(compound) || !isNameChar(compound[end])
-		prevOK := idx == 0 || isBoundaryBefore(compound[idx-1], target[0])
-		if nextOK && prevOK {
-			return compound[:idx], compound[end:], true
-		}
-		from = idx + 1
-	}
-}
-
-func isBoundaryBefore(prev byte, targetFirst byte) bool {
-	// For class/id/placeholder targets, any preceding char is a boundary.
-	if targetFirst == '.' || targetFirst == '#' || targetFirst == '%' || targetFirst == '[' || targetFirst == ':' {
-		return true
-	}
-	// For element targets, previous char must be a combinator/space boundary.
-	return !isNameChar(prev) && prev != '.' && prev != '#' && prev != '%'
-}
-
-// prunePlaceholders removes selectors that reference placeholder classes.
-func (e *evaluator) prunePlaceholders(c cssContainer) {
-	for _, n := range c.children() {
-		switch v := n.(type) {
-		case *cssStyleRule:
-			var kept []complexSelector
-			for _, cx := range v.selector.complexes {
-				if !complexHasPlaceholder(cx) {
-					kept = append(kept, cx)
+func simpleSelectorsIn(complex *selComplex) []simpleSel {
+	var out []simpleSel
+	for _, component := range complex.components {
+		for _, simple := range component.selector.components {
+			out = append(out, simple)
+			if ps, ok := simple.(*pseudoSel); ok && ps.selector != nil {
+				for _, c := range ps.selector.components {
+					out = append(out, simpleSelectorsIn(c)...)
 				}
 			}
-			v.selector.complexes = kept
-			e.prunePlaceholders(v)
-		case *cssAtRule:
-			e.prunePlaceholders(v)
 		}
+	}
+	return out
+}
+
+func (s *extensionStore) extendExistingExtensions(extensions []*extension, newExtensions map[string]*targetExtensions) map[string]*targetExtensions {
+	var additional map[string]*targetExtensions
+	for _, ext := range append([]*extension{}, extensions...) {
+		sources := s.extensions[simpleKey(ext.target)]
+		selectors := s.extendComplex(ext.extender.selector, newExtensions, ext.mediaContext)
+		if selectors == nil {
+			continue
+		}
+		containsExtension := selectors[0].equal(ext.extender.selector)
+		if containsExtension {
+			selectors = selectors[1:]
+		}
+		for _, complex := range selectors {
+			withExtender := &extension{target: ext.target, mediaContext: ext.mediaContext, optional: ext.optional}
+			withExtender.extender = &extender{selector: complex, specificity: ext.extender.specificity, ext: withExtender}
+			ck := complexKey(complex)
+			if _, ok := sources.sources[ck]; ok {
+				continue
+			}
+			sources.put(ck, withExtender)
+			for _, component := range complex.components {
+				for _, simple := range component.selector.components {
+					sk := simpleKey(simple)
+					s.extensionsByExtender[sk] = append(s.extensionsByExtender[sk], withExtender)
+				}
+			}
+			if _, ok := newExtensions[simpleKey(ext.target)]; ok {
+				if additional == nil {
+					additional = map[string]*targetExtensions{}
+				}
+				tk := simpleKey(ext.target)
+				te := additional[tk]
+				if te == nil {
+					te = &targetExtensions{target: ext.target, sources: map[string]*extension{}}
+					additional[tk] = te
+				}
+				te.put(ck, withExtender)
+			}
+		}
+	}
+	return additional
+}
+
+func (s *extensionStore) extendExistingSelectors(boxes []*box, newExtensions map[string]*targetExtensions) {
+	for _, b := range boxes {
+		oldValue := b.value
+		b.value = s.extendList(b.value, newExtensions, s.mediaContexts[b])
+		if b.value == oldValue {
+			continue
+		}
+		s.registerSelector(b.value, b)
 	}
 }
 
-func complexHasPlaceholder(cx complexSelector) bool {
-	for _, p := range cx.parts {
-		if strings.Contains(p.compound, "%") {
+// extendList extends list using extensions.
+func (s *extensionStore) extendList(list *selList, extensions map[string]*targetExtensions, mediaQueryContext []string) *selList {
+	var extended []*selComplex
+	for i, complex := range list.components {
+		result := s.extendComplex(complex, extensions, mediaQueryContext)
+		if result == nil {
+			if extended != nil {
+				extended = append(extended, complex)
+			}
+		} else {
+			if extended == nil {
+				extended = append([]*selComplex{}, list.components[:i]...)
+			}
+			extended = append(extended, result...)
+		}
+	}
+	if extended == nil {
+		return list
+	}
+	return &selList{components: s.trim(extended, func(c *selComplex) bool { return s.originals[complexKey(c)] })}
+}
+
+func (s *extensionStore) extendComplex(complex *selComplex, extensions map[string]*targetExtensions, mediaQueryContext []string) []*selComplex {
+	if len(complex.leadingCombinators) > 1 {
+		return nil
+	}
+
+	var extendedNotExpanded [][]*selComplex
+	isOriginal := s.originals[complexKey(complex)]
+	for i, component := range complex.components {
+		extended := s.extendCompound(component, extensions, mediaQueryContext, isOriginal)
+		if extended == nil {
+			if extendedNotExpanded != nil {
+				extendedNotExpanded = append(extendedNotExpanded, []*selComplex{{
+					components: []complexComponent{component},
+					lineBreak:  complex.lineBreak,
+				}})
+			}
+		} else if extendedNotExpanded != nil {
+			extendedNotExpanded = append(extendedNotExpanded, extended)
+		} else if i != 0 {
+			extendedNotExpanded = [][]*selComplex{
+				{{leadingCombinators: complex.leadingCombinators, components: complex.components[:i], lineBreak: complex.lineBreak}},
+				extended,
+			}
+		} else if len(complex.leadingCombinators) == 0 {
+			extendedNotExpanded = [][]*selComplex{extended}
+		} else {
+			var withLeading []*selComplex
+			for _, nc := range extended {
+				if len(nc.leadingCombinators) == 0 || combSliceEqual(complex.leadingCombinators, nc.leadingCombinators) {
+					withLeading = append(withLeading, &selComplex{
+						leadingCombinators: complex.leadingCombinators,
+						components:         nc.components,
+						lineBreak:          complex.lineBreak || nc.lineBreak,
+					})
+				}
+			}
+			extendedNotExpanded = [][]*selComplex{withLeading}
+		}
+	}
+	if extendedNotExpanded == nil {
+		return nil
+	}
+
+	first := true
+	var out []*selComplex
+	for _, path := range pathsComplex(extendedNotExpanded) {
+		for _, outputComplex := range weave(path, complex.lineBreak) {
+			if first && s.originals[complexKey(complex)] {
+				s.originals[complexKey(outputComplex)] = true
+			}
+			first = false
+			out = append(out, outputComplex)
+		}
+	}
+	return out
+}
+
+func (s *extensionStore) extendCompound(component complexComponent, extensions map[string]*targetExtensions, mediaQueryContext []string, inOriginal bool) []*selComplex {
+	var targetsUsed map[string]bool
+	if !(s.mode == extendNormal || len(extensions) < 2) {
+		targetsUsed = map[string]bool{}
+	}
+
+	simples := component.selector.components
+	var options [][]*extender
+	for i, simple := range simples {
+		extended := s.extendSimple(simple, extensions, mediaQueryContext, targetsUsed)
+		if extended == nil {
+			if options != nil {
+				options = append(options, []*extender{extenderForSimple(simple, s.sourceSpecificity[simpleKey(simple)])})
+			}
+		} else {
+			if options == nil {
+				options = [][]*extender{}
+				if i != 0 {
+					options = append(options, []*extender{s.extenderForCompound(simples[:i])})
+				}
+			}
+			options = append(options, extended...)
+		}
+	}
+	if options == nil {
+		return nil
+	}
+
+	if targetsUsed != nil && len(targetsUsed) != len(extensions) {
+		return nil
+	}
+
+	if len(options) == 1 {
+		var result []*selComplex
+		for _, ext := range options[0] {
+			ext.assertCompatibleMediaContext(mediaQueryContext)
+			complex := ext.selector.withAdditionalCombinators(component.combinators, false)
+			if complex.isUseless() {
+				continue
+			}
+			result = append(result, complex)
+		}
+		return result
+	}
+
+	extenderPaths := pathsExtender(options)
+	var result []*selComplex
+	if s.mode != extendReplace {
+		first := extenderPaths[0]
+		var simplesOut []simpleSel
+		for _, ext := range first {
+			last := ext.selector.components[len(ext.selector.components)-1].selector
+			simplesOut = append(simplesOut, last.components...)
+		}
+		result = append(result, &selComplex{
+			components: []complexComponent{{
+				selector:    &compoundSel{components: simplesOut},
+				combinators: component.combinators,
+			}},
+		})
+	}
+
+	startIdx := 1
+	if s.mode == extendReplace {
+		startIdx = 0
+	}
+	for _, path := range extenderPaths[startIdx:] {
+		extended := s.unifyExtenders(path, mediaQueryContext)
+		if extended == nil {
+			continue
+		}
+		for _, complex := range extended {
+			withCombinators := complex.withAdditionalCombinators(component.combinators, false)
+			if !withCombinators.isUseless() {
+				result = append(result, withCombinators)
+			}
+		}
+	}
+
+	origKey := ""
+	if inOriginal && s.mode != extendReplace {
+		origKey = complexKey(result[0])
+	}
+	isOrig := func(c *selComplex) bool {
+		return origKey != "" && complexKey(c) == origKey
+	}
+	return s.trim(result, isOrig)
+}
+
+func (s *extensionStore) unifyExtenders(extenders []*extender, mediaQueryContext []string) []*selComplex {
+	var toUnify []*selComplex
+	var originals []simpleSel
+	originalsLineBreak := false
+	for _, ext := range extenders {
+		if ext.isOriginal {
+			last := ext.selector.components[len(ext.selector.components)-1].selector
+			originals = append(originals, last.components...)
+			originalsLineBreak = originalsLineBreak || ext.selector.lineBreak
+		} else if ext.selector.isUseless() {
+			return nil
+		} else {
+			toUnify = append(toUnify, ext.selector)
+		}
+	}
+	if originals != nil {
+		toUnify = append([]*selComplex{{
+			components: []complexComponent{{selector: &compoundSel{components: originals}}},
+			lineBreak:  originalsLineBreak,
+		}}, toUnify...)
+	}
+	complexes, ok := unifyComplex(toUnify)
+	if !ok {
+		return nil
+	}
+	for _, ext := range extenders {
+		ext.assertCompatibleMediaContext(mediaQueryContext)
+	}
+	return complexes
+}
+
+func (s *extensionStore) extendSimple(simple simpleSel, extensions map[string]*targetExtensions, mediaQueryContext []string, targetsUsed map[string]bool) [][]*extender {
+	withoutPseudo := func(simple simpleSel) []*extender {
+		te := extensions[simpleKey(simple)]
+		if te == nil {
+			return nil
+		}
+		if targetsUsed != nil {
+			targetsUsed[simpleKey(simple)] = true
+		}
+		var out []*extender
+		if s.mode != extendReplace {
+			out = append(out, extenderForSimple(simple, s.sourceSpecificity[simpleKey(simple)]))
+		}
+		for _, ext := range te.values() {
+			out = append(out, ext.extender)
+		}
+		return out
+	}
+
+	if ps, ok := simple.(*pseudoSel); ok && ps.selector != nil {
+		if extended := s.extendPseudo(ps, extensions, mediaQueryContext); extended != nil {
+			var out [][]*extender
+			for _, pseudo := range extended {
+				w := withoutPseudo(pseudo)
+				if w == nil {
+					w = []*extender{extenderForSimple(pseudo, s.sourceSpecificity[simpleKey(pseudo)])}
+				}
+				out = append(out, w)
+			}
+			return out
+		}
+	}
+
+	w := withoutPseudo(simple)
+	if w == nil {
+		return nil
+	}
+	return [][]*extender{w}
+}
+
+func (s *extensionStore) extenderForCompound(simples []simpleSel) *extender {
+	compound := &compoundSel{components: simples}
+	return &extender{
+		selector:    &selComplex{components: []complexComponent{{selector: compound}}},
+		specificity: s.sourceSpecificityFor(compound),
+		isOriginal:  true,
+	}
+}
+
+func extenderForSimple(simple simpleSel, specificity int) *extender {
+	return &extender{
+		selector:    &selComplex{components: []complexComponent{{selector: &compoundSel{components: []simpleSel{simple}}}}},
+		specificity: specificity,
+		isOriginal:  true,
+	}
+}
+
+func (s *extensionStore) extendPseudo(pseudo *pseudoSel, extensions map[string]*targetExtensions, mediaQueryContext []string) []*pseudoSel {
+	selector := pseudo.selector
+	extended := s.extendList(selector, extensions, mediaQueryContext)
+	if extended == selector {
+		return nil
+	}
+
+	var complexes []*selComplex = extended.components
+	if pseudo.normalizedName == "not" &&
+		!anyComplexMultiComponent(selector.components) &&
+		anyComplexSingleComponent(extended.components) {
+		var filtered []*selComplex
+		for _, c := range extended.components {
+			if len(c.components) <= 1 {
+				filtered = append(filtered, c)
+			}
+		}
+		complexes = filtered
+	}
+
+	var expanded []*selComplex
+	for _, complex := range complexes {
+		sc := complex.singleCompound()
+		var innerPseudo *pseudoSel
+		if sc != nil {
+			if ss := sc.singleSimple(); ss != nil {
+				if ip, ok := ss.(*pseudoSel); ok {
+					innerPseudo = ip
+				}
+			}
+		}
+		if innerPseudo == nil || innerPseudo.selector == nil {
+			expanded = append(expanded, complex)
+			continue
+		}
+		switch pseudo.normalizedName {
+		case "not":
+			if innerPseudo.normalizedName == "is" || innerPseudo.normalizedName == "matches" || innerPseudo.normalizedName == "where" {
+				expanded = append(expanded, innerPseudo.selector.components...)
+			}
+		case "is", "matches", "where", "any", "current", "nth-child", "nth-last-child":
+			if innerPseudo.name == pseudo.name && strEqualPtr(innerPseudo.argument, pseudo.argument) {
+				expanded = append(expanded, innerPseudo.selector.components...)
+			}
+		case "has", "host", "host-context", "slotted":
+			expanded = append(expanded, complex)
+		}
+	}
+	complexes = expanded
+
+	if pseudo.normalizedName == "not" && len(selector.components) == 1 {
+		var result []*pseudoSel
+		for _, complex := range complexes {
+			result = append(result, pseudo.withSelector(&selList{components: []*selComplex{complex}}))
+		}
+		if len(result) == 0 {
+			return nil
+		}
+		return result
+	}
+	return []*pseudoSel{pseudo.withSelector(&selList{components: complexes})}
+}
+
+func anyComplexMultiComponent(cs []*selComplex) bool {
+	for _, c := range cs {
+		if len(c.components) > 1 {
 			return true
 		}
 	}
 	return false
 }
 
-// normalizeMediaQuery reproduces dart-sass media-query spacing.
-func normalizeMediaQuery(q string) string {
-	q = strings.TrimSpace(q)
-	var sb strings.Builder
-	for i := 0; i < len(q); i++ {
-		c := q[i]
-		if c == ':' {
-			sb.WriteByte(':')
-			// ensure single space after colon inside feature
-			for i+1 < len(q) && q[i+1] == ' ' {
-				i++
-			}
-			if i+1 < len(q) && q[i+1] != ')' {
-				sb.WriteByte(' ')
-			}
-			continue
+func anyComplexSingleComponent(cs []*selComplex) bool {
+	for _, c := range cs {
+		if len(c.components) == 1 {
+			return true
 		}
-		if c == ' ' {
-			sb.WriteByte(' ')
-			for i+1 < len(q) && q[i+1] == ' ' {
-				i++
-			}
-			continue
-		}
-		sb.WriteByte(c)
 	}
-	return sb.String()
+	return false
+}
+
+func (s *extensionStore) trim(selectors []*selComplex, isOriginal func(*selComplex) bool) []*selComplex {
+	if len(selectors) > 100 {
+		return selectors
+	}
+	var result []*selComplex
+	numOriginals := 0
+outer:
+	for i := len(selectors) - 1; i >= 0; i-- {
+		complex1 := selectors[i]
+		if isOriginal(complex1) {
+			for j := 0; j < numOriginals; j++ {
+				if result[j].equal(complex1) {
+					rotateSliceComplex(result, 0, j+1)
+					continue outer
+				}
+			}
+			numOriginals++
+			result = append([]*selComplex{complex1}, result...)
+			continue
+		}
+
+		maxSpecificity := 0
+		for _, component := range complex1.components {
+			if sp := s.sourceSpecificityFor(component.selector); sp > maxSpecificity {
+				maxSpecificity = sp
+			}
+		}
+
+		superFound := false
+		for _, complex2 := range result {
+			if complex2.specificity() >= maxSpecificity && complex2.isSuper(complex1) {
+				superFound = true
+				break
+			}
+		}
+		if superFound {
+			continue
+		}
+		for _, complex2 := range selectors[:i] {
+			if complex2.specificity() >= maxSpecificity && complex2.isSuper(complex1) {
+				superFound = true
+				break
+			}
+		}
+		if superFound {
+			continue
+		}
+		result = append([]*selComplex{complex1}, result...)
+	}
+	return result
+}
+
+func rotateSliceComplex(list []*selComplex, start, end int) {
+	element := list[end-1]
+	for i := start; i < end; i++ {
+		next := list[i]
+		list[i] = element
+		element = next
+	}
+}
+
+func (s *extensionStore) sourceSpecificityFor(compound *compoundSel) int {
+	specificity := 0
+	for _, simple := range compound.components {
+		if sp := s.sourceSpecificity[simpleKey(simple)]; sp > specificity {
+			specificity = sp
+		}
+	}
+	return specificity
+}
+
+// pathsComplex / pathsExtender: dart's paths() over the two element types.
+func pathsComplex(choices [][]*selComplex) [][]*selComplex {
+	result := [][]*selComplex{{}}
+	for _, choice := range choices {
+		var next [][]*selComplex
+		for _, option := range choice {
+			for _, path := range result {
+				np := append(append([]*selComplex{}, path...), option)
+				next = append(next, np)
+			}
+		}
+		result = next
+	}
+	return result
+}
+
+func pathsExtender(choices [][]*extender) [][]*extender {
+	result := [][]*extender{{}}
+	for _, choice := range choices {
+		var next [][]*extender
+		for _, option := range choice {
+			for _, path := range result {
+				np := append(append([]*extender{}, path...), option)
+				next = append(next, np)
+			}
+		}
+		result = next
+	}
+	return result
 }

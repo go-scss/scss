@@ -42,10 +42,12 @@ func (r *cssRoot) appendNode(n cssNode) { r.nodes = append(r.nodes, n) }
 func (r *cssRoot) children() []cssNode  { return r.nodes }
 
 type cssStyleRule struct {
-	selector    selectorList
-	nodes       []cssNode
-	original    selectorList // pre-extend selector for @extend matching
-	blankBefore bool
+	selector     selectorList
+	nodes        []cssNode
+	original     selectorList // pre-extend selector (extender + child nesting)
+	mediaContext []string     // enclosing media-query context for @extend
+	box          *box         // extension box; selector is set from it post-extend
+	blankBefore  bool
 }
 
 func (r *cssStyleRule) cssNode()             {}
@@ -131,7 +133,7 @@ func (s *serializer) emitChildren(nodes []cssNode, depth int, top bool) {
 func isEmptyContainer(n cssNode) bool {
 	switch v := n.(type) {
 	case *cssStyleRule:
-		return len(v.selector.complexes) == 0 || !hasVisible(v.nodes)
+		return v.selector.isEmpty() || v.selector.list.isInvisible() || !hasVisible(v.nodes)
 	case *cssAtRule:
 		return v.hasBody && !hasVisible(v.nodes)
 	}

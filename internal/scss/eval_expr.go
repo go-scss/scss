@@ -25,7 +25,7 @@ func (e *evaluator) evalExpr(expr Expr) Value {
 	case *Ident:
 		return e.evalIdent(x)
 	case *Parent:
-		if len(e.currentParent.complexes) == 0 {
+		if e.currentParent.isEmpty() {
 			return sassNull
 		}
 		return &SassString{Text: e.currentParent.serialize(false)}

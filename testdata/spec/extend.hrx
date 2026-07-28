@@ -1,0 +1,222 @@
+<===> case0/input.scss
+// Regression test for sass/dart-sass#1109.
+.a .b {
+  c: d;
+}
+
+.a.mod1, .a.mod2 {
+  @extend .a, .b;
+}
+.a.mod3, .a.mod4 {
+  @extend .a, .b;
+}
+.a.mod5, .a.mod6 {
+  @extend .a, .b;
+}
+
+<===> case0/output.css
+.a .b, .a .a.mod5, .a .a.mod6, .a .a.mod3, .a .a.mod4, .a .a.mod1, .a .a.mod2 {
+  c: d;
+}
+
+<===> case1/input.scss
+a {b: c}
+> d {@extend a}
+
+<===> case1/output.css
+a, > d {
+  b: c;
+}
+
+<===> case2/input.scss
+a {b: c}
++ ~ d {@extend a}
+
+<===> case2/output.css
+a {
+  b: c;
+}
+
+<===> case3/input.scss
+a {b: c}
+d ~ > c {@extend a}
+
+<===> case3/output.css
+a {
+  b: c;
+}
+
+<===> case4/input.scss
+a {b: c}
+d > + {@extend a}
+
+<===> case4/output.css
+a {
+  b: c;
+}
+
+<===> case5/input.scss
+a {b: c}
++ {@extend a}
+
+<===> case5/output.css
+a {
+  b: c;
+}
+
+<===> case6/input.scss
+a {b: c}
+d + {@extend a}
+
+<===> case6/output.css
+a {
+  b: c;
+}
+
+<===> case7/input.scss
+a {b: c}
+d {@extend a /**/}
+
+<===> case7/output.css
+a, d {
+  b: c;
+}
+
+<===> case8/input.scss
+a {b: c}
+d {
+  @extend a //
+}
+
+<===> case8/output.css
+a, d {
+  b: c;
+}
+
+<===> case9/input.scss
+a {@extend b !optional /**/}
+
+<===> case9/output.css
+
+
+<===> case10/input.scss
+a {
+  @extend b !optional //
+}
+
+<===> case10/output.css
+
+
+<===> case11/input.scss
+a {b: c}
+d {@extend /**/ a}
+
+<===> case11/output.css
+a, d {
+  b: c;
+}
+
+<===> case12/input.scss
+a {b: c}
+d {
+  @extend //
+  a
+}
+
+<===> case12/output.css
+a, d {
+  b: c;
+}
+
+<===> case13/input.scss
+// Regression test for sass/dart-sass#1297, where the root cause was that
+// extending an existing extension accidentally ignored simple selectors in
+// selector pseudos
+:is(midstream) {@extend upstream}
+
+downstream {@extend midstream}
+
+upstream {a: b}
+
+<===> case13/output.css
+upstream, :is(midstream), :is(midstream, downstream) {
+  a: b;
+}
+
+<===> case14/input.scss
+a {b: c}
+d {@extend
+  a}
+
+<===> case14/output.css
+a, d {
+  b: c;
+}
+
+<===> case15/input.scss
+a {@extend b 
+  !optional}
+
+<===> case15/output.css
+
+
+<===> case16/input.scss
+.baz {
+  @extend %foo !optional;
+  color: green;
+}
+
+<===> case16/output.css
+.baz {
+  color: green;
+}
+
+<===> case17/input.scss
+%foo {color: blue}
+%bar {color: red}
+.baz {
+  @extend %foo;
+  color: green;
+}
+
+<===> case17/output.css
+.baz {
+  color: blue;
+}
+
+.baz {
+  color: green;
+}
+
+<===> case18/input.scss
+.baz {
+  @extend .foo !optional;
+  color: green;
+}
+
+<===> case18/output.css
+.baz {
+  color: green;
+}
+
+<===> case19/input.scss
+.foo {color: blue}
+.bar {color: red}
+.baz {
+  @extend .foo;
+  color: green;
+}
+
+<===> case19/output.css
+.foo, .baz {
+  color: blue;
+}
+
+.bar {
+  color: red;
+}
+
+.baz {
+  color: green;
+}
+
