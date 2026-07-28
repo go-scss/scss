@@ -1,0 +1,661 @@
+<===> case0/input.scss
+@use "sass:meta";
+
+a {b: meta.accepts-content(meta.get-mixin(apply, meta))}
+
+<===> case0/output.css
+a {
+  b: true;
+}
+
+<===> case1/input.scss
+@use "sass:meta";
+
+@mixin a() {@content}
+
+a {b: meta.accepts-content(meta.get-mixin("a"))}
+
+<===> case1/output.css
+a {
+  b: true;
+}
+
+<===> case2/input.scss
+@use "sass:meta";
+
+@mixin a() {
+  @if false {@content}
+}
+
+a {b: meta.accepts-content(meta.get-mixin("a"))}
+
+<===> case2/output.css
+a {
+  b: true;
+}
+
+<===> case3/input.scss
+@use "sass:meta";
+
+a {b: meta.accepts-content($mixin: meta.get-mixin(apply, meta))}
+
+<===> case3/output.css
+a {
+  b: true;
+}
+
+<===> case4/input.scss
+@use "sass:meta";
+@mixin a() {}
+
+a {b: meta.accepts-content(meta.get-mixin(load-css, meta))}
+
+<===> case4/output.css
+a {
+  b: false;
+}
+
+<===> case5/input.scss
+@use "sass:meta";
+@mixin a() {}
+
+a {b: meta.accepts-content(meta.get-mixin("a"))}
+
+<===> case5/output.css
+a {
+  b: false;
+}
+
+<===> case6/input.scss
+@use "sass:meta";
+
+@mixin a {
+  b: c;
+}
+
+a {@include meta.apply($mixin: meta.get-mixin("a"))}
+
+<===> case6/output.css
+a {
+  b: c;
+}
+
+<===> case7/input.scss
+@use "sass:meta";
+
+@mixin a($a) {b: $a}
+
+a {@include meta.apply(meta.get-mixin("a"), $a: c)}
+
+<===> case7/output.css
+a {
+  b: c;
+}
+
+<===> case8/input.scss
+@use "sass:meta";
+
+@mixin a($a) {b: $a}
+
+a {@include meta.apply(meta.get-mixin("a"), c)}
+
+<===> case8/output.css
+a {
+  b: c;
+}
+
+<===> case9/input.scss
+@use "sass:meta";
+
+@mixin a($a...) {b: $a}
+
+a {@include meta.apply(meta.get-mixin("a"), a, b, c)}
+
+<===> case9/output.css
+a {
+  b: a, b, c;
+}
+
+<===> case10/input.scss
+@use "sass:meta";
+
+@mixin a($a, $b) {b: $a, $b}
+
+$rest: (mixin: meta.get-mixin("a"), a: 1, b: 2);
+a {@include meta.apply($rest...)}
+
+<===> case10/output.css
+a {
+  b: 1, 2;
+}
+
+<===> case11/input.scss
+@use "sass:meta";
+
+@mixin a($a, $b) {b: $a, $b}
+
+$rest: meta.get-mixin("a") 1 2;
+a {@include meta.apply($rest...)}
+
+<===> case11/output.css
+a {
+  b: 1, 2;
+}
+
+<===> case12/input.scss
+@use "sass:meta";
+
+@mixin a($a, $b) {b: $a, $b}
+
+$rest: (a: 1, b: 2);
+a {@include meta.apply(meta.get-mixin("a"), $rest...)}
+
+<===> case12/output.css
+a {
+  b: 1, 2;
+}
+
+<===> case13/input.scss
+@use "sass:meta";
+
+@mixin a($a, $b) {b: $a, $b}
+
+$rest: 1 2;
+a {@include meta.apply(meta.get-mixin("a"), $rest...)}
+
+<===> case13/output.css
+a {
+  b: 1, 2;
+}
+
+<===> case14/input.scss
+@use "sass:list";
+@use "sass:meta";
+a {b: list.nth(meta.calc-args(clamp(1%, 2px, 3px)), 1)}
+
+<===> case14/output.css
+a {
+  b: 1%;
+}
+
+<===> case15/input.scss
+@use "sass:list";
+@use "sass:meta";
+a {b: list.length(meta.calc-args(clamp(1%, 2px, 3px)))}
+
+<===> case15/output.css
+a {
+  b: 3;
+}
+
+<===> case16/input.scss
+@use "sass:list";
+@use "sass:meta";
+a {b: list.nth(meta.calc-args(clamp(1%, 2px, 3px)), 2)}
+
+<===> case16/output.css
+a {
+  b: 2px;
+}
+
+<===> case17/input.scss
+@use "sass:list";
+@use "sass:meta";
+a {b: list.nth(meta.calc-args(clamp(1%, 2px, 3px)), 3)}
+
+<===> case17/output.css
+a {
+  b: 3px;
+}
+
+<===> case18/input.scss
+@use "sass:meta";
+a {b: meta.calc-args($calc: calc(var(--c)))}
+
+<===> case18/output.css
+a {
+  b: var(--c);
+}
+
+<===> case19/input.scss
+@use "sass:list";
+@use "sass:meta";
+a {b: list.nth(meta.calc-args(calc(var(--c))), 1)}
+
+<===> case19/output.css
+a {
+  b: var(--c);
+}
+
+<===> case20/input.scss
+@use "sass:list";
+@use "sass:meta";
+a {b: list.length(meta.calc-args(calc(var(--c))))}
+
+<===> case20/output.css
+a {
+  b: 1;
+}
+
+<===> case21/input.scss
+@use "sass:list";
+@use "sass:meta";
+a {b: meta.type-of(list.nth(meta.calc-args(min(max(1%, 1px), 2px)), 1))}
+
+<===> case21/output.css
+a {
+  b: calculation;
+}
+
+<===> case22/input.scss
+@use "sass:list";
+@use "sass:meta";
+a {b: meta.type-of(list.nth(meta.calc-args(calc(var(--c))), 1))}
+
+<===> case22/output.css
+a {
+  b: string;
+}
+
+<===> case23/input.scss
+@use "sass:list";
+@use "sass:meta";
+a {b: meta.type-of(list.nth(meta.calc-args(calc(#{1px})), 1))}
+
+<===> case23/output.css
+a {
+  b: string;
+}
+
+<===> case24/input.scss
+@use "sass:list";
+@use "sass:meta";
+a {b: meta.type-of(list.nth(meta.calc-args(calc(1% + 1px)), 1))}
+
+<===> case24/output.css
+a {
+  b: string;
+}
+
+<===> case25/input.scss
+@use "sass:list";
+@use "sass:meta";
+a {b: meta.type-of(list.nth(meta.calc-args(min(1%, 2px)), 1))}
+
+<===> case25/output.css
+a {
+  b: number;
+}
+
+<===> case26/input.scss
+@use "sass:list";
+@use "sass:meta";
+$a: b;
+c {d: meta.type-of(list.nth(meta.calc-args(calc($a)), 1))}
+
+<===> case26/output.css
+c {
+  d: string;
+}
+
+<===> case27/input.scss
+@use "sass:meta";
+a {b: meta.calc-name(calc(var(--c)))}
+
+<===> case27/output.css
+a {
+  b: "calc";
+}
+
+<===> case28/input.scss
+@use "sass:meta";
+a {b: meta.calc-name(clamp(1%, 2px, 3px))}
+
+<===> case28/output.css
+a {
+  b: "clamp";
+}
+
+<===> case29/input.scss
+@use "sass:meta";
+a {b: meta.calc-name(max(var(--c)))}
+
+<===> case29/output.css
+a {
+  b: "max";
+}
+
+<===> case30/input.scss
+@use "sass:meta";
+a {b: meta.calc-name(min(var(--c)))}
+
+<===> case30/output.css
+a {
+  b: "min";
+}
+
+<===> case31/input.scss
+@use "sass:meta";
+a {b: meta.calc-name($calc: calc(var(--c)))}
+
+<===> case31/output.css
+a {
+  b: "calc";
+}
+
+<===> case32/input.scss
+@use "sass:meta";
+a {b: meta.call(meta.get-function("rgb"), $blue: 1, $green: 2, $red: 3)}
+
+<===> case32/output.css
+a {
+  b: rgb(3, 2, 1);
+}
+
+<===> case33/input.scss
+@use "sass:meta";
+@function a() {@return b}
+c {d: meta.call(meta.get-function("a"))}
+
+<===> case33/output.css
+c {
+  d: b;
+}
+
+<===> case34/input.scss
+@use "sass:meta";
+a {b: meta.call(meta.get-function("rgb"), 1, 2, 3)}
+
+<===> case34/output.css
+a {
+  b: rgb(1, 2, 3);
+}
+
+<===> case35/input.scss
+@use "sass:meta";
+$positional: 1 2;
+$named: ("blue": 3);
+a {b: meta.call(meta.get-function("rgb"), $positional..., $named...)}
+
+<===> case35/output.css
+a {
+  b: rgb(1, 2, 3);
+}
+
+<===> case36/input.scss
+@use "sass:meta";
+$args: ("green": 1, "blue": 2, "red": 3);
+a {b: meta.call(meta.get-function("rgb"), $args...)}
+
+<===> case36/output.css
+a {
+  b: rgb(3, 1, 2);
+}
+
+<===> case37/input.scss
+@use "sass:meta";
+$args: 1, 2, 3;
+a {b: meta.call(meta.get-function("rgb"), $args...)}
+
+<===> case37/output.css
+a {
+  b: rgb(1, 2, 3);
+}
+
+<===> case38/input.scss
+@use "sass:meta";
+a {b: meta.call($function: meta.get-function("rgb"), $red: 1, $green: 2, $blue: 3)}
+
+<===> case38/output.css
+a {
+  b: rgb(1, 2, 3);
+}
+
+<===> case39/input.scss
+@use "sass:meta";
+a {b: meta.call("rgb", 1, 2, 3)}
+
+<===> case39/output.css
+a {
+  b: rgb(1, 2, 3);
+}
+
+<===> case40/input.scss
+@use "sass:meta";
+@function a($arg) {@return $arg + 1}
+a {b: meta.call("a", 1)}
+
+<===> case40/output.css
+a {
+  b: 2;
+}
+
+<===> case41/input.scss
+@use "sass:meta";
+// Regression test for sass/libsass#2842
+@mixin test-content-exists() {
+  @if meta.content-exists() {
+    @content;
+  }
+  @else {
+    content-exists: false;
+  }
+}
+
+a {
+  @include test-content-exists();
+}
+
+<===> case41/output.css
+a {
+  content-exists: false;
+}
+
+<===> case42/input.scss
+@use "sass:meta";
+// Regression test for sass/libsass#2842
+@mixin test-content-exists() {
+  @if meta.content-exists() {
+    @content;
+  }
+  @else {
+    content-exists: false;
+  }
+}
+
+a {
+  @include test-content-exists() {
+    content: present;
+  }
+}
+
+<===> case42/output.css
+a {
+  content: present;
+}
+
+<===> case43/input.scss
+@use "sass:meta";
+@mixin call-content {
+  @content;
+}
+
+@mixin print-content-exists {
+  a {b: meta.content-exists()}
+}
+
+@include call-content {
+  @include print-content-exists;
+}
+
+<===> case43/output.css
+a {
+  b: false;
+}
+
+<===> case44/input.scss
+@use "sass:meta";
+@mixin a {
+  b {c: meta.content-exists()}
+}
+@include a;
+
+<===> case44/output.css
+b {
+  c: false;
+}
+
+<===> case45/input.scss
+@use "sass:meta";
+@mixin a {
+  b {c: meta.content-exists()}
+  @content;
+}
+@include a {
+  d {e: f}
+}
+
+<===> case45/output.css
+b {
+  c: true;
+}
+
+d {
+  e: f;
+}
+
+<===> case46/input.scss
+@use "sass:meta";
+a {b: meta.feature-exists(at-error)}
+
+<===> case46/output.css
+a {
+  b: true;
+}
+
+<===> case47/input.scss
+@use "sass:meta";
+a {b: meta.feature-exists(custom-property)}
+
+<===> case47/output.css
+a {
+  b: true;
+}
+
+<===> case48/input.scss
+@use "sass:meta";
+a {b: meta.feature-exists(at_error)}
+
+<===> case48/output.css
+a {
+  b: false;
+}
+
+<===> case49/input.scss
+@use "sass:meta";
+a {b: meta.feature-exists(extend-selector-pseudoclass)}
+
+<===> case49/output.css
+a {
+  b: true;
+}
+
+<===> case50/input.scss
+@use "sass:meta";
+a {b: meta.feature-exists($feature: at-error)}
+
+<===> case50/output.css
+a {
+  b: true;
+}
+
+<===> case51/input.scss
+@use "sass:meta";
+a {b: meta.feature-exists("at-error")}
+
+<===> case51/output.css
+a {
+  b: true;
+}
+
+<===> case52/input.scss
+@use "sass:meta";
+a {b: meta.feature-exists(units-level-3)}
+
+<===> case52/output.css
+a {
+  b: true;
+}
+
+<===> case53/input.scss
+@use "sass:meta";
+a {b: meta.feature-exists(unknown)}
+
+<===> case53/output.css
+a {
+  b: false;
+}
+
+<===> case54/input.scss
+@use "sass:meta";
+@use "sass:color" as a;
+b {c: meta.function-exists("red", "a")}
+
+<===> case54/output.css
+b {
+  c: true;
+}
+
+<===> case55/input.scss
+@use "sass:meta";
+@use "sass:color";
+a {b: meta.function-exists("red", "color")}
+
+<===> case55/output.css
+a {
+  b: true;
+}
+
+<===> case56/input.scss
+@use "sass:meta";
+@use "sass:color";
+a {b: meta.function-exists("c", "color")}
+
+<===> case56/output.css
+a {
+  b: false;
+}
+
+<===> case57/input.scss
+@use "sass:meta";
+@use "sass:color";
+
+a {b: meta.function-exists($name: "red", $module: "color")}
+
+<===> case57/output.css
+a {
+  b: true;
+}
+
+<===> case58/input.scss
+@use "sass:meta";
+@function a_b() {@return null}
+
+c {d: meta.function-exists(a-b)}
+
+<===> case58/output.css
+c {
+  d: true;
+}
+
+<===> case59/input.scss
+@use "sass:meta";
+@function a-b() {@return null}
+
+c {d: meta.function-exists(a_b)}
+
+<===> case59/output.css
+c {
+  d: true;
+}
+

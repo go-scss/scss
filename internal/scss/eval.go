@@ -306,31 +306,24 @@ func (e *evaluator) evalRuleBody(stmts []Stmt, fr *frame) {
 // --- includes / mixins ---
 
 func (e *evaluator) evalInclude(n *Include, fr *frame) {
+	// The sass:meta module exposes two mixins as @include-only forms.
+	if n.Namespace != "" && e.isMetaNamespace(n.Namespace) {
+		switch normIdent(n.Name) {
+		case "apply":
+			e.evalMetaApply(n, fr)
+			return
+		case "load-css":
+			e.evalMetaLoadCss(n, fr)
+			return
+		}
+	}
 	m := e.lookupMixin(n.Namespace, n.Name)
 	if m == nil {
 		e.fail("Undefined mixin.")
 	}
-	e.enter()
-	defer e.leave()
 	callEnv := e.env
-	defEnv := m.env
-	saved := e.env
-	e.env = defEnv
-	e.env.pushScope()
-	e.bindArgs(m.def.Params, n.Args, callEnv)
-	savedContent := e.env.content
-	savedContentEnv := e.env.contentEnv
-	e.env.content = n.Content
-	e.env.contentEnv = callEnv
-	func() {
-		defer func() {
-			e.env.content = savedContent
-			e.env.contentEnv = savedContentEnv
-			e.env.popScope()
-			e.env = saved
-		}()
-		e.evalBody(m.def.Body, fr, fr.atContainer)
-	}()
+	pos, named := e.evalArgs(n.Args)
+	e.invokeMixin(m, pos, named, n.Content, callEnv, fr)
 }
 
 func (e *evaluator) evalContent(n *ContentStmt, fr *frame) {

@@ -271,6 +271,11 @@ func rgbLike(ci *callInfo, space ColorSpace, names [3]string) Value {
 			a := alphaFromValue(e, ci.positional[1])
 			return c.toSpace(spaceRGB, true).changeAlpha(a)
 		}
+		// A special CSS value ($color or $alpha) makes the call unresolvable, so
+		// it is emitted as a plain-CSS function verbatim.
+		if anySpecialValue(ci.positional[0], ci.positional[1]) {
+			return &SassString{Text: functionString(ci.fn, ci.positional), Quoted: false}
+		}
 	}
 	// Single $channels argument.
 	if len(ci.positional) == 1 && len(ci.named) == 0 {
