@@ -772,6 +772,9 @@ var metaFns = map[string]builtinFunc{
 		return boolean(ci.e.env.content != nil)
 	},
 	"calc-args": fnCalcArgs,
+	// First-class function/mixin and reflection built-ins are registered in an
+	// init() (see meta.go) to avoid an initialisation cycle: they reference
+	// moduleRegistry, which references this map.
 }
 
 // fnCalcArgs implements meta.calc-args: the arguments of a calculation as a
@@ -821,6 +824,10 @@ func typeName(v Value) string {
 		return "list"
 	case *SassCalculation:
 		return "calculation"
+	case *SassFunction:
+		return "function"
+	case *SassMixin:
+		return "mixin"
 	}
 	return "unknown"
 }
@@ -863,6 +870,10 @@ func inspect(v Value) string {
 		return "(" + strings.Join(parts, ", ") + ")"
 	case *Null:
 		return "null"
+	case *SassFunction:
+		return "get-function(" + serializeQuoted(x.name) + ")"
+	case *SassMixin:
+		return "get-mixin(" + serializeQuoted(x.name) + ")"
 	}
 	return serializeValue(v, false)
 }

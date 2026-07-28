@@ -57,10 +57,66 @@ func (e *evaluator) evalForward(n *Forward) {
 	if strings.HasPrefix(n.URL, "sass:") {
 		return
 	}
-	mod := e.loadModule(n.URL, n.Config)
+	mod := filterForwarded(e.loadModule(n.URL, n.Config), n, n.Prefix)
 	e.mergeModuleGlobally(mod, n.Prefix)
 	// track for downstream @use of THIS stylesheet
 	e.forwarded = append(e.forwarded, forwardedMod{mod: mod, prefix: n.Prefix})
+}
+
+// filterForwarded applies a @forward's show/hide clauses, returning a module
+// exposing only the permitted members (an unfiltered forward returns mod as-is).
+// Variables are named with a leading "$" in show/hide lists; functions and
+// mixins share their bare name.
+func filterForwarded(mod *module, n *Forward, prefix string) *module {
+	if !n.HasShow && !n.HasHide {
+		return mod
+	}
+	names := map[string]bool{}
+	vars := map[string]bool{}
+	for _, m := range n.Show {
+		if strings.HasPrefix(m, "$") {
+			vars[normIdent(m[1:])] = true
+		} else {
+			names[normIdent(m)] = true
+		}
+	}
+	for _, m := range n.Hide {
+		if strings.HasPrefix(m, "$") {
+			vars[normIdent(m[1:])] = true
+		} else {
+			names[normIdent(m)] = true
+		}
+	}
+	// show/hide match the members' *forwarded* (prefixed) names.
+	nameAllowed := func(k string) bool {
+		if n.HasShow {
+			return names[normIdent(prefix+k)]
+		}
+		return !names[normIdent(prefix+k)]
+	}
+	varAllowed := func(k string) bool {
+		if n.HasShow {
+			return vars[normIdent(prefix+k)]
+		}
+		return !vars[normIdent(prefix+k)]
+	}
+	out := &module{vars: map[string]Value{}, mixins: map[string]*mixinEntry{}, funcs: map[string]*funcEntry{}, env: mod.env}
+	for k, v := range mod.vars {
+		if varAllowed(k) {
+			out.vars[k] = v
+		}
+	}
+	for k, v := range mod.mixins {
+		if nameAllowed(k) {
+			out.mixins[k] = v
+		}
+	}
+	for k, v := range mod.funcs {
+		if nameAllowed(k) {
+			out.funcs[k] = v
+		}
+	}
+	return out
 }
 
 func (e *evaluator) mergeModuleGlobally(mod *module, prefix string) {

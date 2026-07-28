@@ -35,6 +35,40 @@ func (ci *callInfo) num(i int, name string) *Number {
 	return ci.e.asNumber(ci.require(i, name))
 }
 
+func (e *evaluator) asString(v Value) *SassString {
+	if s, ok := v.(*SassString); ok {
+		return s
+	}
+	return &SassString{Text: serializeValue(v, false)}
+}
+
+// callUserResolved calls a user-defined function with pre-resolved arguments.
+func (e *evaluator) callUserResolved(fn *funcEntry, pos []Value, named map[string]Value) (result Value) {
+	e.enter()
+	defer e.leave()
+	saved := e.env
+	e.env = fn.env
+	e.env.pushScope()
+	e.bindResolved(fn.def.Params, pos, named)
+	defer func() {
+		e.env.popScope()
+		e.env = saved
+		if r := recover(); r != nil {
+			if rs, ok := r.(returnSignal); ok {
+				result = rs.value
+				return
+			}
+			panic(r)
+		}
+	}()
+	dummy := &frame{container: e.root, rootContainer: e.root, mediaParent: e.root, group: &groupInfo{}}
+	for _, s := range fn.def.Body {
+		e.evalStmt(s, dummy)
+	}
+	e.fail("Function %s did not return a value.", fn.def.Name)
+	return sassNull
+}
+
 func (e *evaluator) asNumber(v Value) *Number {
 	n, ok := v.(*Number)
 	if !ok {

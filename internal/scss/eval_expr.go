@@ -37,6 +37,8 @@ func (e *evaluator) evalExpr(expr Expr) Value {
 		return e.evalCall(x)
 	case *IfCssExpr:
 		return e.evalIfCss(x)
+	case *preEvaluated:
+		return x.v
 	case *ListExpr:
 		return e.evalList(x)
 	case *MapExpr:
