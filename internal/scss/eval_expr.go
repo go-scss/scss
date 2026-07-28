@@ -159,7 +159,12 @@ func (e *evaluator) evalUnary(x *Unary) Value {
 	}
 	v := e.evalExpr(x.Expr)
 	if x.Op == "+" {
-		return v
+		// Unary plus is a no-op on a number, but on any other value dart-sass
+		// keeps the sign as literal text: `+foo(12px)` stays `+foo(12px)`.
+		if _, ok := v.(*Number); ok {
+			return v
+		}
+		return &SassString{Text: "+" + serializeValue(v, false), Quoted: false}
 	}
 	// unary minus
 	if n, ok := v.(*Number); ok {
@@ -257,9 +262,15 @@ func (e *evaluator) arith(op string, l, r Value) Value {
 }
 
 func (e *evaluator) stringOp(l, r Value, sep string) Value {
+	// The result's quotedness follows the left operand when it is a string; when
+	// the left operand is not a string (e.g. a number), it follows the right
+	// operand instead. So `3 + "hello"` yields the quoted `"3hello"`, matching
+	// dart-sass.
 	quoted := false
-	if s, ok := l.(*SassString); ok && s.Quoted {
-		quoted = true
+	if s, ok := l.(*SassString); ok {
+		quoted = s.Quoted
+	} else if s, ok := r.(*SassString); ok {
+		quoted = s.Quoted
 	}
 	ls := unquotedInner(l)
 	rs := unquotedInner(r)

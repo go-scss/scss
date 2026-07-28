@@ -73,7 +73,7 @@ func (p *parser) tryUrlContents() (Expr, bool) {
 			p.pos = save
 			return nil, false
 		case c == '\\':
-			sb.WriteString(p.scanEscape())
+			sb.WriteString(p.scanEscape(false))
 		case c == '#' && p.peekAt(1) == '{':
 			flush()
 			p.pos += 2

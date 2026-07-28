@@ -105,11 +105,12 @@ func TestSupportsConditionErrors(t *testing.T) {
 	}
 }
 
-// TestSupportsConditionEscape documents that go-scss preserves CSS escapes
-// verbatim in raw condition text (a serialization concern independent of the
-// @supports grammar). It also covers the escape branches of interpolatedIdentifier
-// and lookingAtInterpolatedIdentifier.
+// TestSupportsConditionEscape documents that go-scss canonicalises CSS escapes
+// in raw condition text the way dart-sass does: a hex escape denoting a valid
+// name character is rendered as that bare character (`\61` -> `a`, `\62` -> `b`).
+// It also covers the escape branches of interpolatedIdentifier and
+// lookingAtInterpolatedIdentifier.
 func TestSupportsConditionEscape(t *testing.T) {
-	expectEq(t, `@supports \61(b) {x{y:z}}`, "@supports \\61(b) {\n  x {\n    y: z;\n  }\n}\n")
-	expectEq(t, `@supports a(\62) {x{y:z}}`, "@supports a(\\62) {\n  x {\n    y: z;\n  }\n}\n")
+	expectEq(t, `@supports \61(b) {x{y:z}}`, "@supports a(b) {\n  x {\n    y: z;\n  }\n}\n")
+	expectEq(t, `@supports a(\62) {x{y:z}}`, "@supports a(b) {\n  x {\n    y: z;\n  }\n}\n")
 }

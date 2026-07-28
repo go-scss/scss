@@ -276,7 +276,7 @@ func (p *parser) interpolatedIdentifier() *Interp {
 			p.next()
 			parts = append(parts, &InterpExpr{Expr: e})
 		case c == '\\':
-			sb.WriteString(p.scanEscape())
+			sb.WriteString(p.scanEscape(sb.Len() == 0 && len(parts) == 0))
 		case isNameChar(c):
 			sb.WriteByte(p.next())
 		default:
@@ -309,7 +309,7 @@ func (p *parser) interpolatedDeclarationValue(allowEmpty, allowSemicolon, allowC
 		c := p.peek()
 		switch {
 		case c == '\\':
-			sb.WriteString(p.scanEscape())
+			sb.WriteString(p.scanEscape(false))
 			wroteNewline = false
 		case c == '"' || c == '\'':
 			sb.WriteString(p.scanQuotedRaw())

@@ -346,7 +346,7 @@ func (p *parser) interpolatedIdent() []any {
 		}
 		c := p.peek()
 		if c == '\\' {
-			sb.WriteString(p.scanEscape())
+			sb.WriteString(p.scanEscape(sb.Len() == 0 && len(parts) == 0))
 			continue
 		}
 		if isNameChar(c) {
