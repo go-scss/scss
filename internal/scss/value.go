@@ -5,6 +5,7 @@ package scss
 
 import (
 	"math"
+	"math/big"
 	"strconv"
 	"strings"
 )
@@ -290,6 +291,30 @@ func roundDecimalString(text string) string {
 	return res
 }
 
+// bigTenPow10 is 10^SassNumber.precision, the fixed-point scale dart-sass rounds
+// numbers to (10 fractional digits).
+var bigTenPow10 = new(big.Int).Exp(big.NewInt(10), big.NewInt(10), nil)
+
+// exactIntegerString renders the exact integer value of a whole-valued finite
+// float64. dart-sass serializes whole doubles via Dart's double.toString(),
+// which for integers prints their exact value rather than the shortest round-
+// trippable decimal — so 76837657717023024.0 prints as "76837657717023024",
+// not Go strconv's shorter "76837657717023020". Non-integer doubles keep the
+// shortest-decimal path, matching Dart's toString for fractional numbers (e.g.
+// 2120983611678430.75 prints as "2120983611678430.8").
+func exactIntegerString(f float64) string {
+	r := new(big.Rat).SetFloat64(f) // exact; f is a finite whole number here
+	neg := r.Sign() < 0
+	if neg {
+		r.Abs(r)
+	}
+	res := new(big.Int).Quo(r.Num(), r.Denom()).String()
+	if neg && res != "0" {
+		res = "-" + res
+	}
+	return res
+}
+
 // formatFloat renders a float the way dart-sass does: up to 10 fractional
 // digits, trailing zeros stripped, "-0" normalised to "0", and (when
 // compressed) a leading zero dropped for magnitudes below 1.
@@ -303,9 +328,20 @@ func formatFloat(f float64, compressed bool) string {
 		}
 		return "-Infinity"
 	}
-	// dart-sass serializes the shortest round-trippable decimal, then rounds to
-	// at most SassNumber.precision (10) fractional digits.
-	s := roundDecimalString(strconv.FormatFloat(f, 'f', -1, 64))
+	// dart-sass serializes via Dart's double.toString(). For a whole-valued
+	// double whose magnitude is below 1e21, Dart prints its exact integer value
+	// (76837657717023024, not Go strconv's shorter 76837657717023020). At 1e21
+	// and above, Dart switches to exponential notation with the shortest
+	// mantissa, which dart-sass's _removeExponent expands to the shortest decimal
+	// with trailing zeros — matching Go strconv's fixed shortest form. Fractional
+	// doubles print the shortest round-trippable decimal rounded to at most
+	// SassNumber.precision (10) fractional digits.
+	var s string
+	if f == math.Trunc(f) && math.Abs(f) < 1e21 {
+		s = exactIntegerString(f)
+	} else {
+		s = roundDecimalString(strconv.FormatFloat(f, 'f', -1, 64))
+	}
 	if s == "-0" || s == "" {
 		s = "0"
 	}
