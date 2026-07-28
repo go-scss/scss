@@ -1,0 +1,416 @@
+<===> case0/input.scss
+// Regression test for sass/sass#3384. In Dart Sass, this caused a bug because
+// we were asking "has this media query been merged?" to determine whether to
+// bubble it up through parent queries, disregarding whether it had been merged
+// with *that particular query*.
+@media not a {
+  @media (b) {
+    @media (c) {
+      d {e: f}
+    }
+  }
+}
+
+<===> case0/output.css
+@media not a {
+  @media (b) and (c) {
+    d {
+      e: f;
+    }
+  }
+}
+
+<===> case1/input.scss
+@media screen /**/ {}
+
+<===> case1/output.css
+
+
+<===> case2/input.scss
+@media screen //
+  {}
+
+<===> case2/output.css
+
+
+<===> case3/input.scss
+@media /**/ screen {}
+
+<===> case3/output.css
+
+
+<===> case4/input.scss
+@media //
+  screen {}
+
+<===> case4/output.css
+
+
+<===> case5/input.scss
+@media a {
+  b, a {
+    c, d { e: f }
+  }
+}
+
+<===> case5/output.css
+@media a {
+  b c, b d, a c, a d {
+    e: f;
+  }
+}
+
+<===> case6/input.scss
+@media (a) and/**/(b) {x {y: z}}
+
+<===> case6/output.css
+@media (a) and (b) {
+  x {
+    y: z;
+  }
+}
+
+<===> case7/input.scss
+@media (a) and #{"(b) and (c)"} {x {y: z}}
+
+<===> case7/output.css
+@media (a) and (b) and (c) {
+  x {
+    y: z;
+  }
+}
+
+<===> case8/input.scss
+@media (a) AnD (b) {x {y: z}}
+
+<===> case8/output.css
+@media (a) and (b) {
+  x {
+    y: z;
+  }
+}
+
+<===> case9/input.scss
+@media (a) and (b) and (c) and (d) {x {y: z}}
+
+<===> case9/output.css
+@media (a) and (b) and (c) and (d) {
+  x {
+    y: z;
+  }
+}
+
+<===> case10/input.scss
+@media (a)and (b) {x {y: z}}
+
+<===> case10/output.css
+@media (a) and (b) {
+  x {
+    y: z;
+  }
+}
+
+<===> case11/input.scss
+@media (a) and (b) {x {y: z}}
+
+<===> case11/output.css
+@media (a) and (b) {
+  x {
+    y: z;
+  }
+}
+
+<===> case12/input.scss
+@media #{a} and not (b) {x {y: z}}
+
+<===> case12/output.css
+@media a and not (b) {
+  x {
+    y: z;
+  }
+}
+
+<===> case13/input.scss
+@media a and not (b) {x {y: z}}
+
+<===> case13/output.css
+@media a and not (b) {
+  x {
+    y: z;
+  }
+}
+
+<===> case14/input.scss
+@media only a and not (b) {x {y: z}}
+
+<===> case14/output.css
+@media only a and not (b) {
+  x {
+    y: z;
+  }
+}
+
+<===> case15/input.scss
+@media a and not/**/(b) {x {y: z}}
+
+<===> case15/output.css
+@media a and not (b) {
+  x {
+    y: z;
+  }
+}
+
+<===> case16/input.scss
+@media only a and not/**/(b) {x {y: z}}
+
+<===> case16/output.css
+@media only a and not (b) {
+  x {
+    y: z;
+  }
+}
+
+<===> case17/input.scss
+@media a and not #{"(b)"} {x {y: z}}
+
+<===> case17/output.css
+@media a and not (b) {
+  x {
+    y: z;
+  }
+}
+
+<===> case18/input.scss
+@media a AnD nOt (b) {x {y: z}}
+
+<===> case18/output.css
+@media a and not (b) {
+  x {
+    y: z;
+  }
+}
+
+<===> case19/input.scss
+@media (#{"(a) and (b)"}) {x {y: z}}
+
+<===> case19/output.css
+@media ((a) and (b)) {
+  x {
+    y: z;
+  }
+}
+
+<===> case20/input.scss
+@media (#{"not (a)"}) {x {y: z}}
+
+<===> case20/output.css
+@media not (a) {
+  x {
+    y: z;
+  }
+}
+
+<===> case21/input.scss
+@media (#{"(a) or (b)"}) {x {y: z}}
+
+<===> case21/output.css
+@media ((a) or (b)) {
+  x {
+    y: z;
+  }
+}
+
+<===> case22/input.scss
+@media ((a) and (b)) {x {y: z}}
+
+<===> case22/output.css
+@media ((a) and (b)) {
+  x {
+    y: z;
+  }
+}
+
+<===> case23/input.scss
+@media ((a) AnD (b)) {x {y: z}}
+
+<===> case23/output.css
+@media ((a) and (b)) {
+  x {
+    y: z;
+  }
+}
+
+<===> case24/input.scss
+@media (a) and ((b) or (c)) {x {y: z}}
+
+<===> case24/output.css
+@media (a) and ((b) or (c)) {
+  x {
+    y: z;
+  }
+}
+
+<===> case25/input.scss
+@media (not (a)) {x {y: z}}
+
+<===> case25/output.css
+@media not (a) {
+  x {
+    y: z;
+  }
+}
+
+<===> case26/input.scss
+@media (NoT (a)) {x {y: z}}
+
+<===> case26/output.css
+@media not (a) {
+  x {
+    y: z;
+  }
+}
+
+<===> case27/input.scss
+@media ((a) or (b)) {x {y: z}}
+
+<===> case27/output.css
+@media ((a) or (b)) {
+  x {
+    y: z;
+  }
+}
+
+<===> case28/input.scss
+@media ((a) Or (b)) {x {y: z}}
+
+<===> case28/output.css
+@media ((a) or (b)) {
+  x {
+    y: z;
+  }
+}
+
+<===> case29/input.scss
+@media not/**/(a) {x {y: z}}
+
+<===> case29/output.css
+@media not (a) {
+  x {
+    y: z;
+  }
+}
+
+<===> case30/input.scss
+@media not #{"(a)"} {x {y: z}}
+
+<===> case30/output.css
+@media not (a) {
+  x {
+    y: z;
+  }
+}
+
+<===> case31/input.scss
+@media NoT (a) {x {y: z}}
+
+<===> case31/output.css
+@media not (a) {
+  x {
+    y: z;
+  }
+}
+
+<===> case32/input.scss
+@media not (a) {x {y: z}}
+
+<===> case32/output.css
+@media not (a) {
+  x {
+    y: z;
+  }
+}
+
+<===> case33/input.scss
+@media (a) or/**/(b) {x {y: z}}
+
+<===> case33/output.css
+@media (a) or (b) {
+  x {
+    y: z;
+  }
+}
+
+<===> case34/input.scss
+@media (a) or #{"(b) or (c)"} {x {y: z}}
+
+<===> case34/output.css
+@media (a) or (b) or (c) {
+  x {
+    y: z;
+  }
+}
+
+<===> case35/input.scss
+@media (a) oR (b) {x {y: z}}
+
+<===> case35/output.css
+@media (a) or (b) {
+  x {
+    y: z;
+  }
+}
+
+<===> case36/input.scss
+@media (a) or (b) or (c) or (d) {x {y: z}}
+
+<===> case36/output.css
+@media (a) or (b) or (c) or (d) {
+  x {
+    y: z;
+  }
+}
+
+<===> case37/input.scss
+@media (a)or (b) {x {y: z}}
+
+<===> case37/output.css
+@media (a) or (b) {
+  x {
+    y: z;
+  }
+}
+
+<===> case38/input.scss
+@media (a) or (b) {x {y: z}}
+
+<===> case38/output.css
+@media (a) or (b) {
+  x {
+    y: z;
+  }
+}
+
+<===> case39/input.scss
+@media not a {x {y: z}}
+
+<===> case39/output.css
+@media not a {
+  x {
+    y: z;
+  }
+}
+
+<===> case40/input.scss
+@media screen 
+  {}
+
+<===> case40/output.css
+
+
+<===> case41/input.scss
+@media 
+  screen {}
+
+<===> case41/output.css
+
+

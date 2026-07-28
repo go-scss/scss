@@ -170,177 +170,105 @@ b {
 }
 
 <===> case24/input.scss
-a {b: c}
-d {@extend a /**/}
+@for $i from /**/ 1 through 10 {}
 
 <===> case24/output.css
-a, d {
-  b: c;
-}
+
 
 <===> case25/input.scss
-a {b: c}
-d {
-  @extend a //
-}
+@for $i from //
+  1 through 10 {}
 
 <===> case25/output.css
-a, d {
-  b: c;
-}
+
 
 <===> case26/input.scss
-a {@extend b !optional /**/}
+@for $i from 1 through /**/ 10 {}
 
 <===> case26/output.css
 
 
 <===> case27/input.scss
-a {
-  @extend b !optional //
-}
+@for $i from 1 through //
+  10 {}
 
 <===> case27/output.css
 
 
 <===> case28/input.scss
-a {b: c}
-d {@extend /**/ a}
+@for $i from 1 through 10 /**/ {}
 
 <===> case28/output.css
-a, d {
-  b: c;
-}
+
 
 <===> case29/input.scss
-a {b: c}
-d {
-  @extend //
-  a
-}
+@for $i from 1 through 10 //
+  {}
 
 <===> case29/output.css
-a, d {
-  b: c;
-}
+
 
 <===> case30/input.scss
-a {b: c}
-d {@extend
-  a}
+@for $i /**/ from 1 through 10 {}
 
 <===> case30/output.css
-a, d {
-  b: c;
-}
+
 
 <===> case31/input.scss
-a {@extend b 
-  !optional}
+@for $i //
+  from 1 through 10 {}
 
 <===> case31/output.css
 
 
 <===> case32/input.scss
-@for $i from /**/ 1 through 10 {}
+@for $i from 1 /**/ through 10 {}
 
 <===> case32/output.css
 
 
 <===> case33/input.scss
-@for $i from //
-  1 through 10 {}
+@for $i from 1 //
+  through 10 {}
 
 <===> case33/output.css
 
 
 <===> case34/input.scss
-@for $i from 1 through /**/ 10 {}
+@for /**/ $i from 1 through 10 {}
 
 <===> case34/output.css
 
 
 <===> case35/input.scss
-@for $i from 1 through //
-  10 {}
+@for //
+  $i from 1 through 10 {}
 
 <===> case35/output.css
 
 
-<===> case36/input.scss
-@for $i from 1 through 10 /**/ {}
+<===> case36/input.sass
+a
+  @for $i from 1 to 1
+    b: $i
 
 <===> case36/output.css
 
 
 <===> case37/input.scss
-@for $i from 1 through 10 //
-  {}
-
-<===> case37/output.css
-
-
-<===> case38/input.scss
-@for $i /**/ from 1 through 10 {}
-
-<===> case38/output.css
-
-
-<===> case39/input.scss
-@for $i //
-  from 1 through 10 {}
-
-<===> case39/output.css
-
-
-<===> case40/input.scss
-@for $i from 1 /**/ through 10 {}
-
-<===> case40/output.css
-
-
-<===> case41/input.scss
-@for $i from 1 //
-  through 10 {}
-
-<===> case41/output.css
-
-
-<===> case42/input.scss
-@for /**/ $i from 1 through 10 {}
-
-<===> case42/output.css
-
-
-<===> case43/input.scss
-@for //
-  $i from 1 through 10 {}
-
-<===> case43/output.css
-
-
-<===> case44/input.sass
-a
-  @for $i from 1 to 1
-    b: $i
-
-<===> case44/output.css
-
-
-<===> case45/input.scss
 a {
   @for $i from 1 to 1 {b: $i;}
 }
 
-<===> case45/output.css
+<===> case37/output.css
 
 
-<===> case46/input.sass
+<===> case38/input.sass
 a 
   @for $i from 5 to 1
     b: $i
 
-<===> case46/output.css
+<===> case38/output.css
 a {
   b: 5;
   b: 4;
@@ -348,12 +276,12 @@ a {
   b: 2;
 }
 
-<===> case47/input.scss
+<===> case39/input.scss
 a {
   @for $i from 5 to 1 {b: $i;}
 }
 
-<===> case47/output.css
+<===> case39/output.css
 a {
   b: 5;
   b: 4;
@@ -361,12 +289,12 @@ a {
   b: 2;
 }
 
-<===> case48/input.scss
+<===> case40/input.scss
 a {
   @for $i from 1 to 5 {b: $i;}
 }
 
-<===> case48/output.css
+<===> case40/output.css
 a {
   b: 1;
   b: 2;
@@ -374,12 +302,12 @@ a {
   b: 4;
 }
 
-<===> case49/input.scss
+<===> case41/input.scss
 a {
   @for $i from 5 through 1 {b: $i;}
 }
 
-<===> case49/output.css
+<===> case41/output.css
 a {
   b: 5;
   b: 4;
@@ -388,12 +316,12 @@ a {
   b: 1;
 }
 
-<===> case50/input.sass
+<===> case42/input.sass
 a
   @for $i from 1 through 5
     b: $i
 
-<===> case50/output.css
+<===> case42/output.css
 a {
   b: 1;
   b: 2;
@@ -402,12 +330,12 @@ a {
   b: 5;
 }
 
-<===> case51/input.scss
+<===> case43/input.scss
 a {
   @for $i from 1 through 5 {b: $i;}
 }
 
-<===> case51/output.css
+<===> case43/output.css
 a {
   b: 1;
   b: 2;
@@ -416,12 +344,12 @@ a {
   b: 5;
 }
 
-<===> case52/input.scss
+<===> case44/input.scss
 a {
   @for $i from -5 through -1 {b: $i;}
 }
 
-<===> case52/output.css
+<===> case44/output.css
 a {
   b: -5;
   b: -4;
@@ -430,12 +358,12 @@ a {
   b: -1;
 }
 
-<===> case53/input.scss
+<===> case45/input.scss
 a {
   @for $i from -1 through 3 {b: $i;}
 }
 
-<===> case53/output.css
+<===> case45/output.css
 a {
   b: -1;
   b: 0;
@@ -444,12 +372,12 @@ a {
   b: 3;
 }
 
-<===> case54/input.scss
+<===> case46/input.scss
 a {
   @for $i from 2 through -1 {b: $i;}
 }
 
-<===> case54/output.css
+<===> case46/output.css
 a {
   b: 2;
   b: 1;
@@ -457,7 +385,7 @@ a {
   b: -1;
 }
 
-<===> case55/input.scss
+<===> case47/input.scss
 // Overriding the variable inside the loop will not impact the end of the loop.
 $limit: 4;
 
@@ -469,7 +397,7 @@ $limit: 4;
   }
 }
 
-<===> case55/output.css
+<===> case47/output.css
 a {
   limit: 2;
   i: 1;
@@ -490,12 +418,12 @@ a {
   i: 4;
 }
 
-<===> case56/input.scss
+<===> case48/input.scss
 a {
   @for $i from 1 through 5px {b: $i;}
 }
 
-<===> case56/output.css
+<===> case48/output.css
 a {
   b: 1;
   b: 2;
@@ -504,23 +432,77 @@ a {
   b: 5;
 }
 
-<===> case57/input.scss
+<===> case49/input.scss
 @for $i from 
   1 through 10 {}
+
+<===> case49/output.css
+
+
+<===> case50/input.scss
+@for $i from 1 through
+  10 {}
+
+<===> case50/output.css
+
+
+<===> case51/input.scss
+@for $i from 1 to
+  10 {}
+
+<===> case51/output.css
+
+
+<===> case52/input.scss
+@for $i from 1 through 10 
+  {}
+
+<===> case52/output.css
+
+
+<===> case53/input.scss
+@for $i
+  from 1 through 10 {}
+
+<===> case53/output.css
+
+
+<===> case54/input.scss
+@for $i from 1
+  through 10 {}
+
+<===> case54/output.css
+
+
+<===> case55/input.scss
+@for $i from 1
+  to 10 {}
+
+<===> case55/output.css
+
+
+<===> case56/input.scss
+@for 
+  $i from 1 through 10 {}
+
+<===> case56/output.css
+
+
+<===> case57/input.scss
+@function a() /**/ {}
 
 <===> case57/output.css
 
 
 <===> case58/input.scss
-@for $i from 1 through
-  10 {}
+@function a() //
+  {}
 
 <===> case58/output.css
 
 
 <===> case59/input.scss
-@for $i from 1 to
-  10 {}
+@function /**/ a() {}
 
 <===> case59/output.css
 

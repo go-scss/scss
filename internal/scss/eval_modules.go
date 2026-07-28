@@ -137,7 +137,6 @@ func (e *evaluator) runModule(stmts []Stmt) {
 	fr := &frame{container: e.root, rootContainer: e.root, mediaParent: e.root, atContainer: true, group: &groupInfo{}}
 	e.evalBody(stmts, fr, true)
 	e.applyExtends()
-	e.prunePlaceholders(e.root)
 }
 
 func (e *evaluator) resolve(url string) (string, string, bool) {

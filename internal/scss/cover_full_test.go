@@ -136,8 +136,12 @@ func TestBuiltinBranches(t *testing.T) {
 		".a{v: length(map.get((), x))}":                                       "",      // asMapVal empty list
 		".a{v: map.get((a: (b: 1)), a, c)}":                                   "",      // nested map key not found
 		".a{v: map.get((a: 1), a, b)}":                                        "",      // nested cur not a map
-		".a{v: selector.unify(a b, c)}":                                       "",      // selectorText list space join
-		".a{v: selector.unify(1, 2)}":                                         "",      // selectorText serialize fallback
+		".a{v: selector.unify(a b, c)}":                                       "",      // selector list space join
+		".a{v: selector.extend(\"a\", \"b\", \"c\")}":                         "a",     // selector.extend
+		".a{v: selector.replace(\"a b\", \"b\", \"c\")}":                      "a c",   // selector.replace
+		".a{v: selector.is-superselector(\"a\", \"a.b\")}":                    "true",  // is-superselector
+		".a{v: selector.simple-selectors(\"a.b.c\")}":                         "a",     // simple-selectors
+		".a{v: inspect(selector.parse(\"a, b\"))}":                            "a",     // selector.parse
 		".a{v: inspect((1, 2))}":                                              "1, 2",  // inspect comma list
 		".a{v: inspect(list.slash(1, 2))}":                                    "1 / 2", // inspect slash list
 		"@mixin m($a...){ x: inspect(keywords($a)) } .a{ @include m($x: 1) }": "",      // keywords
@@ -371,7 +375,7 @@ func TestDefensiveDirectCalls(t *testing.T) {
 	(&cssAtRule{}).cssNode()
 
 	// selectorList.String.
-	sl := selectorList{complexes: []complexSelector{parseComplex(".a")}}
+	sl := parseSelectorList(".a")
 	if s := sl.String(); s == "" {
 		t.Error("selectorList.String empty")
 	}
@@ -393,12 +397,9 @@ func TestDefensiveDirectCalls(t *testing.T) {
 	}
 
 	// resolveNesting with an empty parent returns the child unchanged.
-	if got := resolveNesting(parseSelectorList(".a"), selectorList{}); len(got.complexes) != 1 {
+	if got := resolveNesting(parseSelectorList(".a"), selectorList{}); len(got.list.components) != 1 {
 		t.Errorf("resolveNesting empty parent: %v", got)
 	}
-
-	// parseComplex handles a trailing combinator/whitespace (break on i>=n).
-	_ = parseComplex(".a > ")
 
 	// peekAt past end of source returns 0.
 	if newParser("a").peekAt(10) != 0 {

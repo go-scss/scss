@@ -549,6 +549,2732 @@ foo {
 }
 
 <===> case28/input.scss
+@use "sass:color";
+foo {
+  // c-1: change-color(black,$blue:-1);
+  c0: color.change(black,$blue:0);
+  c1: color.change(black,$blue:1);
+  c2: color.change(black,$blue:2);
+  c3: color.change(black,$blue:3);
+  c4: color.change(black,$blue:4);
+  c5: color.change(black,$blue:5);
+  c6: color.change(black,$blue:6);
+  c7: color.change(black,$blue:7);
+  c8: color.change(black,$blue:8);
+  c9: color.change(black,$blue:9);
+  c10: color.change(black,$blue:10);
+  c11: color.change(black,$blue:11);
+  c12: color.change(black,$blue:12);
+  c13: color.change(black,$blue:13);
+  c14: color.change(black,$blue:14);
+  c15: color.change(black,$blue:15);
+  c16: color.change(black,$blue:16);
+  c17: color.change(black,$blue:17);
+  c18: color.change(black,$blue:18);
+  c19: color.change(black,$blue:19);
+  c20: color.change(black,$blue:20);
+  c21: color.change(black,$blue:21);
+  c22: color.change(black,$blue:22);
+  c23: color.change(black,$blue:23);
+  c24: color.change(black,$blue:24);
+  c25: color.change(black,$blue:25);
+  c26: color.change(black,$blue:26);
+  c27: color.change(black,$blue:27);
+  c28: color.change(black,$blue:28);
+  c29: color.change(black,$blue:29);
+  c30: color.change(black,$blue:30);
+  c31: color.change(black,$blue:31);
+  c32: color.change(black,$blue:32);
+  c33: color.change(black,$blue:33);
+  c34: color.change(black,$blue:34);
+  c35: color.change(black,$blue:35);
+  c36: color.change(black,$blue:36);
+  c37: color.change(black,$blue:37);
+  c38: color.change(black,$blue:38);
+  c39: color.change(black,$blue:39);
+  c40: color.change(black,$blue:40);
+  c41: color.change(black,$blue:41);
+  c42: color.change(black,$blue:42);
+  c43: color.change(black,$blue:43);
+  c44: color.change(black,$blue:44);
+  c45: color.change(black,$blue:45);
+  c46: color.change(black,$blue:46);
+  c47: color.change(black,$blue:47);
+  c48: color.change(black,$blue:48);
+  c49: color.change(black,$blue:49);
+  c50: color.change(black,$blue:50);
+  c51: color.change(black,$blue:51);
+  c52: color.change(black,$blue:52);
+  c53: color.change(black,$blue:53);
+  c54: color.change(black,$blue:54);
+  c55: color.change(black,$blue:55);
+  c56: color.change(black,$blue:56);
+  c57: color.change(black,$blue:57);
+  c58: color.change(black,$blue:58);
+  c59: color.change(black,$blue:59);
+  c60: color.change(black,$blue:60);
+  c61: color.change(black,$blue:61);
+  c62: color.change(black,$blue:62);
+  c63: color.change(black,$blue:63);
+  c64: color.change(black,$blue:64);
+  c65: color.change(black,$blue:65);
+  c66: color.change(black,$blue:66);
+  c67: color.change(black,$blue:67);
+  c68: color.change(black,$blue:68);
+  c69: color.change(black,$blue:69);
+  c70: color.change(black,$blue:70);
+  c71: color.change(black,$blue:71);
+  c72: color.change(black,$blue:72);
+  c73: color.change(black,$blue:73);
+  c74: color.change(black,$blue:74);
+  c75: color.change(black,$blue:75);
+  c76: color.change(black,$blue:76);
+  c77: color.change(black,$blue:77);
+  c78: color.change(black,$blue:78);
+  c79: color.change(black,$blue:79);
+  c80: color.change(black,$blue:80);
+  c81: color.change(black,$blue:81);
+  c82: color.change(black,$blue:82);
+  c83: color.change(black,$blue:83);
+  c84: color.change(black,$blue:84);
+  c85: color.change(black,$blue:85);
+  c86: color.change(black,$blue:86);
+  c87: color.change(black,$blue:87);
+  c88: color.change(black,$blue:88);
+  c89: color.change(black,$blue:89);
+  c90: color.change(black,$blue:90);
+  c91: color.change(black,$blue:91);
+  c92: color.change(black,$blue:92);
+  c93: color.change(black,$blue:93);
+  c94: color.change(black,$blue:94);
+  c95: color.change(black,$blue:95);
+  c96: color.change(black,$blue:96);
+  c97: color.change(black,$blue:97);
+  c98: color.change(black,$blue:98);
+  c99: color.change(black,$blue:99);
+  c100: color.change(black,$blue:100);
+  c101: color.change(black,$blue:101);
+  c102: color.change(black,$blue:102);
+  c103: color.change(black,$blue:103);
+  c104: color.change(black,$blue:104);
+  c105: color.change(black,$blue:105);
+  c106: color.change(black,$blue:106);
+  c107: color.change(black,$blue:107);
+  c108: color.change(black,$blue:108);
+  c109: color.change(black,$blue:109);
+  c110: color.change(black,$blue:110);
+  c111: color.change(black,$blue:111);
+  c112: color.change(black,$blue:112);
+  c113: color.change(black,$blue:113);
+  c114: color.change(black,$blue:114);
+  c115: color.change(black,$blue:115);
+  c116: color.change(black,$blue:116);
+  c117: color.change(black,$blue:117);
+  c118: color.change(black,$blue:118);
+  c119: color.change(black,$blue:119);
+  c120: color.change(black,$blue:120);
+  c121: color.change(black,$blue:121);
+  c122: color.change(black,$blue:122);
+  c123: color.change(black,$blue:123);
+  c124: color.change(black,$blue:124);
+  c125: color.change(black,$blue:125);
+  c126: color.change(black,$blue:126);
+  c127: color.change(black,$blue:127);
+  c128: color.change(black,$blue:128);
+  c129: color.change(black,$blue:129);
+  c130: color.change(black,$blue:130);
+  c131: color.change(black,$blue:131);
+  c132: color.change(black,$blue:132);
+  c133: color.change(black,$blue:133);
+  c134: color.change(black,$blue:134);
+  c135: color.change(black,$blue:135);
+  c136: color.change(black,$blue:136);
+  c137: color.change(black,$blue:137);
+  c138: color.change(black,$blue:138);
+  c139: color.change(black,$blue:139);
+  c140: color.change(black,$blue:140);
+  c141: color.change(black,$blue:141);
+  c142: color.change(black,$blue:142);
+  c143: color.change(black,$blue:143);
+  c144: color.change(black,$blue:144);
+  c145: color.change(black,$blue:145);
+  c146: color.change(black,$blue:146);
+  c147: color.change(black,$blue:147);
+  c148: color.change(black,$blue:148);
+  c149: color.change(black,$blue:149);
+  c150: color.change(black,$blue:150);
+  c151: color.change(black,$blue:151);
+  c152: color.change(black,$blue:152);
+  c153: color.change(black,$blue:153);
+  c154: color.change(black,$blue:154);
+  c155: color.change(black,$blue:155);
+  c156: color.change(black,$blue:156);
+  c157: color.change(black,$blue:157);
+  c158: color.change(black,$blue:158);
+  c159: color.change(black,$blue:159);
+  c160: color.change(black,$blue:160);
+  c161: color.change(black,$blue:161);
+  c162: color.change(black,$blue:162);
+  c163: color.change(black,$blue:163);
+  c164: color.change(black,$blue:164);
+  c165: color.change(black,$blue:165);
+  c166: color.change(black,$blue:166);
+  c167: color.change(black,$blue:167);
+  c168: color.change(black,$blue:168);
+  c169: color.change(black,$blue:169);
+  c170: color.change(black,$blue:170);
+  c171: color.change(black,$blue:171);
+  c172: color.change(black,$blue:172);
+  c173: color.change(black,$blue:173);
+  c174: color.change(black,$blue:174);
+  c175: color.change(black,$blue:175);
+  c176: color.change(black,$blue:176);
+  c177: color.change(black,$blue:177);
+  c178: color.change(black,$blue:178);
+  c179: color.change(black,$blue:179);
+  c180: color.change(black,$blue:180);
+  c181: color.change(black,$blue:181);
+  c182: color.change(black,$blue:182);
+  c183: color.change(black,$blue:183);
+  c184: color.change(black,$blue:184);
+  c185: color.change(black,$blue:185);
+  c186: color.change(black,$blue:186);
+  c187: color.change(black,$blue:187);
+  c188: color.change(black,$blue:188);
+  c189: color.change(black,$blue:189);
+  c190: color.change(black,$blue:190);
+  c191: color.change(black,$blue:191);
+  c192: color.change(black,$blue:192);
+  c193: color.change(black,$blue:193);
+  c194: color.change(black,$blue:194);
+  c195: color.change(black,$blue:195);
+  c196: color.change(black,$blue:196);
+  c197: color.change(black,$blue:197);
+  c198: color.change(black,$blue:198);
+  c199: color.change(black,$blue:199);
+  c200: color.change(black,$blue:200);
+  c201: color.change(black,$blue:201);
+  c202: color.change(black,$blue:202);
+  c203: color.change(black,$blue:203);
+  c204: color.change(black,$blue:204);
+  c205: color.change(black,$blue:205);
+  c206: color.change(black,$blue:206);
+  c207: color.change(black,$blue:207);
+  c208: color.change(black,$blue:208);
+  c209: color.change(black,$blue:209);
+  c210: color.change(black,$blue:210);
+  c211: color.change(black,$blue:211);
+  c212: color.change(black,$blue:212);
+  c213: color.change(black,$blue:213);
+  c214: color.change(black,$blue:214);
+  c215: color.change(black,$blue:215);
+  c216: color.change(black,$blue:216);
+  c217: color.change(black,$blue:217);
+  c218: color.change(black,$blue:218);
+  c219: color.change(black,$blue:219);
+  c220: color.change(black,$blue:220);
+  c221: color.change(black,$blue:221);
+  c222: color.change(black,$blue:222);
+  c223: color.change(black,$blue:223);
+  c224: color.change(black,$blue:224);
+  c225: color.change(black,$blue:225);
+  c226: color.change(black,$blue:226);
+  c227: color.change(black,$blue:227);
+  c228: color.change(black,$blue:228);
+  c229: color.change(black,$blue:229);
+  c230: color.change(black,$blue:230);
+  c231: color.change(black,$blue:231);
+  c232: color.change(black,$blue:232);
+  c233: color.change(black,$blue:233);
+  c234: color.change(black,$blue:234);
+  c235: color.change(black,$blue:235);
+  c236: color.change(black,$blue:236);
+  c237: color.change(black,$blue:237);
+  c238: color.change(black,$blue:238);
+  c239: color.change(black,$blue:239);
+  c240: color.change(black,$blue:240);
+  c241: color.change(black,$blue:241);
+  c242: color.change(black,$blue:242);
+  c243: color.change(black,$blue:243);
+  c244: color.change(black,$blue:244);
+  c245: color.change(black,$blue:245);
+  c246: color.change(black,$blue:246);
+  c247: color.change(black,$blue:247);
+  c248: color.change(black,$blue:248);
+  c249: color.change(black,$blue:249);
+  c250: color.change(black,$blue:250);
+  c251: color.change(black,$blue:251);
+  c252: color.change(black,$blue:252);
+  c253: color.change(black,$blue:253);
+  c254: color.change(black,$blue:254);
+  c255: color.change(black,$blue:255);
+  // c256: change-color(black,$blue:256);
+}
+
+<===> case28/output.css
+foo {
+  c0: black;
+  c1: #000001;
+  c2: #000002;
+  c3: #000003;
+  c4: #000004;
+  c5: #000005;
+  c6: #000006;
+  c7: #000007;
+  c8: #000008;
+  c9: #000009;
+  c10: #00000a;
+  c11: #00000b;
+  c12: #00000c;
+  c13: #00000d;
+  c14: #00000e;
+  c15: #00000f;
+  c16: #000010;
+  c17: #000011;
+  c18: #000012;
+  c19: #000013;
+  c20: #000014;
+  c21: #000015;
+  c22: #000016;
+  c23: #000017;
+  c24: #000018;
+  c25: #000019;
+  c26: #00001a;
+  c27: #00001b;
+  c28: #00001c;
+  c29: #00001d;
+  c30: #00001e;
+  c31: #00001f;
+  c32: #000020;
+  c33: #000021;
+  c34: #000022;
+  c35: #000023;
+  c36: #000024;
+  c37: #000025;
+  c38: #000026;
+  c39: #000027;
+  c40: #000028;
+  c41: #000029;
+  c42: #00002a;
+  c43: #00002b;
+  c44: #00002c;
+  c45: #00002d;
+  c46: #00002e;
+  c47: #00002f;
+  c48: #000030;
+  c49: #000031;
+  c50: #000032;
+  c51: #000033;
+  c52: #000034;
+  c53: #000035;
+  c54: #000036;
+  c55: #000037;
+  c56: #000038;
+  c57: #000039;
+  c58: #00003a;
+  c59: #00003b;
+  c60: #00003c;
+  c61: #00003d;
+  c62: #00003e;
+  c63: #00003f;
+  c64: #000040;
+  c65: #000041;
+  c66: #000042;
+  c67: #000043;
+  c68: #000044;
+  c69: #000045;
+  c70: #000046;
+  c71: #000047;
+  c72: #000048;
+  c73: #000049;
+  c74: #00004a;
+  c75: #00004b;
+  c76: #00004c;
+  c77: #00004d;
+  c78: #00004e;
+  c79: #00004f;
+  c80: #000050;
+  c81: #000051;
+  c82: #000052;
+  c83: #000053;
+  c84: #000054;
+  c85: #000055;
+  c86: #000056;
+  c87: #000057;
+  c88: #000058;
+  c89: #000059;
+  c90: #00005a;
+  c91: #00005b;
+  c92: #00005c;
+  c93: #00005d;
+  c94: #00005e;
+  c95: #00005f;
+  c96: #000060;
+  c97: #000061;
+  c98: #000062;
+  c99: #000063;
+  c100: #000064;
+  c101: #000065;
+  c102: #000066;
+  c103: #000067;
+  c104: #000068;
+  c105: #000069;
+  c106: #00006a;
+  c107: #00006b;
+  c108: #00006c;
+  c109: #00006d;
+  c110: #00006e;
+  c111: #00006f;
+  c112: #000070;
+  c113: #000071;
+  c114: #000072;
+  c115: #000073;
+  c116: #000074;
+  c117: #000075;
+  c118: #000076;
+  c119: #000077;
+  c120: #000078;
+  c121: #000079;
+  c122: #00007a;
+  c123: #00007b;
+  c124: #00007c;
+  c125: #00007d;
+  c126: #00007e;
+  c127: #00007f;
+  c128: navy;
+  c129: #000081;
+  c130: #000082;
+  c131: #000083;
+  c132: #000084;
+  c133: #000085;
+  c134: #000086;
+  c135: #000087;
+  c136: #000088;
+  c137: #000089;
+  c138: #00008a;
+  c139: darkblue;
+  c140: #00008c;
+  c141: #00008d;
+  c142: #00008e;
+  c143: #00008f;
+  c144: #000090;
+  c145: #000091;
+  c146: #000092;
+  c147: #000093;
+  c148: #000094;
+  c149: #000095;
+  c150: #000096;
+  c151: #000097;
+  c152: #000098;
+  c153: #000099;
+  c154: #00009a;
+  c155: #00009b;
+  c156: #00009c;
+  c157: #00009d;
+  c158: #00009e;
+  c159: #00009f;
+  c160: #0000a0;
+  c161: #0000a1;
+  c162: #0000a2;
+  c163: #0000a3;
+  c164: #0000a4;
+  c165: #0000a5;
+  c166: #0000a6;
+  c167: #0000a7;
+  c168: #0000a8;
+  c169: #0000a9;
+  c170: #0000aa;
+  c171: #0000ab;
+  c172: #0000ac;
+  c173: #0000ad;
+  c174: #0000ae;
+  c175: #0000af;
+  c176: #0000b0;
+  c177: #0000b1;
+  c178: #0000b2;
+  c179: #0000b3;
+  c180: #0000b4;
+  c181: #0000b5;
+  c182: #0000b6;
+  c183: #0000b7;
+  c184: #0000b8;
+  c185: #0000b9;
+  c186: #0000ba;
+  c187: #0000bb;
+  c188: #0000bc;
+  c189: #0000bd;
+  c190: #0000be;
+  c191: #0000bf;
+  c192: #0000c0;
+  c193: #0000c1;
+  c194: #0000c2;
+  c195: #0000c3;
+  c196: #0000c4;
+  c197: #0000c5;
+  c198: #0000c6;
+  c199: #0000c7;
+  c200: #0000c8;
+  c201: #0000c9;
+  c202: #0000ca;
+  c203: #0000cb;
+  c204: #0000cc;
+  c205: mediumblue;
+  c206: #0000ce;
+  c207: #0000cf;
+  c208: #0000d0;
+  c209: #0000d1;
+  c210: #0000d2;
+  c211: #0000d3;
+  c212: #0000d4;
+  c213: #0000d5;
+  c214: #0000d6;
+  c215: #0000d7;
+  c216: #0000d8;
+  c217: #0000d9;
+  c218: #0000da;
+  c219: #0000db;
+  c220: #0000dc;
+  c221: #0000dd;
+  c222: #0000de;
+  c223: #0000df;
+  c224: #0000e0;
+  c225: #0000e1;
+  c226: #0000e2;
+  c227: #0000e3;
+  c228: #0000e4;
+  c229: #0000e5;
+  c230: #0000e6;
+  c231: #0000e7;
+  c232: #0000e8;
+  c233: #0000e9;
+  c234: #0000ea;
+  c235: #0000eb;
+  c236: #0000ec;
+  c237: #0000ed;
+  c238: #0000ee;
+  c239: #0000ef;
+  c240: #0000f0;
+  c241: #0000f1;
+  c242: #0000f2;
+  c243: #0000f3;
+  c244: #0000f4;
+  c245: #0000f5;
+  c246: #0000f6;
+  c247: #0000f7;
+  c248: #0000f8;
+  c249: #0000f9;
+  c250: #0000fa;
+  c251: #0000fb;
+  c252: #0000fc;
+  c253: #0000fd;
+  c254: #0000fe;
+  c255: blue;
+}
+
+<===> case29/input.scss
+@use "sass:color";
+foo {
+  // c-1: change-color(black,$green:-1);
+  c0: color.change(black,$green:0);
+  c1: color.change(black,$green:1);
+  c2: color.change(black,$green:2);
+  c3: color.change(black,$green:3);
+  c4: color.change(black,$green:4);
+  c5: color.change(black,$green:5);
+  c6: color.change(black,$green:6);
+  c7: color.change(black,$green:7);
+  c8: color.change(black,$green:8);
+  c9: color.change(black,$green:9);
+  c10: color.change(black,$green:10);
+  c11: color.change(black,$green:11);
+  c12: color.change(black,$green:12);
+  c13: color.change(black,$green:13);
+  c14: color.change(black,$green:14);
+  c15: color.change(black,$green:15);
+  c16: color.change(black,$green:16);
+  c17: color.change(black,$green:17);
+  c18: color.change(black,$green:18);
+  c19: color.change(black,$green:19);
+  c20: color.change(black,$green:20);
+  c21: color.change(black,$green:21);
+  c22: color.change(black,$green:22);
+  c23: color.change(black,$green:23);
+  c24: color.change(black,$green:24);
+  c25: color.change(black,$green:25);
+  c26: color.change(black,$green:26);
+  c27: color.change(black,$green:27);
+  c28: color.change(black,$green:28);
+  c29: color.change(black,$green:29);
+  c30: color.change(black,$green:30);
+  c31: color.change(black,$green:31);
+  c32: color.change(black,$green:32);
+  c33: color.change(black,$green:33);
+  c34: color.change(black,$green:34);
+  c35: color.change(black,$green:35);
+  c36: color.change(black,$green:36);
+  c37: color.change(black,$green:37);
+  c38: color.change(black,$green:38);
+  c39: color.change(black,$green:39);
+  c40: color.change(black,$green:40);
+  c41: color.change(black,$green:41);
+  c42: color.change(black,$green:42);
+  c43: color.change(black,$green:43);
+  c44: color.change(black,$green:44);
+  c45: color.change(black,$green:45);
+  c46: color.change(black,$green:46);
+  c47: color.change(black,$green:47);
+  c48: color.change(black,$green:48);
+  c49: color.change(black,$green:49);
+  c50: color.change(black,$green:50);
+  c51: color.change(black,$green:51);
+  c52: color.change(black,$green:52);
+  c53: color.change(black,$green:53);
+  c54: color.change(black,$green:54);
+  c55: color.change(black,$green:55);
+  c56: color.change(black,$green:56);
+  c57: color.change(black,$green:57);
+  c58: color.change(black,$green:58);
+  c59: color.change(black,$green:59);
+  c60: color.change(black,$green:60);
+  c61: color.change(black,$green:61);
+  c62: color.change(black,$green:62);
+  c63: color.change(black,$green:63);
+  c64: color.change(black,$green:64);
+  c65: color.change(black,$green:65);
+  c66: color.change(black,$green:66);
+  c67: color.change(black,$green:67);
+  c68: color.change(black,$green:68);
+  c69: color.change(black,$green:69);
+  c70: color.change(black,$green:70);
+  c71: color.change(black,$green:71);
+  c72: color.change(black,$green:72);
+  c73: color.change(black,$green:73);
+  c74: color.change(black,$green:74);
+  c75: color.change(black,$green:75);
+  c76: color.change(black,$green:76);
+  c77: color.change(black,$green:77);
+  c78: color.change(black,$green:78);
+  c79: color.change(black,$green:79);
+  c80: color.change(black,$green:80);
+  c81: color.change(black,$green:81);
+  c82: color.change(black,$green:82);
+  c83: color.change(black,$green:83);
+  c84: color.change(black,$green:84);
+  c85: color.change(black,$green:85);
+  c86: color.change(black,$green:86);
+  c87: color.change(black,$green:87);
+  c88: color.change(black,$green:88);
+  c89: color.change(black,$green:89);
+  c90: color.change(black,$green:90);
+  c91: color.change(black,$green:91);
+  c92: color.change(black,$green:92);
+  c93: color.change(black,$green:93);
+  c94: color.change(black,$green:94);
+  c95: color.change(black,$green:95);
+  c96: color.change(black,$green:96);
+  c97: color.change(black,$green:97);
+  c98: color.change(black,$green:98);
+  c99: color.change(black,$green:99);
+  c100: color.change(black,$green:100);
+  c101: color.change(black,$green:101);
+  c102: color.change(black,$green:102);
+  c103: color.change(black,$green:103);
+  c104: color.change(black,$green:104);
+  c105: color.change(black,$green:105);
+  c106: color.change(black,$green:106);
+  c107: color.change(black,$green:107);
+  c108: color.change(black,$green:108);
+  c109: color.change(black,$green:109);
+  c110: color.change(black,$green:110);
+  c111: color.change(black,$green:111);
+  c112: color.change(black,$green:112);
+  c113: color.change(black,$green:113);
+  c114: color.change(black,$green:114);
+  c115: color.change(black,$green:115);
+  c116: color.change(black,$green:116);
+  c117: color.change(black,$green:117);
+  c118: color.change(black,$green:118);
+  c119: color.change(black,$green:119);
+  c120: color.change(black,$green:120);
+  c121: color.change(black,$green:121);
+  c122: color.change(black,$green:122);
+  c123: color.change(black,$green:123);
+  c124: color.change(black,$green:124);
+  c125: color.change(black,$green:125);
+  c126: color.change(black,$green:126);
+  c127: color.change(black,$green:127);
+  c128: color.change(black,$green:128);
+  c129: color.change(black,$green:129);
+  c130: color.change(black,$green:130);
+  c131: color.change(black,$green:131);
+  c132: color.change(black,$green:132);
+  c133: color.change(black,$green:133);
+  c134: color.change(black,$green:134);
+  c135: color.change(black,$green:135);
+  c136: color.change(black,$green:136);
+  c137: color.change(black,$green:137);
+  c138: color.change(black,$green:138);
+  c139: color.change(black,$green:139);
+  c140: color.change(black,$green:140);
+  c141: color.change(black,$green:141);
+  c142: color.change(black,$green:142);
+  c143: color.change(black,$green:143);
+  c144: color.change(black,$green:144);
+  c145: color.change(black,$green:145);
+  c146: color.change(black,$green:146);
+  c147: color.change(black,$green:147);
+  c148: color.change(black,$green:148);
+  c149: color.change(black,$green:149);
+  c150: color.change(black,$green:150);
+  c151: color.change(black,$green:151);
+  c152: color.change(black,$green:152);
+  c153: color.change(black,$green:153);
+  c154: color.change(black,$green:154);
+  c155: color.change(black,$green:155);
+  c156: color.change(black,$green:156);
+  c157: color.change(black,$green:157);
+  c158: color.change(black,$green:158);
+  c159: color.change(black,$green:159);
+  c160: color.change(black,$green:160);
+  c161: color.change(black,$green:161);
+  c162: color.change(black,$green:162);
+  c163: color.change(black,$green:163);
+  c164: color.change(black,$green:164);
+  c165: color.change(black,$green:165);
+  c166: color.change(black,$green:166);
+  c167: color.change(black,$green:167);
+  c168: color.change(black,$green:168);
+  c169: color.change(black,$green:169);
+  c170: color.change(black,$green:170);
+  c171: color.change(black,$green:171);
+  c172: color.change(black,$green:172);
+  c173: color.change(black,$green:173);
+  c174: color.change(black,$green:174);
+  c175: color.change(black,$green:175);
+  c176: color.change(black,$green:176);
+  c177: color.change(black,$green:177);
+  c178: color.change(black,$green:178);
+  c179: color.change(black,$green:179);
+  c180: color.change(black,$green:180);
+  c181: color.change(black,$green:181);
+  c182: color.change(black,$green:182);
+  c183: color.change(black,$green:183);
+  c184: color.change(black,$green:184);
+  c185: color.change(black,$green:185);
+  c186: color.change(black,$green:186);
+  c187: color.change(black,$green:187);
+  c188: color.change(black,$green:188);
+  c189: color.change(black,$green:189);
+  c190: color.change(black,$green:190);
+  c191: color.change(black,$green:191);
+  c192: color.change(black,$green:192);
+  c193: color.change(black,$green:193);
+  c194: color.change(black,$green:194);
+  c195: color.change(black,$green:195);
+  c196: color.change(black,$green:196);
+  c197: color.change(black,$green:197);
+  c198: color.change(black,$green:198);
+  c199: color.change(black,$green:199);
+  c200: color.change(black,$green:200);
+  c201: color.change(black,$green:201);
+  c202: color.change(black,$green:202);
+  c203: color.change(black,$green:203);
+  c204: color.change(black,$green:204);
+  c205: color.change(black,$green:205);
+  c206: color.change(black,$green:206);
+  c207: color.change(black,$green:207);
+  c208: color.change(black,$green:208);
+  c209: color.change(black,$green:209);
+  c210: color.change(black,$green:210);
+  c211: color.change(black,$green:211);
+  c212: color.change(black,$green:212);
+  c213: color.change(black,$green:213);
+  c214: color.change(black,$green:214);
+  c215: color.change(black,$green:215);
+  c216: color.change(black,$green:216);
+  c217: color.change(black,$green:217);
+  c218: color.change(black,$green:218);
+  c219: color.change(black,$green:219);
+  c220: color.change(black,$green:220);
+  c221: color.change(black,$green:221);
+  c222: color.change(black,$green:222);
+  c223: color.change(black,$green:223);
+  c224: color.change(black,$green:224);
+  c225: color.change(black,$green:225);
+  c226: color.change(black,$green:226);
+  c227: color.change(black,$green:227);
+  c228: color.change(black,$green:228);
+  c229: color.change(black,$green:229);
+  c230: color.change(black,$green:230);
+  c231: color.change(black,$green:231);
+  c232: color.change(black,$green:232);
+  c233: color.change(black,$green:233);
+  c234: color.change(black,$green:234);
+  c235: color.change(black,$green:235);
+  c236: color.change(black,$green:236);
+  c237: color.change(black,$green:237);
+  c238: color.change(black,$green:238);
+  c239: color.change(black,$green:239);
+  c240: color.change(black,$green:240);
+  c241: color.change(black,$green:241);
+  c242: color.change(black,$green:242);
+  c243: color.change(black,$green:243);
+  c244: color.change(black,$green:244);
+  c245: color.change(black,$green:245);
+  c246: color.change(black,$green:246);
+  c247: color.change(black,$green:247);
+  c248: color.change(black,$green:248);
+  c249: color.change(black,$green:249);
+  c250: color.change(black,$green:250);
+  c251: color.change(black,$green:251);
+  c252: color.change(black,$green:252);
+  c253: color.change(black,$green:253);
+  c254: color.change(black,$green:254);
+  c255: color.change(black,$green:255);
+  // c256: change-color(black,$green:256);
+}
+
+<===> case29/output.css
+foo {
+  c0: black;
+  c1: #000100;
+  c2: #000200;
+  c3: #000300;
+  c4: #000400;
+  c5: #000500;
+  c6: #000600;
+  c7: #000700;
+  c8: #000800;
+  c9: #000900;
+  c10: #000a00;
+  c11: #000b00;
+  c12: #000c00;
+  c13: #000d00;
+  c14: #000e00;
+  c15: #000f00;
+  c16: #001000;
+  c17: #001100;
+  c18: #001200;
+  c19: #001300;
+  c20: #001400;
+  c21: #001500;
+  c22: #001600;
+  c23: #001700;
+  c24: #001800;
+  c25: #001900;
+  c26: #001a00;
+  c27: #001b00;
+  c28: #001c00;
+  c29: #001d00;
+  c30: #001e00;
+  c31: #001f00;
+  c32: #002000;
+  c33: #002100;
+  c34: #002200;
+  c35: #002300;
+  c36: #002400;
+  c37: #002500;
+  c38: #002600;
+  c39: #002700;
+  c40: #002800;
+  c41: #002900;
+  c42: #002a00;
+  c43: #002b00;
+  c44: #002c00;
+  c45: #002d00;
+  c46: #002e00;
+  c47: #002f00;
+  c48: #003000;
+  c49: #003100;
+  c50: #003200;
+  c51: #003300;
+  c52: #003400;
+  c53: #003500;
+  c54: #003600;
+  c55: #003700;
+  c56: #003800;
+  c57: #003900;
+  c58: #003a00;
+  c59: #003b00;
+  c60: #003c00;
+  c61: #003d00;
+  c62: #003e00;
+  c63: #003f00;
+  c64: #004000;
+  c65: #004100;
+  c66: #004200;
+  c67: #004300;
+  c68: #004400;
+  c69: #004500;
+  c70: #004600;
+  c71: #004700;
+  c72: #004800;
+  c73: #004900;
+  c74: #004a00;
+  c75: #004b00;
+  c76: #004c00;
+  c77: #004d00;
+  c78: #004e00;
+  c79: #004f00;
+  c80: #005000;
+  c81: #005100;
+  c82: #005200;
+  c83: #005300;
+  c84: #005400;
+  c85: #005500;
+  c86: #005600;
+  c87: #005700;
+  c88: #005800;
+  c89: #005900;
+  c90: #005a00;
+  c91: #005b00;
+  c92: #005c00;
+  c93: #005d00;
+  c94: #005e00;
+  c95: #005f00;
+  c96: #006000;
+  c97: #006100;
+  c98: #006200;
+  c99: #006300;
+  c100: darkgreen;
+  c101: #006500;
+  c102: #006600;
+  c103: #006700;
+  c104: #006800;
+  c105: #006900;
+  c106: #006a00;
+  c107: #006b00;
+  c108: #006c00;
+  c109: #006d00;
+  c110: #006e00;
+  c111: #006f00;
+  c112: #007000;
+  c113: #007100;
+  c114: #007200;
+  c115: #007300;
+  c116: #007400;
+  c117: #007500;
+  c118: #007600;
+  c119: #007700;
+  c120: #007800;
+  c121: #007900;
+  c122: #007a00;
+  c123: #007b00;
+  c124: #007c00;
+  c125: #007d00;
+  c126: #007e00;
+  c127: #007f00;
+  c128: green;
+  c129: #008100;
+  c130: #008200;
+  c131: #008300;
+  c132: #008400;
+  c133: #008500;
+  c134: #008600;
+  c135: #008700;
+  c136: #008800;
+  c137: #008900;
+  c138: #008a00;
+  c139: #008b00;
+  c140: #008c00;
+  c141: #008d00;
+  c142: #008e00;
+  c143: #008f00;
+  c144: #009000;
+  c145: #009100;
+  c146: #009200;
+  c147: #009300;
+  c148: #009400;
+  c149: #009500;
+  c150: #009600;
+  c151: #009700;
+  c152: #009800;
+  c153: #009900;
+  c154: #009a00;
+  c155: #009b00;
+  c156: #009c00;
+  c157: #009d00;
+  c158: #009e00;
+  c159: #009f00;
+  c160: #00a000;
+  c161: #00a100;
+  c162: #00a200;
+  c163: #00a300;
+  c164: #00a400;
+  c165: #00a500;
+  c166: #00a600;
+  c167: #00a700;
+  c168: #00a800;
+  c169: #00a900;
+  c170: #00aa00;
+  c171: #00ab00;
+  c172: #00ac00;
+  c173: #00ad00;
+  c174: #00ae00;
+  c175: #00af00;
+  c176: #00b000;
+  c177: #00b100;
+  c178: #00b200;
+  c179: #00b300;
+  c180: #00b400;
+  c181: #00b500;
+  c182: #00b600;
+  c183: #00b700;
+  c184: #00b800;
+  c185: #00b900;
+  c186: #00ba00;
+  c187: #00bb00;
+  c188: #00bc00;
+  c189: #00bd00;
+  c190: #00be00;
+  c191: #00bf00;
+  c192: #00c000;
+  c193: #00c100;
+  c194: #00c200;
+  c195: #00c300;
+  c196: #00c400;
+  c197: #00c500;
+  c198: #00c600;
+  c199: #00c700;
+  c200: #00c800;
+  c201: #00c900;
+  c202: #00ca00;
+  c203: #00cb00;
+  c204: #00cc00;
+  c205: #00cd00;
+  c206: #00ce00;
+  c207: #00cf00;
+  c208: #00d000;
+  c209: #00d100;
+  c210: #00d200;
+  c211: #00d300;
+  c212: #00d400;
+  c213: #00d500;
+  c214: #00d600;
+  c215: #00d700;
+  c216: #00d800;
+  c217: #00d900;
+  c218: #00da00;
+  c219: #00db00;
+  c220: #00dc00;
+  c221: #00dd00;
+  c222: #00de00;
+  c223: #00df00;
+  c224: #00e000;
+  c225: #00e100;
+  c226: #00e200;
+  c227: #00e300;
+  c228: #00e400;
+  c229: #00e500;
+  c230: #00e600;
+  c231: #00e700;
+  c232: #00e800;
+  c233: #00e900;
+  c234: #00ea00;
+  c235: #00eb00;
+  c236: #00ec00;
+  c237: #00ed00;
+  c238: #00ee00;
+  c239: #00ef00;
+  c240: #00f000;
+  c241: #00f100;
+  c242: #00f200;
+  c243: #00f300;
+  c244: #00f400;
+  c245: #00f500;
+  c246: #00f600;
+  c247: #00f700;
+  c248: #00f800;
+  c249: #00f900;
+  c250: #00fa00;
+  c251: #00fb00;
+  c252: #00fc00;
+  c253: #00fd00;
+  c254: #00fe00;
+  c255: lime;
+}
+
+<===> case30/input.scss
+@use "sass:color";
+foo {
+  c-1: color.change(red,$hue:-1);
+  c0: color.change(red,$hue:0);
+  c1: color.change(red,$hue:1);
+  c2: color.change(red,$hue:2);
+  c3: color.change(red,$hue:3);
+  c4: color.change(red,$hue:4);
+  c5: color.change(red,$hue:5);
+  c6: color.change(red,$hue:6);
+  c7: color.change(red,$hue:7);
+  c8: color.change(red,$hue:8);
+  c9: color.change(red,$hue:9);
+  c10: color.change(red,$hue:10);
+  c11: color.change(red,$hue:11);
+  c12: color.change(red,$hue:12);
+  c13: color.change(red,$hue:13);
+  c14: color.change(red,$hue:14);
+  c15: color.change(red,$hue:15);
+  c16: color.change(red,$hue:16);
+  c17: color.change(red,$hue:17);
+  c18: color.change(red,$hue:18);
+  c19: color.change(red,$hue:19);
+  c20: color.change(red,$hue:20);
+  c21: color.change(red,$hue:21);
+  c22: color.change(red,$hue:22);
+  c23: color.change(red,$hue:23);
+  c24: color.change(red,$hue:24);
+  c25: color.change(red,$hue:25);
+  c26: color.change(red,$hue:26);
+  c27: color.change(red,$hue:27);
+  c28: color.change(red,$hue:28);
+  c29: color.change(red,$hue:29);
+  c30: color.change(red,$hue:30);
+  c31: color.change(red,$hue:31);
+  c32: color.change(red,$hue:32);
+  c33: color.change(red,$hue:33);
+  c34: color.change(red,$hue:34);
+  c35: color.change(red,$hue:35);
+  c36: color.change(red,$hue:36);
+  c37: color.change(red,$hue:37);
+  c38: color.change(red,$hue:38);
+  c39: color.change(red,$hue:39);
+  c40: color.change(red,$hue:40);
+  c41: color.change(red,$hue:41);
+  c42: color.change(red,$hue:42);
+  c43: color.change(red,$hue:43);
+  c44: color.change(red,$hue:44);
+  c45: color.change(red,$hue:45);
+  c46: color.change(red,$hue:46);
+  c47: color.change(red,$hue:47);
+  c48: color.change(red,$hue:48);
+  c49: color.change(red,$hue:49);
+  c50: color.change(red,$hue:50);
+  c51: color.change(red,$hue:51);
+  c52: color.change(red,$hue:52);
+  c53: color.change(red,$hue:53);
+  c54: color.change(red,$hue:54);
+  c55: color.change(red,$hue:55);
+  c56: color.change(red,$hue:56);
+  c57: color.change(red,$hue:57);
+  c58: color.change(red,$hue:58);
+  c59: color.change(red,$hue:59);
+  c60: color.change(red,$hue:60);
+  c61: color.change(red,$hue:61);
+  c62: color.change(red,$hue:62);
+  c63: color.change(red,$hue:63);
+  c64: color.change(red,$hue:64);
+  c65: color.change(red,$hue:65);
+  c66: color.change(red,$hue:66);
+  c67: color.change(red,$hue:67);
+  c68: color.change(red,$hue:68);
+  c69: color.change(red,$hue:69);
+  c70: color.change(red,$hue:70);
+  c71: color.change(red,$hue:71);
+  c72: color.change(red,$hue:72);
+  c73: color.change(red,$hue:73);
+  c74: color.change(red,$hue:74);
+  c75: color.change(red,$hue:75);
+  c76: color.change(red,$hue:76);
+  c77: color.change(red,$hue:77);
+  c78: color.change(red,$hue:78);
+  c79: color.change(red,$hue:79);
+  c80: color.change(red,$hue:80);
+  c81: color.change(red,$hue:81);
+  c82: color.change(red,$hue:82);
+  c83: color.change(red,$hue:83);
+  c84: color.change(red,$hue:84);
+  c85: color.change(red,$hue:85);
+  c86: color.change(red,$hue:86);
+  c87: color.change(red,$hue:87);
+  c88: color.change(red,$hue:88);
+  c89: color.change(red,$hue:89);
+  c90: color.change(red,$hue:90);
+  c91: color.change(red,$hue:91);
+  c92: color.change(red,$hue:92);
+  c93: color.change(red,$hue:93);
+  c94: color.change(red,$hue:94);
+  c95: color.change(red,$hue:95);
+  c96: color.change(red,$hue:96);
+  c97: color.change(red,$hue:97);
+  c98: color.change(red,$hue:98);
+  c99: color.change(red,$hue:99);
+  c100: color.change(red,$hue:100);
+  c101: color.change(red,$hue:101);
+  c102: color.change(red,$hue:102);
+  c103: color.change(red,$hue:103);
+  c104: color.change(red,$hue:104);
+  c105: color.change(red,$hue:105);
+  c106: color.change(red,$hue:106);
+  c107: color.change(red,$hue:107);
+  c108: color.change(red,$hue:108);
+  c109: color.change(red,$hue:109);
+  c110: color.change(red,$hue:110);
+  c111: color.change(red,$hue:111);
+  c112: color.change(red,$hue:112);
+  c113: color.change(red,$hue:113);
+  c114: color.change(red,$hue:114);
+  c115: color.change(red,$hue:115);
+  c116: color.change(red,$hue:116);
+  c117: color.change(red,$hue:117);
+  c118: color.change(red,$hue:118);
+  c119: color.change(red,$hue:119);
+  c120: color.change(red,$hue:120);
+  c121: color.change(red,$hue:121);
+  c122: color.change(red,$hue:122);
+  c123: color.change(red,$hue:123);
+  c124: color.change(red,$hue:124);
+  c125: color.change(red,$hue:125);
+  c126: color.change(red,$hue:126);
+  c127: color.change(red,$hue:127);
+  c128: color.change(red,$hue:128);
+  c129: color.change(red,$hue:129);
+  c130: color.change(red,$hue:130);
+  c131: color.change(red,$hue:131);
+  c132: color.change(red,$hue:132);
+  c133: color.change(red,$hue:133);
+  c134: color.change(red,$hue:134);
+  c135: color.change(red,$hue:135);
+  c136: color.change(red,$hue:136);
+  c137: color.change(red,$hue:137);
+  c138: color.change(red,$hue:138);
+  c139: color.change(red,$hue:139);
+  c140: color.change(red,$hue:140);
+  c141: color.change(red,$hue:141);
+  c142: color.change(red,$hue:142);
+  c143: color.change(red,$hue:143);
+  c144: color.change(red,$hue:144);
+  c145: color.change(red,$hue:145);
+  c146: color.change(red,$hue:146);
+  c147: color.change(red,$hue:147);
+  c148: color.change(red,$hue:148);
+  c149: color.change(red,$hue:149);
+  c150: color.change(red,$hue:150);
+  c151: color.change(red,$hue:151);
+  c152: color.change(red,$hue:152);
+  c153: color.change(red,$hue:153);
+  c154: color.change(red,$hue:154);
+  c155: color.change(red,$hue:155);
+  c156: color.change(red,$hue:156);
+  c157: color.change(red,$hue:157);
+  c158: color.change(red,$hue:158);
+  c159: color.change(red,$hue:159);
+  c160: color.change(red,$hue:160);
+  c161: color.change(red,$hue:161);
+  c162: color.change(red,$hue:162);
+  c163: color.change(red,$hue:163);
+  c164: color.change(red,$hue:164);
+  c165: color.change(red,$hue:165);
+  c166: color.change(red,$hue:166);
+  c167: color.change(red,$hue:167);
+  c168: color.change(red,$hue:168);
+  c169: color.change(red,$hue:169);
+  c170: color.change(red,$hue:170);
+  c171: color.change(red,$hue:171);
+  c172: color.change(red,$hue:172);
+  c173: color.change(red,$hue:173);
+  c174: color.change(red,$hue:174);
+  c175: color.change(red,$hue:175);
+  c176: color.change(red,$hue:176);
+  c177: color.change(red,$hue:177);
+  c178: color.change(red,$hue:178);
+  c179: color.change(red,$hue:179);
+  c180: color.change(red,$hue:180);
+  c181: color.change(red,$hue:181);
+  c182: color.change(red,$hue:182);
+  c183: color.change(red,$hue:183);
+  c184: color.change(red,$hue:184);
+  c185: color.change(red,$hue:185);
+  c186: color.change(red,$hue:186);
+  c187: color.change(red,$hue:187);
+  c188: color.change(red,$hue:188);
+  c189: color.change(red,$hue:189);
+  c190: color.change(red,$hue:190);
+  c191: color.change(red,$hue:191);
+  c192: color.change(red,$hue:192);
+  c193: color.change(red,$hue:193);
+  c194: color.change(red,$hue:194);
+  c195: color.change(red,$hue:195);
+  c196: color.change(red,$hue:196);
+  c197: color.change(red,$hue:197);
+  c198: color.change(red,$hue:198);
+  c199: color.change(red,$hue:199);
+  c200: color.change(red,$hue:200);
+  c201: color.change(red,$hue:201);
+  c202: color.change(red,$hue:202);
+  c203: color.change(red,$hue:203);
+  c204: color.change(red,$hue:204);
+  c205: color.change(red,$hue:205);
+  c206: color.change(red,$hue:206);
+  c207: color.change(red,$hue:207);
+  c208: color.change(red,$hue:208);
+  c209: color.change(red,$hue:209);
+  c210: color.change(red,$hue:210);
+  c211: color.change(red,$hue:211);
+  c212: color.change(red,$hue:212);
+  c213: color.change(red,$hue:213);
+  c214: color.change(red,$hue:214);
+  c215: color.change(red,$hue:215);
+  c216: color.change(red,$hue:216);
+  c217: color.change(red,$hue:217);
+  c218: color.change(red,$hue:218);
+  c219: color.change(red,$hue:219);
+  c220: color.change(red,$hue:220);
+  c221: color.change(red,$hue:221);
+  c222: color.change(red,$hue:222);
+  c223: color.change(red,$hue:223);
+  c224: color.change(red,$hue:224);
+  c225: color.change(red,$hue:225);
+  c226: color.change(red,$hue:226);
+  c227: color.change(red,$hue:227);
+  c228: color.change(red,$hue:228);
+  c229: color.change(red,$hue:229);
+  c230: color.change(red,$hue:230);
+  c231: color.change(red,$hue:231);
+  c232: color.change(red,$hue:232);
+  c233: color.change(red,$hue:233);
+  c234: color.change(red,$hue:234);
+  c235: color.change(red,$hue:235);
+  c236: color.change(red,$hue:236);
+  c237: color.change(red,$hue:237);
+  c238: color.change(red,$hue:238);
+  c239: color.change(red,$hue:239);
+  c240: color.change(red,$hue:240);
+  c241: color.change(red,$hue:241);
+  c242: color.change(red,$hue:242);
+  c243: color.change(red,$hue:243);
+  c244: color.change(red,$hue:244);
+  c245: color.change(red,$hue:245);
+  c246: color.change(red,$hue:246);
+  c247: color.change(red,$hue:247);
+  c248: color.change(red,$hue:248);
+  c249: color.change(red,$hue:249);
+  c250: color.change(red,$hue:250);
+  c251: color.change(red,$hue:251);
+  c252: color.change(red,$hue:252);
+  c253: color.change(red,$hue:253);
+  c254: color.change(red,$hue:254);
+  c255: color.change(red,$hue:255);
+  c256: color.change(red,$hue:256);
+  c257: color.change(red,$hue:257);
+  c258: color.change(red,$hue:258);
+  c259: color.change(red,$hue:259);
+  c260: color.change(red,$hue:260);
+  c261: color.change(red,$hue:261);
+  c262: color.change(red,$hue:262);
+  c263: color.change(red,$hue:263);
+  c264: color.change(red,$hue:264);
+  c265: color.change(red,$hue:265);
+  c266: color.change(red,$hue:266);
+  c267: color.change(red,$hue:267);
+  c268: color.change(red,$hue:268);
+  c269: color.change(red,$hue:269);
+  c270: color.change(red,$hue:270);
+  c271: color.change(red,$hue:271);
+  c272: color.change(red,$hue:272);
+  c273: color.change(red,$hue:273);
+  c274: color.change(red,$hue:274);
+  c275: color.change(red,$hue:275);
+  c276: color.change(red,$hue:276);
+  c277: color.change(red,$hue:277);
+  c278: color.change(red,$hue:278);
+  c279: color.change(red,$hue:279);
+  c280: color.change(red,$hue:280);
+  c281: color.change(red,$hue:281);
+  c282: color.change(red,$hue:282);
+  c283: color.change(red,$hue:283);
+  c284: color.change(red,$hue:284);
+  c285: color.change(red,$hue:285);
+  c286: color.change(red,$hue:286);
+  c287: color.change(red,$hue:287);
+  c288: color.change(red,$hue:288);
+  c289: color.change(red,$hue:289);
+  c290: color.change(red,$hue:290);
+  c291: color.change(red,$hue:291);
+  c292: color.change(red,$hue:292);
+  c293: color.change(red,$hue:293);
+  c294: color.change(red,$hue:294);
+  c295: color.change(red,$hue:295);
+  c296: color.change(red,$hue:296);
+  c297: color.change(red,$hue:297);
+  c298: color.change(red,$hue:298);
+  c299: color.change(red,$hue:299);
+  c300: color.change(red,$hue:300);
+  c301: color.change(red,$hue:301);
+  c302: color.change(red,$hue:302);
+  c303: color.change(red,$hue:303);
+  c304: color.change(red,$hue:304);
+  c305: color.change(red,$hue:305);
+  c306: color.change(red,$hue:306);
+  c307: color.change(red,$hue:307);
+  c308: color.change(red,$hue:308);
+  c309: color.change(red,$hue:309);
+  c310: color.change(red,$hue:310);
+  c311: color.change(red,$hue:311);
+  c312: color.change(red,$hue:312);
+  c313: color.change(red,$hue:313);
+  c314: color.change(red,$hue:314);
+  c315: color.change(red,$hue:315);
+  c316: color.change(red,$hue:316);
+  c317: color.change(red,$hue:317);
+  c318: color.change(red,$hue:318);
+  c319: color.change(red,$hue:319);
+  c320: color.change(red,$hue:320);
+  c321: color.change(red,$hue:321);
+  c322: color.change(red,$hue:322);
+  c323: color.change(red,$hue:323);
+  c324: color.change(red,$hue:324);
+  c325: color.change(red,$hue:325);
+  c326: color.change(red,$hue:326);
+  c327: color.change(red,$hue:327);
+  c328: color.change(red,$hue:328);
+  c329: color.change(red,$hue:329);
+  c330: color.change(red,$hue:330);
+  c331: color.change(red,$hue:331);
+  c332: color.change(red,$hue:332);
+  c333: color.change(red,$hue:333);
+  c334: color.change(red,$hue:334);
+  c335: color.change(red,$hue:335);
+  c336: color.change(red,$hue:336);
+  c337: color.change(red,$hue:337);
+  c338: color.change(red,$hue:338);
+  c339: color.change(red,$hue:339);
+  c340: color.change(red,$hue:340);
+  c341: color.change(red,$hue:341);
+  c342: color.change(red,$hue:342);
+  c343: color.change(red,$hue:343);
+  c344: color.change(red,$hue:344);
+  c345: color.change(red,$hue:345);
+  c346: color.change(red,$hue:346);
+  c347: color.change(red,$hue:347);
+  c348: color.change(red,$hue:348);
+  c349: color.change(red,$hue:349);
+  c350: color.change(red,$hue:350);
+  c351: color.change(red,$hue:351);
+  c352: color.change(red,$hue:352);
+  c353: color.change(red,$hue:353);
+  c354: color.change(red,$hue:354);
+  c355: color.change(red,$hue:355);
+  c356: color.change(red,$hue:356);
+  c357: color.change(red,$hue:357);
+  c358: color.change(red,$hue:358);
+  c359: color.change(red,$hue:359);
+  c360: color.change(red,$hue:360);
+}
+
+<===> case30/output.css
+foo {
+  c-1: rgb(100%, 0%, 1.6666666667%);
+  c0: red;
+  c1: rgb(100%, 1.6666666667%, 0%);
+  c2: rgb(100%, 3.3333333333%, 0%);
+  c3: rgb(100%, 5%, 0%);
+  c4: #ff1100;
+  c5: rgb(100%, 8.3333333333%, 0%);
+  c6: rgb(100%, 10%, 0%);
+  c7: rgb(100%, 11.6666666667%, 0%);
+  c8: #ff2200;
+  c9: rgb(100%, 15%, 0%);
+  c10: rgb(100%, 16.6666666667%, 0%);
+  c11: rgb(100%, 18.3333333333%, 0%);
+  c12: #ff3300;
+  c13: rgb(100%, 21.6666666667%, 0%);
+  c14: rgb(100%, 23.3333333333%, 0%);
+  c15: rgb(100%, 25%, 0%);
+  c16: #ff4400;
+  c17: rgb(100%, 28.3333333333%, 0%);
+  c18: rgb(100%, 30%, 0%);
+  c19: rgb(100%, 31.6666666667%, 0%);
+  c20: #ff5500;
+  c21: rgb(100%, 35%, 0%);
+  c22: rgb(100%, 36.6666666667%, 0%);
+  c23: rgb(100%, 38.3333333333%, 0%);
+  c24: #ff6600;
+  c25: rgb(100%, 41.6666666667%, 0%);
+  c26: rgb(100%, 43.3333333333%, 0%);
+  c27: rgb(100%, 45%, 0%);
+  c28: #ff7700;
+  c29: rgb(100%, 48.3333333333%, 0%);
+  c30: rgb(100%, 50%, 0%);
+  c31: rgb(100%, 51.6666666667%, 0%);
+  c32: #ff8800;
+  c33: rgb(100%, 55%, 0%);
+  c34: rgb(100%, 56.6666666667%, 0%);
+  c35: rgb(100%, 58.3333333333%, 0%);
+  c36: #ff9900;
+  c37: rgb(100%, 61.6666666667%, 0%);
+  c38: rgb(100%, 63.3333333333%, 0%);
+  c39: rgb(100%, 65%, 0%);
+  c40: #ffaa00;
+  c41: rgb(100%, 68.3333333333%, 0%);
+  c42: rgb(100%, 70%, 0%);
+  c43: rgb(100%, 71.6666666667%, 0%);
+  c44: #ffbb00;
+  c45: rgb(100%, 75%, 0%);
+  c46: rgb(100%, 76.6666666667%, 0%);
+  c47: rgb(100%, 78.3333333333%, 0%);
+  c48: #ffcc00;
+  c49: rgb(100%, 81.6666666667%, 0%);
+  c50: rgb(100%, 83.3333333333%, 0%);
+  c51: rgb(100%, 85%, 0%);
+  c52: #ffdd00;
+  c53: rgb(100%, 88.3333333333%, 0%);
+  c54: rgb(100%, 90%, 0%);
+  c55: rgb(100%, 91.6666666667%, 0%);
+  c56: #ffee00;
+  c57: rgb(100%, 95%, 0%);
+  c58: rgb(100%, 96.6666666667%, 0%);
+  c59: rgb(100%, 98.3333333333%, 0%);
+  c60: yellow;
+  c61: rgb(98.3333333333%, 100%, 0%);
+  c62: rgb(96.6666666667%, 100%, 0%);
+  c63: rgb(95%, 100%, 0%);
+  c64: #eeff00;
+  c65: rgb(91.6666666667%, 100%, 0%);
+  c66: rgb(90%, 100%, 0%);
+  c67: rgb(88.3333333333%, 100%, 0%);
+  c68: #ddff00;
+  c69: rgb(85%, 100%, 0%);
+  c70: rgb(83.3333333333%, 100%, 0%);
+  c71: rgb(81.6666666667%, 100%, 0%);
+  c72: #ccff00;
+  c73: rgb(78.3333333333%, 100%, 0%);
+  c74: rgb(76.6666666667%, 100%, 0%);
+  c75: rgb(75%, 100%, 0%);
+  c76: #bbff00;
+  c77: rgb(71.6666666667%, 100%, 0%);
+  c78: rgb(70%, 100%, 0%);
+  c79: rgb(68.3333333333%, 100%, 0%);
+  c80: #aaff00;
+  c81: rgb(65%, 100%, 0%);
+  c82: rgb(63.3333333333%, 100%, 0%);
+  c83: rgb(61.6666666667%, 100%, 0%);
+  c84: #99ff00;
+  c85: rgb(58.3333333333%, 100%, 0%);
+  c86: rgb(56.6666666667%, 100%, 0%);
+  c87: rgb(55%, 100%, 0%);
+  c88: #88ff00;
+  c89: rgb(51.6666666667%, 100%, 0%);
+  c90: rgb(50%, 100%, 0%);
+  c91: rgb(48.3333333333%, 100%, 0%);
+  c92: #77ff00;
+  c93: rgb(45%, 100%, 0%);
+  c94: rgb(43.3333333333%, 100%, 0%);
+  c95: rgb(41.6666666667%, 100%, 0%);
+  c96: #66ff00;
+  c97: rgb(38.3333333333%, 100%, 0%);
+  c98: rgb(36.6666666667%, 100%, 0%);
+  c99: rgb(35%, 100%, 0%);
+  c100: #55ff00;
+  c101: rgb(31.6666666667%, 100%, 0%);
+  c102: rgb(30%, 100%, 0%);
+  c103: rgb(28.3333333333%, 100%, 0%);
+  c104: #44ff00;
+  c105: rgb(25%, 100%, 0%);
+  c106: rgb(23.3333333333%, 100%, 0%);
+  c107: rgb(21.6666666667%, 100%, 0%);
+  c108: #33ff00;
+  c109: rgb(18.3333333333%, 100%, 0%);
+  c110: rgb(16.6666666667%, 100%, 0%);
+  c111: rgb(15%, 100%, 0%);
+  c112: #22ff00;
+  c113: rgb(11.6666666667%, 100%, 0%);
+  c114: rgb(10%, 100%, 0%);
+  c115: rgb(8.3333333333%, 100%, 0%);
+  c116: #11ff00;
+  c117: rgb(5%, 100%, 0%);
+  c118: rgb(3.3333333333%, 100%, 0%);
+  c119: rgb(1.6666666667%, 100%, 0%);
+  c120: lime;
+  c121: rgb(0%, 100%, 1.6666666667%);
+  c122: rgb(0%, 100%, 3.3333333333%);
+  c123: rgb(0%, 100%, 5%);
+  c124: #00ff11;
+  c125: rgb(0%, 100%, 8.3333333333%);
+  c126: rgb(0%, 100%, 10%);
+  c127: rgb(0%, 100%, 11.6666666667%);
+  c128: #00ff22;
+  c129: rgb(0%, 100%, 15%);
+  c130: rgb(0%, 100%, 16.6666666667%);
+  c131: rgb(0%, 100%, 18.3333333333%);
+  c132: #00ff33;
+  c133: rgb(0%, 100%, 21.6666666667%);
+  c134: rgb(0%, 100%, 23.3333333333%);
+  c135: rgb(0%, 100%, 25%);
+  c136: #00ff44;
+  c137: rgb(0%, 100%, 28.3333333333%);
+  c138: rgb(0%, 100%, 30%);
+  c139: rgb(0%, 100%, 31.6666666667%);
+  c140: #00ff55;
+  c141: rgb(0%, 100%, 35%);
+  c142: rgb(0%, 100%, 36.6666666667%);
+  c143: rgb(0%, 100%, 38.3333333333%);
+  c144: #00ff66;
+  c145: rgb(0%, 100%, 41.6666666667%);
+  c146: rgb(0%, 100%, 43.3333333333%);
+  c147: rgb(0%, 100%, 45%);
+  c148: #00ff77;
+  c149: rgb(0%, 100%, 48.3333333333%);
+  c150: rgb(0%, 100%, 50%);
+  c151: rgb(0%, 100%, 51.6666666667%);
+  c152: #00ff88;
+  c153: rgb(0%, 100%, 55%);
+  c154: rgb(0%, 100%, 56.6666666667%);
+  c155: rgb(0%, 100%, 58.3333333333%);
+  c156: #00ff99;
+  c157: rgb(0%, 100%, 61.6666666667%);
+  c158: rgb(0%, 100%, 63.3333333333%);
+  c159: rgb(0%, 100%, 65%);
+  c160: #00ffaa;
+  c161: rgb(0%, 100%, 68.3333333333%);
+  c162: rgb(0%, 100%, 70%);
+  c163: rgb(0%, 100%, 71.6666666667%);
+  c164: #00ffbb;
+  c165: rgb(0%, 100%, 75%);
+  c166: rgb(0%, 100%, 76.6666666667%);
+  c167: rgb(0%, 100%, 78.3333333333%);
+  c168: #00ffcc;
+  c169: rgb(0%, 100%, 81.6666666667%);
+  c170: rgb(0%, 100%, 83.3333333333%);
+  c171: rgb(0%, 100%, 85%);
+  c172: #00ffdd;
+  c173: rgb(0%, 100%, 88.3333333333%);
+  c174: rgb(0%, 100%, 90%);
+  c175: rgb(0%, 100%, 91.6666666667%);
+  c176: #00ffee;
+  c177: rgb(0%, 100%, 95%);
+  c178: rgb(0%, 100%, 96.6666666667%);
+  c179: rgb(0%, 100%, 98.3333333333%);
+  c180: aqua;
+  c181: rgb(0%, 98.3333333333%, 100%);
+  c182: rgb(0%, 96.6666666667%, 100%);
+  c183: rgb(0%, 95%, 100%);
+  c184: #00eeff;
+  c185: rgb(0%, 91.6666666667%, 100%);
+  c186: rgb(0%, 90%, 100%);
+  c187: rgb(0%, 88.3333333333%, 100%);
+  c188: #00ddff;
+  c189: rgb(0%, 85%, 100%);
+  c190: rgb(0%, 83.3333333333%, 100%);
+  c191: rgb(0%, 81.6666666667%, 100%);
+  c192: #00ccff;
+  c193: rgb(0%, 78.3333333333%, 100%);
+  c194: rgb(0%, 76.6666666667%, 100%);
+  c195: rgb(0%, 75%, 100%);
+  c196: #00bbff;
+  c197: rgb(0%, 71.6666666667%, 100%);
+  c198: rgb(0%, 70%, 100%);
+  c199: rgb(0%, 68.3333333333%, 100%);
+  c200: #00aaff;
+  c201: rgb(0%, 65%, 100%);
+  c202: rgb(0%, 63.3333333333%, 100%);
+  c203: rgb(0%, 61.6666666667%, 100%);
+  c204: #0099ff;
+  c205: rgb(0%, 58.3333333333%, 100%);
+  c206: rgb(0%, 56.6666666667%, 100%);
+  c207: rgb(0%, 55%, 100%);
+  c208: #0088ff;
+  c209: rgb(0%, 51.6666666667%, 100%);
+  c210: rgb(0%, 50%, 100%);
+  c211: rgb(0%, 48.3333333333%, 100%);
+  c212: #0077ff;
+  c213: rgb(0%, 45%, 100%);
+  c214: rgb(0%, 43.3333333333%, 100%);
+  c215: rgb(0%, 41.6666666667%, 100%);
+  c216: #0066ff;
+  c217: rgb(0%, 38.3333333333%, 100%);
+  c218: rgb(0%, 36.6666666667%, 100%);
+  c219: rgb(0%, 35%, 100%);
+  c220: #0055ff;
+  c221: rgb(0%, 31.6666666667%, 100%);
+  c222: rgb(0%, 30%, 100%);
+  c223: rgb(0%, 28.3333333333%, 100%);
+  c224: #0044ff;
+  c225: rgb(0%, 25%, 100%);
+  c226: rgb(0%, 23.3333333333%, 100%);
+  c227: rgb(0%, 21.6666666667%, 100%);
+  c228: #0033ff;
+  c229: rgb(0%, 18.3333333333%, 100%);
+  c230: rgb(0%, 16.6666666667%, 100%);
+  c231: rgb(0%, 15%, 100%);
+  c232: #0022ff;
+  c233: rgb(0%, 11.6666666667%, 100%);
+  c234: rgb(0%, 10%, 100%);
+  c235: rgb(0%, 8.3333333333%, 100%);
+  c236: #0011ff;
+  c237: rgb(0%, 5%, 100%);
+  c238: rgb(0%, 3.3333333333%, 100%);
+  c239: rgb(0%, 1.6666666667%, 100%);
+  c240: blue;
+  c241: rgb(1.6666666667%, 0%, 100%);
+  c242: rgb(3.3333333333%, 0%, 100%);
+  c243: rgb(5%, 0%, 100%);
+  c244: #1100ff;
+  c245: rgb(8.3333333333%, 0%, 100%);
+  c246: rgb(10%, 0%, 100%);
+  c247: rgb(11.6666666667%, 0%, 100%);
+  c248: #2200ff;
+  c249: rgb(15%, 0%, 100%);
+  c250: rgb(16.6666666667%, 0%, 100%);
+  c251: rgb(18.3333333333%, 0%, 100%);
+  c252: #3300ff;
+  c253: rgb(21.6666666667%, 0%, 100%);
+  c254: rgb(23.3333333333%, 0%, 100%);
+  c255: rgb(25%, 0%, 100%);
+  c256: #4400ff;
+  c257: rgb(28.3333333333%, 0%, 100%);
+  c258: rgb(30%, 0%, 100%);
+  c259: rgb(31.6666666667%, 0%, 100%);
+  c260: #5500ff;
+  c261: rgb(35%, 0%, 100%);
+  c262: rgb(36.6666666667%, 0%, 100%);
+  c263: rgb(38.3333333333%, 0%, 100%);
+  c264: #6600ff;
+  c265: rgb(41.6666666667%, 0%, 100%);
+  c266: rgb(43.3333333333%, 0%, 100%);
+  c267: rgb(45%, 0%, 100%);
+  c268: #7700ff;
+  c269: rgb(48.3333333333%, 0%, 100%);
+  c270: rgb(50%, 0%, 100%);
+  c271: rgb(51.6666666667%, 0%, 100%);
+  c272: #8800ff;
+  c273: rgb(55%, 0%, 100%);
+  c274: rgb(56.6666666667%, 0%, 100%);
+  c275: rgb(58.3333333333%, 0%, 100%);
+  c276: #9900ff;
+  c277: rgb(61.6666666667%, 0%, 100%);
+  c278: rgb(63.3333333333%, 0%, 100%);
+  c279: rgb(65%, 0%, 100%);
+  c280: #aa00ff;
+  c281: rgb(68.3333333333%, 0%, 100%);
+  c282: rgb(70%, 0%, 100%);
+  c283: rgb(71.6666666667%, 0%, 100%);
+  c284: #bb00ff;
+  c285: rgb(75%, 0%, 100%);
+  c286: rgb(76.6666666667%, 0%, 100%);
+  c287: rgb(78.3333333333%, 0%, 100%);
+  c288: #cc00ff;
+  c289: rgb(81.6666666667%, 0%, 100%);
+  c290: rgb(83.3333333333%, 0%, 100%);
+  c291: rgb(85%, 0%, 100%);
+  c292: #dd00ff;
+  c293: rgb(88.3333333333%, 0%, 100%);
+  c294: rgb(90%, 0%, 100%);
+  c295: rgb(91.6666666667%, 0%, 100%);
+  c296: #ee00ff;
+  c297: rgb(95%, 0%, 100%);
+  c298: rgb(96.6666666667%, 0%, 100%);
+  c299: rgb(98.3333333333%, 0%, 100%);
+  c300: fuchsia;
+  c301: rgb(100%, 0%, 98.3333333333%);
+  c302: rgb(100%, 0%, 96.6666666667%);
+  c303: rgb(100%, 0%, 95%);
+  c304: #ff00ee;
+  c305: rgb(100%, 0%, 91.6666666667%);
+  c306: rgb(100%, 0%, 90%);
+  c307: rgb(100%, 0%, 88.3333333333%);
+  c308: #ff00dd;
+  c309: rgb(100%, 0%, 85%);
+  c310: rgb(100%, 0%, 83.3333333333%);
+  c311: rgb(100%, 0%, 81.6666666667%);
+  c312: #ff00cc;
+  c313: rgb(100%, 0%, 78.3333333333%);
+  c314: rgb(100%, 0%, 76.6666666667%);
+  c315: rgb(100%, 0%, 75%);
+  c316: #ff00bb;
+  c317: rgb(100%, 0%, 71.6666666667%);
+  c318: rgb(100%, 0%, 70%);
+  c319: rgb(100%, 0%, 68.3333333333%);
+  c320: #ff00aa;
+  c321: rgb(100%, 0%, 65%);
+  c322: rgb(100%, 0%, 63.3333333333%);
+  c323: rgb(100%, 0%, 61.6666666667%);
+  c324: #ff0099;
+  c325: rgb(100%, 0%, 58.3333333333%);
+  c326: rgb(100%, 0%, 56.6666666667%);
+  c327: rgb(100%, 0%, 55%);
+  c328: #ff0088;
+  c329: rgb(100%, 0%, 51.6666666667%);
+  c330: rgb(100%, 0%, 50%);
+  c331: rgb(100%, 0%, 48.3333333333%);
+  c332: #ff0077;
+  c333: rgb(100%, 0%, 45%);
+  c334: rgb(100%, 0%, 43.3333333333%);
+  c335: rgb(100%, 0%, 41.6666666667%);
+  c336: #ff0066;
+  c337: rgb(100%, 0%, 38.3333333333%);
+  c338: rgb(100%, 0%, 36.6666666667%);
+  c339: rgb(100%, 0%, 35%);
+  c340: #ff0055;
+  c341: rgb(100%, 0%, 31.6666666667%);
+  c342: rgb(100%, 0%, 30%);
+  c343: rgb(100%, 0%, 28.3333333333%);
+  c344: #ff0044;
+  c345: rgb(100%, 0%, 25%);
+  c346: rgb(100%, 0%, 23.3333333333%);
+  c347: rgb(100%, 0%, 21.6666666667%);
+  c348: #ff0033;
+  c349: rgb(100%, 0%, 18.3333333333%);
+  c350: rgb(100%, 0%, 16.6666666667%);
+  c351: rgb(100%, 0%, 15%);
+  c352: #ff0022;
+  c353: rgb(100%, 0%, 11.6666666667%);
+  c354: rgb(100%, 0%, 10%);
+  c355: rgb(100%, 0%, 8.3333333333%);
+  c356: #ff0011;
+  c357: rgb(100%, 0%, 5%);
+  c358: rgb(100%, 0%, 3.3333333333%);
+  c359: rgb(100%, 0%, 1.6666666667%);
+  c360: red;
+}
+
+<===> case31/input.scss
+@use "sass:color";
+foo {
+  // c-1: change-color(red,$lightness:-1%);
+  c0: color.change(red,$lightness:0%);
+  c1: color.change(red,$lightness:1%);
+  c2: color.change(red,$lightness:2%);
+  c3: color.change(red,$lightness:3%);
+  c4: color.change(red,$lightness:4%);
+  c5: color.change(red,$lightness:5%);
+  c6: color.change(red,$lightness:6%);
+  c7: color.change(red,$lightness:7%);
+  c8: color.change(red,$lightness:8%);
+  c9: color.change(red,$lightness:9%);
+  c10: color.change(red,$lightness:10%);
+  c11: color.change(red,$lightness:11%);
+  c12: color.change(red,$lightness:12%);
+  c13: color.change(red,$lightness:13%);
+  c14: color.change(red,$lightness:14%);
+  c15: color.change(red,$lightness:15%);
+  c16: color.change(red,$lightness:16%);
+  c17: color.change(red,$lightness:17%);
+  c18: color.change(red,$lightness:18%);
+  c19: color.change(red,$lightness:19%);
+  c20: color.change(red,$lightness:20%);
+  c21: color.change(red,$lightness:21%);
+  c22: color.change(red,$lightness:22%);
+  c23: color.change(red,$lightness:23%);
+  c24: color.change(red,$lightness:24%);
+  c25: color.change(red,$lightness:25%);
+  c26: color.change(red,$lightness:26%);
+  c27: color.change(red,$lightness:27%);
+  c28: color.change(red,$lightness:28%);
+  c29: color.change(red,$lightness:29%);
+  c30: color.change(red,$lightness:30%);
+  c31: color.change(red,$lightness:31%);
+  c32: color.change(red,$lightness:32%);
+  c33: color.change(red,$lightness:33%);
+  c34: color.change(red,$lightness:34%);
+  c35: color.change(red,$lightness:35%);
+  c36: color.change(red,$lightness:36%);
+  c37: color.change(red,$lightness:37%);
+  c38: color.change(red,$lightness:38%);
+  c39: color.change(red,$lightness:39%);
+  c40: color.change(red,$lightness:40%);
+  c41: color.change(red,$lightness:41%);
+  c42: color.change(red,$lightness:42%);
+  c43: color.change(red,$lightness:43%);
+  c44: color.change(red,$lightness:44%);
+  c45: color.change(red,$lightness:45%);
+  c46: color.change(red,$lightness:46%);
+  c47: color.change(red,$lightness:47%);
+  c48: color.change(red,$lightness:48%);
+  c49: color.change(red,$lightness:49%);
+  c50: color.change(red,$lightness:50%);
+  c51: color.change(red,$lightness:51%);
+  c52: color.change(red,$lightness:52%);
+  c53: color.change(red,$lightness:53%);
+  c54: color.change(red,$lightness:54%);
+  c55: color.change(red,$lightness:55%);
+  c56: color.change(red,$lightness:56%);
+  c57: color.change(red,$lightness:57%);
+  c58: color.change(red,$lightness:58%);
+  c59: color.change(red,$lightness:59%);
+  c60: color.change(red,$lightness:60%);
+  c61: color.change(red,$lightness:61%);
+  c62: color.change(red,$lightness:62%);
+  c63: color.change(red,$lightness:63%);
+  c64: color.change(red,$lightness:64%);
+  c65: color.change(red,$lightness:65%);
+  c66: color.change(red,$lightness:66%);
+  c67: color.change(red,$lightness:67%);
+  c68: color.change(red,$lightness:68%);
+  c69: color.change(red,$lightness:69%);
+  c70: color.change(red,$lightness:70%);
+  c71: color.change(red,$lightness:71%);
+  c72: color.change(red,$lightness:72%);
+  c73: color.change(red,$lightness:73%);
+  c74: color.change(red,$lightness:74%);
+  c75: color.change(red,$lightness:75%);
+  c76: color.change(red,$lightness:76%);
+  c77: color.change(red,$lightness:77%);
+  c78: color.change(red,$lightness:78%);
+  c79: color.change(red,$lightness:79%);
+  c80: color.change(red,$lightness:80%);
+  c81: color.change(red,$lightness:81%);
+  c82: color.change(red,$lightness:82%);
+  c83: color.change(red,$lightness:83%);
+  c84: color.change(red,$lightness:84%);
+  c85: color.change(red,$lightness:85%);
+  c86: color.change(red,$lightness:86%);
+  c87: color.change(red,$lightness:87%);
+  c88: color.change(red,$lightness:88%);
+  c89: color.change(red,$lightness:89%);
+  c90: color.change(red,$lightness:90%);
+  c91: color.change(red,$lightness:91%);
+  c92: color.change(red,$lightness:92%);
+  c93: color.change(red,$lightness:93%);
+  c94: color.change(red,$lightness:94%);
+  c95: color.change(red,$lightness:95%);
+  c96: color.change(red,$lightness:96%);
+  c97: color.change(red,$lightness:97%);
+  c98: color.change(red,$lightness:98%);
+  c99: color.change(red,$lightness:99%);
+  // c100: change-color(red,$lightness:100%);
+}
+
+<===> case31/output.css
+foo {
+  c0: black;
+  c1: rgb(2%, 0%, 0%);
+  c2: rgb(4%, 0%, 0%);
+  c3: rgb(6%, 0%, 0%);
+  c4: rgb(8%, 0%, 0%);
+  c5: rgb(10%, 0%, 0%);
+  c6: rgb(12%, 0%, 0%);
+  c7: rgb(14%, 0%, 0%);
+  c8: rgb(16%, 0%, 0%);
+  c9: rgb(18%, 0%, 0%);
+  c10: #330000;
+  c11: rgb(22%, 0%, 0%);
+  c12: rgb(24%, 0%, 0%);
+  c13: rgb(26%, 0%, 0%);
+  c14: rgb(28%, 0%, 0%);
+  c15: rgb(30%, 0%, 0%);
+  c16: rgb(32%, 0%, 0%);
+  c17: rgb(34%, 0%, 0%);
+  c18: rgb(36%, 0%, 0%);
+  c19: rgb(38%, 0%, 0%);
+  c20: #660000;
+  c21: rgb(42%, 0%, 0%);
+  c22: rgb(44%, 0%, 0%);
+  c23: rgb(46%, 0%, 0%);
+  c24: rgb(48%, 0%, 0%);
+  c25: rgb(50%, 0%, 0%);
+  c26: rgb(52%, 0%, 0%);
+  c27: rgb(54%, 0%, 0%);
+  c28: rgb(56%, 0%, 0%);
+  c29: rgb(58%, 0%, 0%);
+  c30: #990000;
+  c31: rgb(62%, 0%, 0%);
+  c32: rgb(64%, 0%, 0%);
+  c33: rgb(66%, 0%, 0%);
+  c34: rgb(68%, 0%, 0%);
+  c35: rgb(70%, 0%, 0%);
+  c36: rgb(72%, 0%, 0%);
+  c37: rgb(74%, 0%, 0%);
+  c38: rgb(76%, 0%, 0%);
+  c39: rgb(78%, 0%, 0%);
+  c40: #cc0000;
+  c41: rgb(82%, 0%, 0%);
+  c42: rgb(84%, 0%, 0%);
+  c43: rgb(86%, 0%, 0%);
+  c44: rgb(88%, 0%, 0%);
+  c45: rgb(90%, 0%, 0%);
+  c46: rgb(92%, 0%, 0%);
+  c47: rgb(94%, 0%, 0%);
+  c48: rgb(96%, 0%, 0%);
+  c49: rgb(98%, 0%, 0%);
+  c50: red;
+  c51: rgb(100%, 2%, 2%);
+  c52: rgb(100%, 4%, 4%);
+  c53: rgb(100%, 6%, 6%);
+  c54: rgb(100%, 8%, 8%);
+  c55: rgb(100%, 10%, 10%);
+  c56: rgb(100%, 12%, 12%);
+  c57: rgb(100%, 14%, 14%);
+  c58: rgb(100%, 16%, 16%);
+  c59: rgb(100%, 18%, 18%);
+  c60: #ff3333;
+  c61: rgb(100%, 22%, 22%);
+  c62: rgb(100%, 24%, 24%);
+  c63: rgb(100%, 26%, 26%);
+  c64: rgb(100%, 28%, 28%);
+  c65: rgb(100%, 30%, 30%);
+  c66: rgb(100%, 32%, 32%);
+  c67: rgb(100%, 34%, 34%);
+  c68: rgb(100%, 36%, 36%);
+  c69: rgb(100%, 38%, 38%);
+  c70: #ff6666;
+  c71: rgb(100%, 42%, 42%);
+  c72: rgb(100%, 44%, 44%);
+  c73: rgb(100%, 46%, 46%);
+  c74: rgb(100%, 48%, 48%);
+  c75: rgb(100%, 50%, 50%);
+  c76: rgb(100%, 52%, 52%);
+  c77: rgb(100%, 54%, 54%);
+  c78: rgb(100%, 56%, 56%);
+  c79: rgb(100%, 58%, 58%);
+  c80: #ff9999;
+  c81: rgb(100%, 62%, 62%);
+  c82: rgb(100%, 64%, 64%);
+  c83: rgb(100%, 66%, 66%);
+  c84: rgb(100%, 68%, 68%);
+  c85: rgb(100%, 70%, 70%);
+  c86: rgb(100%, 72%, 72%);
+  c87: rgb(100%, 74%, 74%);
+  c88: rgb(100%, 76%, 76%);
+  c89: rgb(100%, 78%, 78%);
+  c90: #ffcccc;
+  c91: rgb(100%, 82%, 82%);
+  c92: rgb(100%, 84%, 84%);
+  c93: rgb(100%, 86%, 86%);
+  c94: rgb(100%, 88%, 88%);
+  c95: rgb(100%, 90%, 90%);
+  c96: rgb(100%, 92%, 92%);
+  c97: rgb(100%, 94%, 94%);
+  c98: rgb(100%, 96%, 96%);
+  c99: rgb(100%, 98%, 98%);
+}
+
+<===> case32/input.scss
+@use "sass:color";
+foo {
+  // c-1: change-color(black,$red:-1);
+  c0: color.change(black,$red:0);
+  c1: color.change(black,$red:1);
+  c2: color.change(black,$red:2);
+  c3: color.change(black,$red:3);
+  c4: color.change(black,$red:4);
+  c5: color.change(black,$red:5);
+  c6: color.change(black,$red:6);
+  c7: color.change(black,$red:7);
+  c8: color.change(black,$red:8);
+  c9: color.change(black,$red:9);
+  c10: color.change(black,$red:10);
+  c11: color.change(black,$red:11);
+  c12: color.change(black,$red:12);
+  c13: color.change(black,$red:13);
+  c14: color.change(black,$red:14);
+  c15: color.change(black,$red:15);
+  c16: color.change(black,$red:16);
+  c17: color.change(black,$red:17);
+  c18: color.change(black,$red:18);
+  c19: color.change(black,$red:19);
+  c20: color.change(black,$red:20);
+  c21: color.change(black,$red:21);
+  c22: color.change(black,$red:22);
+  c23: color.change(black,$red:23);
+  c24: color.change(black,$red:24);
+  c25: color.change(black,$red:25);
+  c26: color.change(black,$red:26);
+  c27: color.change(black,$red:27);
+  c28: color.change(black,$red:28);
+  c29: color.change(black,$red:29);
+  c30: color.change(black,$red:30);
+  c31: color.change(black,$red:31);
+  c32: color.change(black,$red:32);
+  c33: color.change(black,$red:33);
+  c34: color.change(black,$red:34);
+  c35: color.change(black,$red:35);
+  c36: color.change(black,$red:36);
+  c37: color.change(black,$red:37);
+  c38: color.change(black,$red:38);
+  c39: color.change(black,$red:39);
+  c40: color.change(black,$red:40);
+  c41: color.change(black,$red:41);
+  c42: color.change(black,$red:42);
+  c43: color.change(black,$red:43);
+  c44: color.change(black,$red:44);
+  c45: color.change(black,$red:45);
+  c46: color.change(black,$red:46);
+  c47: color.change(black,$red:47);
+  c48: color.change(black,$red:48);
+  c49: color.change(black,$red:49);
+  c50: color.change(black,$red:50);
+  c51: color.change(black,$red:51);
+  c52: color.change(black,$red:52);
+  c53: color.change(black,$red:53);
+  c54: color.change(black,$red:54);
+  c55: color.change(black,$red:55);
+  c56: color.change(black,$red:56);
+  c57: color.change(black,$red:57);
+  c58: color.change(black,$red:58);
+  c59: color.change(black,$red:59);
+  c60: color.change(black,$red:60);
+  c61: color.change(black,$red:61);
+  c62: color.change(black,$red:62);
+  c63: color.change(black,$red:63);
+  c64: color.change(black,$red:64);
+  c65: color.change(black,$red:65);
+  c66: color.change(black,$red:66);
+  c67: color.change(black,$red:67);
+  c68: color.change(black,$red:68);
+  c69: color.change(black,$red:69);
+  c70: color.change(black,$red:70);
+  c71: color.change(black,$red:71);
+  c72: color.change(black,$red:72);
+  c73: color.change(black,$red:73);
+  c74: color.change(black,$red:74);
+  c75: color.change(black,$red:75);
+  c76: color.change(black,$red:76);
+  c77: color.change(black,$red:77);
+  c78: color.change(black,$red:78);
+  c79: color.change(black,$red:79);
+  c80: color.change(black,$red:80);
+  c81: color.change(black,$red:81);
+  c82: color.change(black,$red:82);
+  c83: color.change(black,$red:83);
+  c84: color.change(black,$red:84);
+  c85: color.change(black,$red:85);
+  c86: color.change(black,$red:86);
+  c87: color.change(black,$red:87);
+  c88: color.change(black,$red:88);
+  c89: color.change(black,$red:89);
+  c90: color.change(black,$red:90);
+  c91: color.change(black,$red:91);
+  c92: color.change(black,$red:92);
+  c93: color.change(black,$red:93);
+  c94: color.change(black,$red:94);
+  c95: color.change(black,$red:95);
+  c96: color.change(black,$red:96);
+  c97: color.change(black,$red:97);
+  c98: color.change(black,$red:98);
+  c99: color.change(black,$red:99);
+  c100: color.change(black,$red:100);
+  c101: color.change(black,$red:101);
+  c102: color.change(black,$red:102);
+  c103: color.change(black,$red:103);
+  c104: color.change(black,$red:104);
+  c105: color.change(black,$red:105);
+  c106: color.change(black,$red:106);
+  c107: color.change(black,$red:107);
+  c108: color.change(black,$red:108);
+  c109: color.change(black,$red:109);
+  c110: color.change(black,$red:110);
+  c111: color.change(black,$red:111);
+  c112: color.change(black,$red:112);
+  c113: color.change(black,$red:113);
+  c114: color.change(black,$red:114);
+  c115: color.change(black,$red:115);
+  c116: color.change(black,$red:116);
+  c117: color.change(black,$red:117);
+  c118: color.change(black,$red:118);
+  c119: color.change(black,$red:119);
+  c120: color.change(black,$red:120);
+  c121: color.change(black,$red:121);
+  c122: color.change(black,$red:122);
+  c123: color.change(black,$red:123);
+  c124: color.change(black,$red:124);
+  c125: color.change(black,$red:125);
+  c126: color.change(black,$red:126);
+  c127: color.change(black,$red:127);
+  c128: color.change(black,$red:128);
+  c129: color.change(black,$red:129);
+  c130: color.change(black,$red:130);
+  c131: color.change(black,$red:131);
+  c132: color.change(black,$red:132);
+  c133: color.change(black,$red:133);
+  c134: color.change(black,$red:134);
+  c135: color.change(black,$red:135);
+  c136: color.change(black,$red:136);
+  c137: color.change(black,$red:137);
+  c138: color.change(black,$red:138);
+  c139: color.change(black,$red:139);
+  c140: color.change(black,$red:140);
+  c141: color.change(black,$red:141);
+  c142: color.change(black,$red:142);
+  c143: color.change(black,$red:143);
+  c144: color.change(black,$red:144);
+  c145: color.change(black,$red:145);
+  c146: color.change(black,$red:146);
+  c147: color.change(black,$red:147);
+  c148: color.change(black,$red:148);
+  c149: color.change(black,$red:149);
+  c150: color.change(black,$red:150);
+  c151: color.change(black,$red:151);
+  c152: color.change(black,$red:152);
+  c153: color.change(black,$red:153);
+  c154: color.change(black,$red:154);
+  c155: color.change(black,$red:155);
+  c156: color.change(black,$red:156);
+  c157: color.change(black,$red:157);
+  c158: color.change(black,$red:158);
+  c159: color.change(black,$red:159);
+  c160: color.change(black,$red:160);
+  c161: color.change(black,$red:161);
+  c162: color.change(black,$red:162);
+  c163: color.change(black,$red:163);
+  c164: color.change(black,$red:164);
+  c165: color.change(black,$red:165);
+  c166: color.change(black,$red:166);
+  c167: color.change(black,$red:167);
+  c168: color.change(black,$red:168);
+  c169: color.change(black,$red:169);
+  c170: color.change(black,$red:170);
+  c171: color.change(black,$red:171);
+  c172: color.change(black,$red:172);
+  c173: color.change(black,$red:173);
+  c174: color.change(black,$red:174);
+  c175: color.change(black,$red:175);
+  c176: color.change(black,$red:176);
+  c177: color.change(black,$red:177);
+  c178: color.change(black,$red:178);
+  c179: color.change(black,$red:179);
+  c180: color.change(black,$red:180);
+  c181: color.change(black,$red:181);
+  c182: color.change(black,$red:182);
+  c183: color.change(black,$red:183);
+  c184: color.change(black,$red:184);
+  c185: color.change(black,$red:185);
+  c186: color.change(black,$red:186);
+  c187: color.change(black,$red:187);
+  c188: color.change(black,$red:188);
+  c189: color.change(black,$red:189);
+  c190: color.change(black,$red:190);
+  c191: color.change(black,$red:191);
+  c192: color.change(black,$red:192);
+  c193: color.change(black,$red:193);
+  c194: color.change(black,$red:194);
+  c195: color.change(black,$red:195);
+  c196: color.change(black,$red:196);
+  c197: color.change(black,$red:197);
+  c198: color.change(black,$red:198);
+  c199: color.change(black,$red:199);
+  c200: color.change(black,$red:200);
+  c201: color.change(black,$red:201);
+  c202: color.change(black,$red:202);
+  c203: color.change(black,$red:203);
+  c204: color.change(black,$red:204);
+  c205: color.change(black,$red:205);
+  c206: color.change(black,$red:206);
+  c207: color.change(black,$red:207);
+  c208: color.change(black,$red:208);
+  c209: color.change(black,$red:209);
+  c210: color.change(black,$red:210);
+  c211: color.change(black,$red:211);
+  c212: color.change(black,$red:212);
+  c213: color.change(black,$red:213);
+  c214: color.change(black,$red:214);
+  c215: color.change(black,$red:215);
+  c216: color.change(black,$red:216);
+  c217: color.change(black,$red:217);
+  c218: color.change(black,$red:218);
+  c219: color.change(black,$red:219);
+  c220: color.change(black,$red:220);
+  c221: color.change(black,$red:221);
+  c222: color.change(black,$red:222);
+  c223: color.change(black,$red:223);
+  c224: color.change(black,$red:224);
+  c225: color.change(black,$red:225);
+  c226: color.change(black,$red:226);
+  c227: color.change(black,$red:227);
+  c228: color.change(black,$red:228);
+  c229: color.change(black,$red:229);
+  c230: color.change(black,$red:230);
+  c231: color.change(black,$red:231);
+  c232: color.change(black,$red:232);
+  c233: color.change(black,$red:233);
+  c234: color.change(black,$red:234);
+  c235: color.change(black,$red:235);
+  c236: color.change(black,$red:236);
+  c237: color.change(black,$red:237);
+  c238: color.change(black,$red:238);
+  c239: color.change(black,$red:239);
+  c240: color.change(black,$red:240);
+  c241: color.change(black,$red:241);
+  c242: color.change(black,$red:242);
+  c243: color.change(black,$red:243);
+  c244: color.change(black,$red:244);
+  c245: color.change(black,$red:245);
+  c246: color.change(black,$red:246);
+  c247: color.change(black,$red:247);
+  c248: color.change(black,$red:248);
+  c249: color.change(black,$red:249);
+  c250: color.change(black,$red:250);
+  c251: color.change(black,$red:251);
+  c252: color.change(black,$red:252);
+  c253: color.change(black,$red:253);
+  c254: color.change(black,$red:254);
+  c255: color.change(black,$red:255);
+  // c256: change-color(black,$red:256);
+}
+
+<===> case32/output.css
+foo {
+  c0: black;
+  c1: #010000;
+  c2: #020000;
+  c3: #030000;
+  c4: #040000;
+  c5: #050000;
+  c6: #060000;
+  c7: #070000;
+  c8: #080000;
+  c9: #090000;
+  c10: #0a0000;
+  c11: #0b0000;
+  c12: #0c0000;
+  c13: #0d0000;
+  c14: #0e0000;
+  c15: #0f0000;
+  c16: #100000;
+  c17: #110000;
+  c18: #120000;
+  c19: #130000;
+  c20: #140000;
+  c21: #150000;
+  c22: #160000;
+  c23: #170000;
+  c24: #180000;
+  c25: #190000;
+  c26: #1a0000;
+  c27: #1b0000;
+  c28: #1c0000;
+  c29: #1d0000;
+  c30: #1e0000;
+  c31: #1f0000;
+  c32: #200000;
+  c33: #210000;
+  c34: #220000;
+  c35: #230000;
+  c36: #240000;
+  c37: #250000;
+  c38: #260000;
+  c39: #270000;
+  c40: #280000;
+  c41: #290000;
+  c42: #2a0000;
+  c43: #2b0000;
+  c44: #2c0000;
+  c45: #2d0000;
+  c46: #2e0000;
+  c47: #2f0000;
+  c48: #300000;
+  c49: #310000;
+  c50: #320000;
+  c51: #330000;
+  c52: #340000;
+  c53: #350000;
+  c54: #360000;
+  c55: #370000;
+  c56: #380000;
+  c57: #390000;
+  c58: #3a0000;
+  c59: #3b0000;
+  c60: #3c0000;
+  c61: #3d0000;
+  c62: #3e0000;
+  c63: #3f0000;
+  c64: #400000;
+  c65: #410000;
+  c66: #420000;
+  c67: #430000;
+  c68: #440000;
+  c69: #450000;
+  c70: #460000;
+  c71: #470000;
+  c72: #480000;
+  c73: #490000;
+  c74: #4a0000;
+  c75: #4b0000;
+  c76: #4c0000;
+  c77: #4d0000;
+  c78: #4e0000;
+  c79: #4f0000;
+  c80: #500000;
+  c81: #510000;
+  c82: #520000;
+  c83: #530000;
+  c84: #540000;
+  c85: #550000;
+  c86: #560000;
+  c87: #570000;
+  c88: #580000;
+  c89: #590000;
+  c90: #5a0000;
+  c91: #5b0000;
+  c92: #5c0000;
+  c93: #5d0000;
+  c94: #5e0000;
+  c95: #5f0000;
+  c96: #600000;
+  c97: #610000;
+  c98: #620000;
+  c99: #630000;
+  c100: #640000;
+  c101: #650000;
+  c102: #660000;
+  c103: #670000;
+  c104: #680000;
+  c105: #690000;
+  c106: #6a0000;
+  c107: #6b0000;
+  c108: #6c0000;
+  c109: #6d0000;
+  c110: #6e0000;
+  c111: #6f0000;
+  c112: #700000;
+  c113: #710000;
+  c114: #720000;
+  c115: #730000;
+  c116: #740000;
+  c117: #750000;
+  c118: #760000;
+  c119: #770000;
+  c120: #780000;
+  c121: #790000;
+  c122: #7a0000;
+  c123: #7b0000;
+  c124: #7c0000;
+  c125: #7d0000;
+  c126: #7e0000;
+  c127: #7f0000;
+  c128: maroon;
+  c129: #810000;
+  c130: #820000;
+  c131: #830000;
+  c132: #840000;
+  c133: #850000;
+  c134: #860000;
+  c135: #870000;
+  c136: #880000;
+  c137: #890000;
+  c138: #8a0000;
+  c139: darkred;
+  c140: #8c0000;
+  c141: #8d0000;
+  c142: #8e0000;
+  c143: #8f0000;
+  c144: #900000;
+  c145: #910000;
+  c146: #920000;
+  c147: #930000;
+  c148: #940000;
+  c149: #950000;
+  c150: #960000;
+  c151: #970000;
+  c152: #980000;
+  c153: #990000;
+  c154: #9a0000;
+  c155: #9b0000;
+  c156: #9c0000;
+  c157: #9d0000;
+  c158: #9e0000;
+  c159: #9f0000;
+  c160: #a00000;
+  c161: #a10000;
+  c162: #a20000;
+  c163: #a30000;
+  c164: #a40000;
+  c165: #a50000;
+  c166: #a60000;
+  c167: #a70000;
+  c168: #a80000;
+  c169: #a90000;
+  c170: #aa0000;
+  c171: #ab0000;
+  c172: #ac0000;
+  c173: #ad0000;
+  c174: #ae0000;
+  c175: #af0000;
+  c176: #b00000;
+  c177: #b10000;
+  c178: #b20000;
+  c179: #b30000;
+  c180: #b40000;
+  c181: #b50000;
+  c182: #b60000;
+  c183: #b70000;
+  c184: #b80000;
+  c185: #b90000;
+  c186: #ba0000;
+  c187: #bb0000;
+  c188: #bc0000;
+  c189: #bd0000;
+  c190: #be0000;
+  c191: #bf0000;
+  c192: #c00000;
+  c193: #c10000;
+  c194: #c20000;
+  c195: #c30000;
+  c196: #c40000;
+  c197: #c50000;
+  c198: #c60000;
+  c199: #c70000;
+  c200: #c80000;
+  c201: #c90000;
+  c202: #ca0000;
+  c203: #cb0000;
+  c204: #cc0000;
+  c205: #cd0000;
+  c206: #ce0000;
+  c207: #cf0000;
+  c208: #d00000;
+  c209: #d10000;
+  c210: #d20000;
+  c211: #d30000;
+  c212: #d40000;
+  c213: #d50000;
+  c214: #d60000;
+  c215: #d70000;
+  c216: #d80000;
+  c217: #d90000;
+  c218: #da0000;
+  c219: #db0000;
+  c220: #dc0000;
+  c221: #dd0000;
+  c222: #de0000;
+  c223: #df0000;
+  c224: #e00000;
+  c225: #e10000;
+  c226: #e20000;
+  c227: #e30000;
+  c228: #e40000;
+  c229: #e50000;
+  c230: #e60000;
+  c231: #e70000;
+  c232: #e80000;
+  c233: #e90000;
+  c234: #ea0000;
+  c235: #eb0000;
+  c236: #ec0000;
+  c237: #ed0000;
+  c238: #ee0000;
+  c239: #ef0000;
+  c240: #f00000;
+  c241: #f10000;
+  c242: #f20000;
+  c243: #f30000;
+  c244: #f40000;
+  c245: #f50000;
+  c246: #f60000;
+  c247: #f70000;
+  c248: #f80000;
+  c249: #f90000;
+  c250: #fa0000;
+  c251: #fb0000;
+  c252: #fc0000;
+  c253: #fd0000;
+  c254: #fe0000;
+  c255: red;
+}
+
+<===> case33/input.scss
+@use "sass:color";
+foo {
+  // c-1: change-color(red,$saturation:-1%);
+  c0: color.change(red,$saturation:0%);
+  c1: color.change(red,$saturation:1%);
+  c2: color.change(red,$saturation:2%);
+  c3: color.change(red,$saturation:3%);
+  c4: color.change(red,$saturation:4%);
+  c5: color.change(red,$saturation:5%);
+  c6: color.change(red,$saturation:6%);
+  c7: color.change(red,$saturation:7%);
+  c8: color.change(red,$saturation:8%);
+  c9: color.change(red,$saturation:9%);
+  c10: color.change(red,$saturation:10%);
+  c11: color.change(red,$saturation:11%);
+  c12: color.change(red,$saturation:12%);
+  c13: color.change(red,$saturation:13%);
+  c14: color.change(red,$saturation:14%);
+  c15: color.change(red,$saturation:15%);
+  c16: color.change(red,$saturation:16%);
+  c17: color.change(red,$saturation:17%);
+  c18: color.change(red,$saturation:18%);
+  c19: color.change(red,$saturation:19%);
+  c20: color.change(red,$saturation:20%);
+  c21: color.change(red,$saturation:21%);
+  c22: color.change(red,$saturation:22%);
+  c23: color.change(red,$saturation:23%);
+  c24: color.change(red,$saturation:24%);
+  c25: color.change(red,$saturation:25%);
+  c26: color.change(red,$saturation:26%);
+  c27: color.change(red,$saturation:27%);
+  c28: color.change(red,$saturation:28%);
+  c29: color.change(red,$saturation:29%);
+  c30: color.change(red,$saturation:30%);
+  c31: color.change(red,$saturation:31%);
+  c32: color.change(red,$saturation:32%);
+  c33: color.change(red,$saturation:33%);
+  c34: color.change(red,$saturation:34%);
+  c35: color.change(red,$saturation:35%);
+  c36: color.change(red,$saturation:36%);
+  c37: color.change(red,$saturation:37%);
+  c38: color.change(red,$saturation:38%);
+  c39: color.change(red,$saturation:39%);
+  c40: color.change(red,$saturation:40%);
+  c41: color.change(red,$saturation:41%);
+  c42: color.change(red,$saturation:42%);
+  c43: color.change(red,$saturation:43%);
+  c44: color.change(red,$saturation:44%);
+  c45: color.change(red,$saturation:45%);
+  c46: color.change(red,$saturation:46%);
+  c47: color.change(red,$saturation:47%);
+  c48: color.change(red,$saturation:48%);
+  c49: color.change(red,$saturation:49%);
+  c50: color.change(red,$saturation:50%);
+  c51: color.change(red,$saturation:51%);
+  c52: color.change(red,$saturation:52%);
+  c53: color.change(red,$saturation:53%);
+  c54: color.change(red,$saturation:54%);
+  c55: color.change(red,$saturation:55%);
+  c56: color.change(red,$saturation:56%);
+  c57: color.change(red,$saturation:57%);
+  c58: color.change(red,$saturation:58%);
+  c59: color.change(red,$saturation:59%);
+  c60: color.change(red,$saturation:60%);
+  c61: color.change(red,$saturation:61%);
+  c62: color.change(red,$saturation:62%);
+  c63: color.change(red,$saturation:63%);
+  c64: color.change(red,$saturation:64%);
+  c65: color.change(red,$saturation:65%);
+  c66: color.change(red,$saturation:66%);
+  c67: color.change(red,$saturation:67%);
+  c68: color.change(red,$saturation:68%);
+  c69: color.change(red,$saturation:69%);
+  c70: color.change(red,$saturation:70%);
+  c71: color.change(red,$saturation:71%);
+  c72: color.change(red,$saturation:72%);
+  c73: color.change(red,$saturation:73%);
+  c74: color.change(red,$saturation:74%);
+  c75: color.change(red,$saturation:75%);
+  c76: color.change(red,$saturation:76%);
+  c77: color.change(red,$saturation:77%);
+  c78: color.change(red,$saturation:78%);
+  c79: color.change(red,$saturation:79%);
+  c80: color.change(red,$saturation:80%);
+  c81: color.change(red,$saturation:81%);
+  c82: color.change(red,$saturation:82%);
+  c83: color.change(red,$saturation:83%);
+  c84: color.change(red,$saturation:84%);
+  c85: color.change(red,$saturation:85%);
+  c86: color.change(red,$saturation:86%);
+  c87: color.change(red,$saturation:87%);
+  c88: color.change(red,$saturation:88%);
+  c89: color.change(red,$saturation:89%);
+  c90: color.change(red,$saturation:90%);
+  c91: color.change(red,$saturation:91%);
+  c92: color.change(red,$saturation:92%);
+  c93: color.change(red,$saturation:93%);
+  c94: color.change(red,$saturation:94%);
+  c95: color.change(red,$saturation:95%);
+  c96: color.change(red,$saturation:96%);
+  c97: color.change(red,$saturation:97%);
+  c98: color.change(red,$saturation:98%);
+  c99: color.change(red,$saturation:99%);
+  c100: color.change(red,$saturation:100%);
+  // c101: change-color(red,$saturation:101%);
+}
+
+<===> case33/output.css
+foo {
+  c0: rgb(50%, 50%, 50%);
+  c1: rgb(50.5%, 49.5%, 49.5%);
+  c2: rgb(51%, 49%, 49%);
+  c3: rgb(51.5%, 48.5%, 48.5%);
+  c4: rgb(52%, 48%, 48%);
+  c5: rgb(52.5%, 47.5%, 47.5%);
+  c6: rgb(53%, 47%, 47%);
+  c7: rgb(53.5%, 46.5%, 46.5%);
+  c8: rgb(54%, 46%, 46%);
+  c9: rgb(54.5%, 45.5%, 45.5%);
+  c10: rgb(55%, 45%, 45%);
+  c11: rgb(55.5%, 44.5%, 44.5%);
+  c12: rgb(56%, 44%, 44%);
+  c13: rgb(56.5%, 43.5%, 43.5%);
+  c14: rgb(57%, 43%, 43%);
+  c15: rgb(57.5%, 42.5%, 42.5%);
+  c16: rgb(58%, 42%, 42%);
+  c17: rgb(58.5%, 41.5%, 41.5%);
+  c18: rgb(59%, 41%, 41%);
+  c19: rgb(59.5%, 40.5%, 40.5%);
+  c20: #996666;
+  c21: rgb(60.5%, 39.5%, 39.5%);
+  c22: rgb(61%, 39%, 39%);
+  c23: rgb(61.5%, 38.5%, 38.5%);
+  c24: rgb(62%, 38%, 38%);
+  c25: rgb(62.5%, 37.5%, 37.5%);
+  c26: rgb(63%, 37%, 37%);
+  c27: rgb(63.5%, 36.5%, 36.5%);
+  c28: rgb(64%, 36%, 36%);
+  c29: rgb(64.5%, 35.5%, 35.5%);
+  c30: rgb(65%, 35%, 35%);
+  c31: rgb(65.5%, 34.5%, 34.5%);
+  c32: rgb(66%, 34%, 34%);
+  c33: rgb(66.5%, 33.5%, 33.5%);
+  c34: rgb(67%, 33%, 33%);
+  c35: rgb(67.5%, 32.5%, 32.5%);
+  c36: rgb(68%, 32%, 32%);
+  c37: rgb(68.5%, 31.5%, 31.5%);
+  c38: rgb(69%, 31%, 31%);
+  c39: rgb(69.5%, 30.5%, 30.5%);
+  c40: rgb(70%, 30%, 30%);
+  c41: rgb(70.5%, 29.5%, 29.5%);
+  c42: rgb(71%, 29%, 29%);
+  c43: rgb(71.5%, 28.5%, 28.5%);
+  c44: rgb(72%, 28%, 28%);
+  c45: rgb(72.5%, 27.5%, 27.5%);
+  c46: rgb(73%, 27%, 27%);
+  c47: rgb(73.5%, 26.5%, 26.5%);
+  c48: rgb(74%, 26%, 26%);
+  c49: rgb(74.5%, 25.5%, 25.5%);
+  c50: rgb(75%, 25%, 25%);
+  c51: rgb(75.5%, 24.5%, 24.5%);
+  c52: rgb(76%, 24%, 24%);
+  c53: rgb(76.5%, 23.5%, 23.5%);
+  c54: rgb(77%, 23%, 23%);
+  c55: rgb(77.5%, 22.5%, 22.5%);
+  c56: rgb(78%, 22%, 22%);
+  c57: rgb(78.5%, 21.5%, 21.5%);
+  c58: rgb(79%, 21%, 21%);
+  c59: rgb(79.5%, 20.5%, 20.5%);
+  c60: #cc3333;
+  c61: rgb(80.5%, 19.5%, 19.5%);
+  c62: rgb(81%, 19%, 19%);
+  c63: rgb(81.5%, 18.5%, 18.5%);
+  c64: rgb(82%, 18%, 18%);
+  c65: rgb(82.5%, 17.5%, 17.5%);
+  c66: rgb(83%, 17%, 17%);
+  c67: rgb(83.5%, 16.5%, 16.5%);
+  c68: rgb(84%, 16%, 16%);
+  c69: rgb(84.5%, 15.5%, 15.5%);
+  c70: rgb(85%, 15%, 15%);
+  c71: rgb(85.5%, 14.5%, 14.5%);
+  c72: rgb(86%, 14%, 14%);
+  c73: rgb(86.5%, 13.5%, 13.5%);
+  c74: rgb(87%, 13%, 13%);
+  c75: rgb(87.5%, 12.5%, 12.5%);
+  c76: rgb(88%, 12%, 12%);
+  c77: rgb(88.5%, 11.5%, 11.5%);
+  c78: rgb(89%, 11%, 11%);
+  c79: rgb(89.5%, 10.5%, 10.5%);
+  c80: rgb(90%, 10%, 10%);
+  c81: rgb(90.5%, 9.5%, 9.5%);
+  c82: rgb(91%, 9%, 9%);
+  c83: rgb(91.5%, 8.5%, 8.5%);
+  c84: rgb(92%, 8%, 8%);
+  c85: rgb(92.5%, 7.5%, 7.5%);
+  c86: rgb(93%, 7%, 7%);
+  c87: rgb(93.5%, 6.5%, 6.5%);
+  c88: rgb(94%, 6%, 6%);
+  c89: rgb(94.5%, 5.5%, 5.5%);
+  c90: rgb(95%, 5%, 5%);
+  c91: rgb(95.5%, 4.5%, 4.5%);
+  c92: rgb(96%, 4%, 4%);
+  c93: rgb(96.5%, 3.5%, 3.5%);
+  c94: rgb(97%, 3%, 3%);
+  c95: rgb(97.5%, 2.5%, 2.5%);
+  c96: rgb(98%, 2%, 2%);
+  c97: rgb(98.5%, 1.5%, 1.5%);
+  c98: rgb(99%, 1%, 1%);
+  c99: rgb(99.5%, 0.5%, 0.5%);
+  c100: red;
+}
+
+<===> case34/input.scss
 foo {
   c-1: rgb(0,0,-1);
   c0: rgb(0,0,0);
@@ -916,7 +3642,7 @@ foo {
   c101: rgb(0,0,101%);
 }
 
-<===> case28/output.css
+<===> case34/output.css
 foo {
   c-1: rgb(0, 0, 0);
   c0: rgb(0, 0, 0);
@@ -1284,7 +4010,7 @@ foo {
   c101: rgb(0, 0, 255);
 }
 
-<===> case29/input.scss
+<===> case35/input.scss
 foo {
   c-1: rgb(0,-1,0);
   c0: rgb(0,0,0);
@@ -1652,7 +4378,7 @@ foo {
   c101: rgb(0,101%,0);
 }
 
-<===> case29/output.css
+<===> case35/output.css
 foo {
   c-1: rgb(0, 0, 0);
   c0: rgb(0, 0, 0);
@@ -2020,7 +4746,7 @@ foo {
   c101: rgb(0, 255, 0);
 }
 
-<===> case30/input.scss
+<===> case36/input.scss
 foo {
   c-1: rgb(0,-1,0);
   c0: rgb(0,0,0);
@@ -2388,7 +5114,7 @@ foo {
   c101: rgb(101%,0,0);
 }
 
-<===> case30/output.css
+<===> case36/output.css
 foo {
   c-1: rgb(0, 0, 0);
   c0: rgb(0, 0, 0);
@@ -2756,7 +5482,77 @@ foo {
   c101: rgb(255, 0, 0);
 }
 
-<===> case31/input.scss
+<===> case37/input.scss
+foo {
+  c-1: rgba(0,0,0,-1);
+  c0: rgba(0,0,0,0.0);
+  c1: rgba(0,0,0,0.1);
+  c2: rgba(0,0,0,0.2);
+  c3: rgba(0,0,0,0.3);
+  c4: rgba(0,0,0,0.4);
+  c5: rgba(0,0,0,0.5);
+  c6: rgba(0,0,0,0.6);
+  c7: rgba(0,0,0,0.7);
+  c8: rgba(0,0,0,0.8);
+  c9: rgba(0,0,0,0.9);
+  c10: rgba(0,0,0,1);
+  c11: rgba(0,0,0,1.1);
+  c12: rgba(0,0,0,2);
+}
+
+foo {
+  c-1: rgba(black,-1);
+  c0: rgba(black,0.0);
+  c1: rgba(black,0.1);
+  c2: rgba(black,0.2);
+  c3: rgba(black,0.3);
+  c4: rgba(black,0.4);
+  c5: rgba(black,0.5);
+  c6: rgba(black,0.6);
+  c7: rgba(black,0.7);
+  c8: rgba(black,0.8);
+  c9: rgba(black,0.9);
+  c10: rgba(black,1);
+  c11: rgba(black,1.1);
+  c12: rgba(black,2);
+}
+
+<===> case37/output.css
+foo {
+  c-1: rgba(0, 0, 0, 0);
+  c0: rgba(0, 0, 0, 0);
+  c1: rgba(0, 0, 0, 0.1);
+  c2: rgba(0, 0, 0, 0.2);
+  c3: rgba(0, 0, 0, 0.3);
+  c4: rgba(0, 0, 0, 0.4);
+  c5: rgba(0, 0, 0, 0.5);
+  c6: rgba(0, 0, 0, 0.6);
+  c7: rgba(0, 0, 0, 0.7);
+  c8: rgba(0, 0, 0, 0.8);
+  c9: rgba(0, 0, 0, 0.9);
+  c10: rgb(0, 0, 0);
+  c11: rgb(0, 0, 0);
+  c12: rgb(0, 0, 0);
+}
+
+foo {
+  c-1: rgba(0, 0, 0, 0);
+  c0: rgba(0, 0, 0, 0);
+  c1: rgba(0, 0, 0, 0.1);
+  c2: rgba(0, 0, 0, 0.2);
+  c3: rgba(0, 0, 0, 0.3);
+  c4: rgba(0, 0, 0, 0.4);
+  c5: rgba(0, 0, 0, 0.5);
+  c6: rgba(0, 0, 0, 0.6);
+  c7: rgba(0, 0, 0, 0.7);
+  c8: rgba(0, 0, 0, 0.8);
+  c9: rgba(0, 0, 0, 0.9);
+  c10: black;
+  c11: black;
+  c12: black;
+}
+
+<===> case38/input.scss
 foo {
   c-1: rgba(0,0,-1,1);
   c0: rgba(0,0,0,1);
@@ -3124,7 +5920,7 @@ foo {
   c101: rgba(0,0,101%,1);
 }
 
-<===> case31/output.css
+<===> case38/output.css
 foo {
   c-1: rgb(0, 0, 0);
   c0: rgb(0, 0, 0);
@@ -3492,7 +6288,7 @@ foo {
   c101: rgb(0, 0, 255);
 }
 
-<===> case32/input.scss
+<===> case39/input.scss
 foo {
   c-1: rgba(0,-1,0,1);
   c0: rgba(0,0,0,1);
@@ -3860,7 +6656,7 @@ foo {
   c101: rgba(0,101%,0,1);
 }
 
-<===> case32/output.css
+<===> case39/output.css
 foo {
   c-1: rgb(0, 0, 0);
   c0: rgb(0, 0, 0);
@@ -4228,7 +7024,7 @@ foo {
   c101: rgb(0, 255, 0);
 }
 
-<===> case33/input.scss
+<===> case40/input.scss
 foo {
   c-1: rgba(0,-1,0,1);
   c0: rgba(0,0,0,1);
@@ -4596,7 +7392,7 @@ foo {
   c101: rgba(101%,0,0,1);
 }
 
-<===> case33/output.css
+<===> case40/output.css
 foo {
   c-1: rgb(0, 0, 0);
   c0: rgb(0, 0, 0);
@@ -4964,32 +7760,260 @@ foo {
   c101: rgb(255, 0, 0);
 }
 
-<===> case34/input.scss
+<===> case41/input.scss
+@use "sass:color";
+foo {
+  c0: color.adjust(hsl(100, 0%, 50%), $saturation: 0%);
+  c1: color.adjust(hsl(100, 0%, 50%), $saturation: 1%);
+  c2: color.adjust(hsl(100, 0%, 50%), $saturation: 2%);
+  c3: color.adjust(hsl(100, 0%, 50%), $saturation: 3%);
+  c4: color.adjust(hsl(100, 0%, 50%), $saturation: 4%);
+  c5: color.adjust(hsl(100, 0%, 50%), $saturation: 5%);
+  c6: color.adjust(hsl(100, 0%, 50%), $saturation: 6%);
+  c7: color.adjust(hsl(100, 0%, 50%), $saturation: 7%);
+  c8: color.adjust(hsl(100, 0%, 50%), $saturation: 8%);
+  c9: color.adjust(hsl(100, 0%, 50%), $saturation: 9%);
+  c10: color.adjust(hsl(100, 0%, 50%), $saturation: 10%);
+  c11: color.adjust(hsl(100, 0%, 50%), $saturation: 11%);
+  c12: color.adjust(hsl(100, 0%, 50%), $saturation: 12%);
+  c13: color.adjust(hsl(100, 0%, 50%), $saturation: 13%);
+  c14: color.adjust(hsl(100, 0%, 50%), $saturation: 14%);
+  c15: color.adjust(hsl(100, 0%, 50%), $saturation: 15%);
+  c16: color.adjust(hsl(100, 0%, 50%), $saturation: 16%);
+  c17: color.adjust(hsl(100, 0%, 50%), $saturation: 17%);
+  c18: color.adjust(hsl(100, 0%, 50%), $saturation: 18%);
+  c19: color.adjust(hsl(100, 0%, 50%), $saturation: 19%);
+  c20: color.adjust(hsl(100, 0%, 50%), $saturation: 20%);
+  c21: color.adjust(hsl(100, 0%, 50%), $saturation: 21%);
+  c22: color.adjust(hsl(100, 0%, 50%), $saturation: 22%);
+  c23: color.adjust(hsl(100, 0%, 50%), $saturation: 23%);
+  c24: color.adjust(hsl(100, 0%, 50%), $saturation: 24%);
+  c25: color.adjust(hsl(100, 0%, 50%), $saturation: 25%);
+  c26: color.adjust(hsl(100, 0%, 50%), $saturation: 26%);
+  c27: color.adjust(hsl(100, 0%, 50%), $saturation: 27%);
+  c28: color.adjust(hsl(100, 0%, 50%), $saturation: 28%);
+  c29: color.adjust(hsl(100, 0%, 50%), $saturation: 29%);
+  c30: color.adjust(hsl(100, 0%, 50%), $saturation: 30%);
+  c31: color.adjust(hsl(100, 0%, 50%), $saturation: 31%);
+  c32: color.adjust(hsl(100, 0%, 50%), $saturation: 32%);
+  c33: color.adjust(hsl(100, 0%, 50%), $saturation: 33%);
+  c34: color.adjust(hsl(100, 0%, 50%), $saturation: 34%);
+  c35: color.adjust(hsl(100, 0%, 50%), $saturation: 35%);
+  c36: color.adjust(hsl(100, 0%, 50%), $saturation: 36%);
+  c37: color.adjust(hsl(100, 0%, 50%), $saturation: 37%);
+  c38: color.adjust(hsl(100, 0%, 50%), $saturation: 38%);
+  c39: color.adjust(hsl(100, 0%, 50%), $saturation: 39%);
+  // c40: saturate(hsl(100, 0%, 50%), 40%);
+  c41: color.adjust(hsl(100, 0%, 50%), $saturation: 41%);
+  c42: color.adjust(hsl(100, 0%, 50%), $saturation: 42%);
+  c43: color.adjust(hsl(100, 0%, 50%), $saturation: 43%);
+  c44: color.adjust(hsl(100, 0%, 50%), $saturation: 44%);
+  c45: color.adjust(hsl(100, 0%, 50%), $saturation: 45%);
+  c46: color.adjust(hsl(100, 0%, 50%), $saturation: 46%);
+  c47: color.adjust(hsl(100, 0%, 50%), $saturation: 47%);
+  c48: color.adjust(hsl(100, 0%, 50%), $saturation: 48%);
+  c49: color.adjust(hsl(100, 0%, 50%), $saturation: 49%);
+  c50: color.adjust(hsl(100, 0%, 50%), $saturation: 50%);
+  c51: color.adjust(hsl(100, 0%, 50%), $saturation: 51%);
+  c52: color.adjust(hsl(100, 0%, 50%), $saturation: 52%);
+  c53: color.adjust(hsl(100, 0%, 50%), $saturation: 53%);
+  c54: color.adjust(hsl(100, 0%, 50%), $saturation: 54%);
+  c55: color.adjust(hsl(100, 0%, 50%), $saturation: 55%);
+  c56: color.adjust(hsl(100, 0%, 50%), $saturation: 56%);
+  c57: color.adjust(hsl(100, 0%, 50%), $saturation: 57%);
+  c58: color.adjust(hsl(100, 0%, 50%), $saturation: 58%);
+  c59: color.adjust(hsl(100, 0%, 50%), $saturation: 59%);
+  c60: color.adjust(hsl(100, 0%, 50%), $saturation: 60%);
+  c61: color.adjust(hsl(100, 0%, 50%), $saturation: 61%);
+  c62: color.adjust(hsl(100, 0%, 50%), $saturation: 62%);
+  c63: color.adjust(hsl(100, 0%, 50%), $saturation: 63%);
+  c64: color.adjust(hsl(100, 0%, 50%), $saturation: 64%);
+  c65: color.adjust(hsl(100, 0%, 50%), $saturation: 65%);
+  c66: color.adjust(hsl(100, 0%, 50%), $saturation: 66%);
+  c67: color.adjust(hsl(100, 0%, 50%), $saturation: 67%);
+  c68: color.adjust(hsl(100, 0%, 50%), $saturation: 68%);
+  c69: color.adjust(hsl(100, 0%, 50%), $saturation: 69%);
+  c70: color.adjust(hsl(100, 0%, 50%), $saturation: 70%);
+  c71: color.adjust(hsl(100, 0%, 50%), $saturation: 71%);
+  c72: color.adjust(hsl(100, 0%, 50%), $saturation: 72%);
+  c73: color.adjust(hsl(100, 0%, 50%), $saturation: 73%);
+  c74: color.adjust(hsl(100, 0%, 50%), $saturation: 74%);
+  c75: color.adjust(hsl(100, 0%, 50%), $saturation: 75%);
+  c76: color.adjust(hsl(100, 0%, 50%), $saturation: 76%);
+  c77: color.adjust(hsl(100, 0%, 50%), $saturation: 77%);
+  c78: color.adjust(hsl(100, 0%, 50%), $saturation: 78%);
+  c79: color.adjust(hsl(100, 0%, 50%), $saturation: 79%);
+  // c80: saturate(hsl(100, 0%, 50%), 80%);
+  c81: color.adjust(hsl(100, 0%, 50%), $saturation: 81%);
+  c82: color.adjust(hsl(100, 0%, 50%), $saturation: 82%);
+  c83: color.adjust(hsl(100, 0%, 50%), $saturation: 83%);
+  c84: color.adjust(hsl(100, 0%, 50%), $saturation: 84%);
+  c85: color.adjust(hsl(100, 0%, 50%), $saturation: 85%);
+  c86: color.adjust(hsl(100, 0%, 50%), $saturation: 86%);
+  c87: color.adjust(hsl(100, 0%, 50%), $saturation: 87%);
+  c88: color.adjust(hsl(100, 0%, 50%), $saturation: 88%);
+  c89: color.adjust(hsl(100, 0%, 50%), $saturation: 89%);
+  c90: color.adjust(hsl(100, 0%, 50%), $saturation: 90%);
+  c91: color.adjust(hsl(100, 0%, 50%), $saturation: 91%);
+  c92: color.adjust(hsl(100, 0%, 50%), $saturation: 92%);
+  c93: color.adjust(hsl(100, 0%, 50%), $saturation: 93%);
+  c94: color.adjust(hsl(100, 0%, 50%), $saturation: 94%);
+  c95: color.adjust(hsl(100, 0%, 50%), $saturation: 95%);
+  c96: color.adjust(hsl(100, 0%, 50%), $saturation: 96%);
+  c97: color.adjust(hsl(100, 0%, 50%), $saturation: 97%);
+  c98: color.adjust(hsl(100, 0%, 50%), $saturation: 98%);
+  c99: color.adjust(hsl(100, 0%, 50%), $saturation: 99%);
+  c100: color.adjust(hsl(100, 0%, 50%), $saturation: 100%);
+}
+
+<===> case41/output.css
+foo {
+  c0: hsl(100, 0%, 50%);
+  c1: hsl(100, 1%, 50%);
+  c2: hsl(100, 2%, 50%);
+  c3: hsl(100, 3%, 50%);
+  c4: hsl(100, 4%, 50%);
+  c5: hsl(100, 5%, 50%);
+  c6: hsl(100, 6%, 50%);
+  c7: hsl(100, 7%, 50%);
+  c8: hsl(100, 8%, 50%);
+  c9: hsl(100, 9%, 50%);
+  c10: hsl(100, 10%, 50%);
+  c11: hsl(100, 11%, 50%);
+  c12: hsl(100, 12%, 50%);
+  c13: hsl(100, 13%, 50%);
+  c14: hsl(100, 14%, 50%);
+  c15: hsl(100, 15%, 50%);
+  c16: hsl(100, 16%, 50%);
+  c17: hsl(100, 17%, 50%);
+  c18: hsl(100, 18%, 50%);
+  c19: hsl(100, 19%, 50%);
+  c20: hsl(100, 20%, 50%);
+  c21: hsl(100, 21%, 50%);
+  c22: hsl(100, 22%, 50%);
+  c23: hsl(100, 23%, 50%);
+  c24: hsl(100, 24%, 50%);
+  c25: hsl(100, 25%, 50%);
+  c26: hsl(100, 26%, 50%);
+  c27: hsl(100, 27%, 50%);
+  c28: hsl(100, 28%, 50%);
+  c29: hsl(100, 29%, 50%);
+  c30: hsl(100, 30%, 50%);
+  c31: hsl(100, 31%, 50%);
+  c32: hsl(100, 32%, 50%);
+  c33: hsl(100, 33%, 50%);
+  c34: hsl(100, 34%, 50%);
+  c35: hsl(100, 35%, 50%);
+  c36: hsl(100, 36%, 50%);
+  c37: hsl(100, 37%, 50%);
+  c38: hsl(100, 38%, 50%);
+  c39: hsl(100, 39%, 50%);
+  c41: hsl(100, 41%, 50%);
+  c42: hsl(100, 42%, 50%);
+  c43: hsl(100, 43%, 50%);
+  c44: hsl(100, 44%, 50%);
+  c45: hsl(100, 45%, 50%);
+  c46: hsl(100, 46%, 50%);
+  c47: hsl(100, 47%, 50%);
+  c48: hsl(100, 48%, 50%);
+  c49: hsl(100, 49%, 50%);
+  c50: hsl(100, 50%, 50%);
+  c51: hsl(100, 51%, 50%);
+  c52: hsl(100, 52%, 50%);
+  c53: hsl(100, 53%, 50%);
+  c54: hsl(100, 54%, 50%);
+  c55: hsl(100, 55%, 50%);
+  c56: hsl(100, 56%, 50%);
+  c57: hsl(100, 57%, 50%);
+  c58: hsl(100, 58%, 50%);
+  c59: hsl(100, 59%, 50%);
+  c60: hsl(100, 60%, 50%);
+  c61: hsl(100, 61%, 50%);
+  c62: hsl(100, 62%, 50%);
+  c63: hsl(100, 63%, 50%);
+  c64: hsl(100, 64%, 50%);
+  c65: hsl(100, 65%, 50%);
+  c66: hsl(100, 66%, 50%);
+  c67: hsl(100, 67%, 50%);
+  c68: hsl(100, 68%, 50%);
+  c69: hsl(100, 69%, 50%);
+  c70: hsl(100, 70%, 50%);
+  c71: hsl(100, 71%, 50%);
+  c72: hsl(100, 72%, 50%);
+  c73: hsl(100, 73%, 50%);
+  c74: hsl(100, 74%, 50%);
+  c75: hsl(100, 75%, 50%);
+  c76: hsl(100, 76%, 50%);
+  c77: hsl(100, 77%, 50%);
+  c78: hsl(100, 78%, 50%);
+  c79: hsl(100, 79%, 50%);
+  c81: hsl(100, 81%, 50%);
+  c82: hsl(100, 82%, 50%);
+  c83: hsl(100, 83%, 50%);
+  c84: hsl(100, 84%, 50%);
+  c85: hsl(100, 85%, 50%);
+  c86: hsl(100, 86%, 50%);
+  c87: hsl(100, 87%, 50%);
+  c88: hsl(100, 88%, 50%);
+  c89: hsl(100, 89%, 50%);
+  c90: hsl(100, 90%, 50%);
+  c91: hsl(100, 91%, 50%);
+  c92: hsl(100, 92%, 50%);
+  c93: hsl(100, 93%, 50%);
+  c94: hsl(100, 94%, 50%);
+  c95: hsl(100, 95%, 50%);
+  c96: hsl(100, 96%, 50%);
+  c97: hsl(100, 97%, 50%);
+  c98: hsl(100, 98%, 50%);
+  c99: hsl(100, 99%, 50%);
+  c100: hsl(100, 100%, 50%);
+}
+
+<===> case42/input.scss
 div {
   width: 3cm * 2in * 2in / 1cm / 1cm;
   width: 3cm * 2in / 1cm;
   width: 4cm * (12in / 3in);
 }
 
-<===> case34/output.css
+<===> case42/output.css
 div {
   width: 30.48in;
   width: 6in;
   width: 16cm;
 }
 
-<===> case35/input.scss
+<===> case43/input.scss
+:nth-child(2n + 3) {
+  outer-whitespace: false;
+}
+
+// Regression test for sass/dart-sass#465.
+:nth-child( 2n + 3 ) {
+  outer-whitespace: true;
+}
+
+<===> case43/output.css
+:nth-child(2n+3) {
+  outer-whitespace: false;
+}
+
+:nth-child(2n+3) {
+  outer-whitespace: true;
+}
+
+<===> case44/input.scss
 @charset "UTF-8";
 foo {
   bar: föö bâr; }
 
-<===> case35/output.css
+<===> case44/output.css
 @charset "UTF-8";
 foo {
   bar: föö bâr;
 }
 
-<===> case36/input.scss
+<===> case45/input.scss
 @function c() {
   @warn test;
   @return d;
@@ -5001,12 +8025,12 @@ a {
   }
 }
 
-<===> case36/output.css
+<===> case45/output.css
 a {
   b-c: d;
 }
 
-<===> case37/input.scss
+<===> case46/input.scss
 a {
   b: {
     @debug test;
@@ -5014,44 +8038,44 @@ a {
   }
 }
 
-<===> case37/output.css
+<===> case46/output.css
 a {
   b-c: d;
 }
 
-<===> case38/input.scss
+<===> case47/input.scss
 div {
   foo: center == "center";
   foo: (a b c) == (a b c);
   foo: a b c == a b c;
 }
 
-<===> case38/output.css
+<===> case47/output.css
 div {
   foo: true;
   foo: true;
   foo: a b false b c;
 }
 
-<===> case39/input.scss
+<===> case48/input.scss
 @import "http://fonts.googleapis.com/css?family=Droid+Sans";
 
-<===> case39/output.css
+<===> case48/output.css
 @import "http://fonts.googleapis.com/css?family=Droid+Sans";
 
-<===> case40/input.scss
+<===> case49/input.scss
 div {
   blah: image-url("hello.png", false);
   blah: image-url("hello.png", true);
 }
 
-<===> case40/output.css
+<===> case49/output.css
 div {
   blah: image-url("hello.png", false);
   blah: image-url("hello.png", true);
 }
 
-<===> case41/input.scss
+<===> case50/input.scss
 foo.a {
   width: 10px;
 }
@@ -5061,7 +8085,7 @@ bar {
   @extend foo;
 }
 
-<===> case41/output.css
+<===> case50/output.css
 foo.a, bar.a {
   width: 10px;
 }
@@ -5070,7 +8094,7 @@ bar {
   color: red;
 }
 
-<===> case42/input.scss
+<===> case51/input.scss
 @media screen {
   a {
     color: black;
@@ -5099,7 +8123,7 @@ a {
   }
 }
 
-<===> case42/output.css
+<===> case51/output.css
 @media screen {
   a {
     color: black;
@@ -5131,7 +8155,7 @@ a b {
   }
 }
 
-<===> case43/input.scss
+<===> case52/input.scss
 @use "sass:map";
 $tablet-portrait:                 768px;
 $tablet-landscape:                980px;
@@ -5168,7 +8192,7 @@ $grid-breakpoints-immobile: (
   }
 }
 
-<===> case43/output.css
+<===> case52/output.css
 @media only screen and (min-width: 768px) and (max-width: 980px) {
   body.immobile & {
     margin-bottom: 0;
@@ -5190,7 +8214,7 @@ $grid-breakpoints-immobile: (
   }
 }
 
-<===> case44/input.scss
+<===> case53/input.scss
 %foo {
 	@media screen and (min-width: 300px) {
 		max-width: 80%;
@@ -5201,14 +8225,37 @@ bar {
 	@extend %foo;
 }
 
-<===> case44/output.css
+<===> case53/output.css
 @media screen and (min-width: 300px) {
   bar {
     max-width: 80%;
   }
 }
 
-<===> case45/input.scss
+<===> case54/input.scss
+%x {
+  width: 100px;
+
+  %y {
+    height: 100px;
+  }
+}
+
+.foo {
+  @extend %x;
+
+  .bar { @extend %y }
+}
+
+<===> case54/output.css
+.foo {
+  width: 100px;
+}
+.foo .bar {
+  height: 100px;
+}
+
+<===> case55/input.scss
 @use "sass:math";
 test {
   foo: 0.4999 math.round(0.4999);
@@ -5217,7 +8264,7 @@ test {
   baz: 0.49999999999 math.round(0.49999999999);
 }
 
-<===> case45/output.css
+<===> case55/output.css
 test {
   foo: 0.4999 0;
   bar: 0.49999 0;
@@ -5225,7 +8272,7 @@ test {
   baz: 0.5 0;
 }
 
-<===> case46/input.scss
+<===> case56/input.scss
 @use "sass:math";
 test {
   foo: 0.4999 math.round(0.4999);
@@ -5233,14 +8280,14 @@ test {
   baz: 0.499999 math.round(0.499999);
 }
 
-<===> case46/output.css
+<===> case56/output.css
 test {
   foo: 0.4999 0;
   bar: 0.49999 0;
   baz: 0.499999 0;
 }
 
-<===> case47/input.scss
+<===> case57/input.scss
 @use "sass:math";
 test {
   foo: 0.4999 math.round(0.4999);
@@ -5248,14 +8295,14 @@ test {
   baz: 0.499999 math.round(0.499999);
 }
 
-<===> case47/output.css
+<===> case57/output.css
 test {
   foo: 0.4999 0;
   bar: 0.49999 0;
   baz: 0.499999 0;
 }
 
-<===> case48/input.scss
+<===> case58/input.scss
 div {
   less: 3px < 3pt;
   less: (1px / 1pt);
@@ -5278,7 +8325,7 @@ div {
   lt: 5 < 4;
 }
 
-<===> case48/output.css
+<===> case58/output.css
 div {
   less: true;
   less: 0.75;
@@ -5301,648 +8348,16 @@ div {
   lt: false;
 }
 
-<===> case49/input.scss
-.foo {
-  $bar: &;
-  content: $bar;
-}
-
-<===> case49/output.css
-.foo {
-  content: .foo;
-}
-
-<===> case50/input.scss
-.foo {
-  $bar: &;
-  content: #{$bar};
-}
-
-<===> case50/output.css
-.foo {
-  content: .foo;
-}
-
-<===> case51/input.scss
-.result {
-  output: (0deg + 1deg);
-  output: (4.2deg / 1deg);
-  output: (4.2deg * 1deg / 1deg);
-  output: (0deg + 1grad);
-  output: (4.2deg / 1grad);
-  output: (4.2deg * 1grad / 1deg);
-  output: (0deg + 1rad);
-  output: (4.2deg / 1rad);
-  output: (4.2deg * 1rad / 1deg);
-  output: (0deg + 1turn);
-  output: (4.2deg / 1turn);
-  output: (4.2deg * 1turn / 1deg);
-  output: (0grad + 1deg);
-  output: (4.2grad / 1deg);
-  output: (4.2grad * 1deg / 1grad);
-  output: (0grad + 1grad);
-  output: (4.2grad / 1grad);
-  output: (4.2grad * 1grad / 1grad);
-  output: (0grad + 1rad);
-  output: (4.2grad / 1rad);
-  output: (4.2grad * 1rad / 1grad);
-  output: (0grad + 1turn);
-  output: (4.2grad / 1turn);
-  output: (4.2grad * 1turn / 1grad);
-  output: (0rad + 1deg);
-  output: (4.2rad / 1deg);
-  output: (4.2rad * 1deg / 1rad);
-  output: (0rad + 1grad);
-  output: (4.2rad / 1grad);
-  output: (4.2rad * 1grad / 1rad);
-  output: (0rad + 1rad);
-  output: (4.2rad / 1rad);
-  output: (4.2rad * 1rad / 1rad);
-  output: (0rad + 1turn);
-  output: (4.2rad / 1turn);
-  output: (4.2rad * 1turn / 1rad);
-  output: (0turn + 1deg);
-  output: (4.2turn / 1deg);
-  output: (4.2turn * 1deg / 1turn);
-  output: (0turn + 1grad);
-  output: (4.2turn / 1grad);
-  output: (4.2turn * 1grad / 1turn);
-  output: (0turn + 1rad);
-  output: (4.2turn / 1rad);
-  output: (4.2turn * 1rad / 1turn);
-  output: (0turn + 1turn);
-  output: (4.2turn / 1turn);
-  output: (4.2turn * 1turn / 1turn);
-}
-
-<===> case51/output.css
-.result {
-  output: 1deg;
-  output: 4.2;
-  output: 4.2deg;
-  output: 0.9deg;
-  output: 4.6666666667;
-  output: 4.2grad;
-  output: 57.2957795131deg;
-  output: 0.0733038286;
-  output: 4.2rad;
-  output: 360deg;
-  output: 0.0116666667;
-  output: 4.2turn;
-  output: 1.1111111111grad;
-  output: 3.78;
-  output: 4.2deg;
-  output: 1grad;
-  output: 4.2;
-  output: 4.2grad;
-  output: 63.6619772368grad;
-  output: 0.0659734457;
-  output: 4.2rad;
-  output: 400grad;
-  output: 0.0105;
-  output: 4.2turn;
-  output: 0.0174532925rad;
-  output: 240.6422739549;
-  output: 4.2deg;
-  output: 0.0157079633rad;
-  output: 267.3803043944;
-  output: 4.2grad;
-  output: 1rad;
-  output: 4.2;
-  output: 4.2rad;
-  output: 6.2831853072rad;
-  output: 0.668450761;
-  output: 4.2turn;
-  output: 0.0027777778turn;
-  output: 1512;
-  output: 4.2deg;
-  output: 0.0025turn;
-  output: 1680;
-  output: 4.2grad;
-  output: 0.1591549431turn;
-  output: 26.3893782902;
-  output: 4.2rad;
-  output: 1turn;
-  output: 4.2;
-  output: 4.2turn;
-}
-
-<===> case52/input.scss
-.result {
-  output: (0Hz + 1Hz);
-  output: (4.2Hz / 1Hz);
-  output: (4.2Hz * 1Hz / 1Hz);
-  output: (0Hz + 1kHz);
-  output: (4.2Hz / 1kHz);
-  output: (4.2Hz * 1kHz / 1Hz);
-  output: (0kHz + 1Hz);
-  output: (4.2kHz / 1Hz);
-  output: (4.2kHz * 1Hz / 1kHz);
-  output: (0kHz + 1kHz);
-  output: (4.2kHz / 1kHz);
-  output: (4.2kHz * 1kHz / 1kHz);
-}
-
-<===> case52/output.css
-.result {
-  output: 1Hz;
-  output: 4.2;
-  output: 4.2Hz;
-  output: 1000Hz;
-  output: 0.0042;
-  output: 4.2kHz;
-  output: 0.001kHz;
-  output: 4200;
-  output: 4.2Hz;
-  output: 1kHz;
-  output: 4.2;
-  output: 4.2kHz;
-}
-
-<===> case53/input.scss
-.result {
-  output: (0dpi + 1dpi);
-  output: (4.2dpi / 1dpi);
-  output: (4.2dpi * 1dpi / 1dpi);
-  output: (0dpi + 1dpcm);
-  output: (4.2dpi / 1dpcm);
-  output: (4.2dpi * 1dpcm / 1dpi);
-  output: (0dpi + 1dppx);
-  output: (4.2dpi / 1dppx);
-  output: (4.2dpi * 1dppx / 1dpi);
-  output: (0dpcm + 1dpi);
-  output: (4.2dpcm / 1dpi);
-  output: (4.2dpcm * 1dpi / 1dpcm);
-  output: (0dpcm + 1dpcm);
-  output: (4.2dpcm / 1dpcm);
-  output: (4.2dpcm * 1dpcm / 1dpcm);
-  output: (0dpcm + 1dppx);
-  output: (4.2dpcm / 1dppx);
-  output: (4.2dpcm * 1dppx / 1dpcm);
-  output: (0dppx + 1dpi);
-  output: (4.2dppx / 1dpi);
-  output: (4.2dppx * 1dpi / 1dppx);
-  output: (0dppx + 1dpcm);
-  output: (4.2dppx / 1dpcm);
-  output: (4.2dppx * 1dpcm / 1dppx);
-  output: (0dppx + 1dppx);
-  output: (4.2dppx / 1dppx);
-  output: (4.2dppx * 1dppx / 1dppx);
-}
-
-<===> case53/output.css
-.result {
-  output: 1dpi;
-  output: 4.2;
-  output: 4.2dpi;
-  output: 2.54dpi;
-  output: 1.6535433071;
-  output: 4.2dpcm;
-  output: 96dpi;
-  output: 0.04375;
-  output: 4.2dppx;
-  output: 0.3937007874dpcm;
-  output: 10.668;
-  output: 4.2dpi;
-  output: 1dpcm;
-  output: 4.2;
-  output: 4.2dpcm;
-  output: 37.7952755906dpcm;
-  output: 0.111125;
-  output: 4.2dppx;
-  output: 0.0104166667dppx;
-  output: 403.2;
-  output: 4.2dpi;
-  output: 0.0264583333dppx;
-  output: 158.7401574803;
-  output: 4.2dpcm;
-  output: 1dppx;
-  output: 4.2;
-  output: 4.2dppx;
-}
-
-<===> case54/input.scss
-.result {
-  output: (0px + 1px);
-  output: (4.2px / 1px);
-  output: (4.2px * 1px / 1px);
-  output: (0px + 1pt);
-  output: (4.2px / 1pt);
-  output: (4.2px * 1pt / 1px);
-  output: (0px + 1pc);
-  output: (4.2px / 1pc);
-  output: (4.2px * 1pc / 1px);
-  output: (0px + 1mm);
-  output: (4.2px / 1mm);
-  output: (4.2px * 1mm / 1px);
-  output: (0px + 1cm);
-  output: (4.2px / 1cm);
-  output: (4.2px * 1cm / 1px);
-  output: (0px + 1in);
-  output: (4.2px / 1in);
-  output: (4.2px * 1in / 1px);
-  output: (0pt + 1px);
-  output: (4.2pt / 1px);
-  output: (4.2pt * 1px / 1pt);
-  output: (0pt + 1pt);
-  output: (4.2pt / 1pt);
-  output: (4.2pt * 1pt / 1pt);
-  output: (0pt + 1pc);
-  output: (4.2pt / 1pc);
-  output: (4.2pt * 1pc / 1pt);
-  output: (0pt + 1mm);
-  output: (4.2pt / 1mm);
-  output: (4.2pt * 1mm / 1pt);
-  output: (0pt + 1cm);
-  output: (4.2pt / 1cm);
-  output: (4.2pt * 1cm / 1pt);
-  output: (0pt + 1in);
-  output: (4.2pt / 1in);
-  output: (4.2pt * 1in / 1pt);
-  output: (0pc + 1px);
-  output: (4.2pc / 1px);
-  output: (4.2pc * 1px / 1pc);
-  output: (0pc + 1pt);
-  output: (4.2pc / 1pt);
-  output: (4.2pc * 1pt / 1pc);
-  output: (0pc + 1pc);
-  output: (4.2pc / 1pc);
-  output: (4.2pc * 1pc / 1pc);
-  output: (0pc + 1mm);
-  output: (4.2pc / 1mm);
-  output: (4.2pc * 1mm / 1pc);
-  output: (0pc + 1cm);
-  output: (4.2pc / 1cm);
-  output: (4.2pc * 1cm / 1pc);
-  output: (0pc + 1in);
-  output: (4.2pc / 1in);
-  output: (4.2pc * 1in / 1pc);
-  output: (0mm + 1px);
-  output: (4.2mm / 1px);
-  output: (4.2mm * 1px / 1mm);
-  output: (0mm + 1pt);
-  output: (4.2mm / 1pt);
-  output: (4.2mm * 1pt / 1mm);
-  output: (0mm + 1pc);
-  output: (4.2mm / 1pc);
-  output: (4.2mm * 1pc / 1mm);
-  output: (0mm + 1mm);
-  output: (4.2mm / 1mm);
-  output: (4.2mm * 1mm / 1mm);
-  output: (0mm + 1cm);
-  output: (4.2mm / 1cm);
-  output: (4.2mm * 1cm / 1mm);
-  output: (0mm + 1in);
-  output: (4.2mm / 1in);
-  output: (4.2mm * 1in / 1mm);
-  output: (0cm + 1px);
-  output: (4.2cm / 1px);
-  output: (4.2cm * 1px / 1cm);
-  output: (0cm + 1pt);
-  output: (4.2cm / 1pt);
-  output: (4.2cm * 1pt / 1cm);
-  output: (0cm + 1pc);
-  output: (4.2cm / 1pc);
-  output: (4.2cm * 1pc / 1cm);
-  output: (0cm + 1mm);
-  output: (4.2cm / 1mm);
-  output: (4.2cm * 1mm / 1cm);
-  output: (0cm + 1cm);
-  output: (4.2cm / 1cm);
-  output: (4.2cm * 1cm / 1cm);
-  output: (0cm + 1in);
-  output: (4.2cm / 1in);
-  output: (4.2cm * 1in / 1cm);
-  output: (0in + 1px);
-  output: (4.2in / 1px);
-  output: (4.2in * 1px / 1in);
-  output: (0in + 1pt);
-  output: (4.2in / 1pt);
-  output: (4.2in * 1pt / 1in);
-  output: (0in + 1pc);
-  output: (4.2in / 1pc);
-  output: (4.2in * 1pc / 1in);
-  output: (0in + 1mm);
-  output: (4.2in / 1mm);
-  output: (4.2in * 1mm / 1in);
-  output: (0in + 1cm);
-  output: (4.2in / 1cm);
-  output: (4.2in * 1cm / 1in);
-  output: (0in + 1in);
-  output: (4.2in / 1in);
-  output: (4.2in * 1in / 1in);
-}
-
-<===> case54/output.css
-.result {
-  output: 1px;
-  output: 4.2;
-  output: 4.2px;
-  output: 1.3333333333px;
-  output: 3.15;
-  output: 4.2pt;
-  output: 16px;
-  output: 0.2625;
-  output: 4.2pc;
-  output: 3.7795275591px;
-  output: 1.11125;
-  output: 4.2mm;
-  output: 37.7952755906px;
-  output: 0.111125;
-  output: 4.2cm;
-  output: 96px;
-  output: 0.04375;
-  output: 4.2in;
-  output: 0.75pt;
-  output: 5.6;
-  output: 4.2px;
-  output: 1pt;
-  output: 4.2;
-  output: 4.2pt;
-  output: 12pt;
-  output: 0.35;
-  output: 4.2pc;
-  output: 2.8346456693pt;
-  output: 1.4816666667;
-  output: 4.2mm;
-  output: 28.3464566929pt;
-  output: 0.1481666667;
-  output: 4.2cm;
-  output: 72pt;
-  output: 0.0583333333;
-  output: 4.2in;
-  output: 0.0625pc;
-  output: 67.2;
-  output: 4.2px;
-  output: 0.0833333333pc;
-  output: 50.4;
-  output: 4.2pt;
-  output: 1pc;
-  output: 4.2;
-  output: 4.2pc;
-  output: 0.2362204724pc;
-  output: 17.78;
-  output: 4.2mm;
-  output: 2.3622047244pc;
-  output: 1.778;
-  output: 4.2cm;
-  output: 6pc;
-  output: 0.7;
-  output: 4.2in;
-  output: 0.2645833333mm;
-  output: 15.874015748;
-  output: 4.2px;
-  output: 0.3527777778mm;
-  output: 11.905511811;
-  output: 4.2pt;
-  output: 4.2333333333mm;
-  output: 0.9921259843;
-  output: 4.2pc;
-  output: 1mm;
-  output: 4.2;
-  output: 4.2mm;
-  output: 10mm;
-  output: 0.42;
-  output: 4.2cm;
-  output: 25.4mm;
-  output: 0.1653543307;
-  output: 4.2in;
-  output: 0.0264583333cm;
-  output: 158.7401574803;
-  output: 4.2px;
-  output: 0.0352777778cm;
-  output: 119.0551181102;
-  output: 4.2pt;
-  output: 0.4233333333cm;
-  output: 9.9212598425;
-  output: 4.2pc;
-  output: 0.1cm;
-  output: 42;
-  output: 4.2mm;
-  output: 1cm;
-  output: 4.2;
-  output: 4.2cm;
-  output: 2.54cm;
-  output: 1.6535433071;
-  output: 4.2in;
-  output: 0.0104166667in;
-  output: 403.2;
-  output: 4.2px;
-  output: 0.0138888889in;
-  output: 302.4;
-  output: 4.2pt;
-  output: 0.1666666667in;
-  output: 25.2;
-  output: 4.2pc;
-  output: 0.0393700787in;
-  output: 106.68;
-  output: 4.2mm;
-  output: 0.3937007874in;
-  output: 10.668;
-  output: 4.2cm;
-  output: 1in;
-  output: 4.2;
-  output: 4.2in;
-}
-
-<===> case55/input.scss
-.result {
-  output: (0s + 1s);
-  output: (4.2s / 1s);
-  output: (4.2s * 1s / 1s);
-  output: (0s + 1ms);
-  output: (4.2s / 1ms);
-  output: (4.2s * 1ms / 1s);
-  output: (0ms + 1s);
-  output: (4.2ms / 1s);
-  output: (4.2ms * 1s / 1ms);
-  output: (0ms + 1ms);
-  output: (4.2ms / 1ms);
-  output: (4.2ms * 1ms / 1ms);
-}
-
-<===> case55/output.css
-.result {
-  output: 1s;
-  output: 4.2;
-  output: 4.2s;
-  output: 0.001s;
-  output: 4200;
-  output: 4.2ms;
-  output: 1000ms;
-  output: 0.0042;
-  output: 4.2s;
-  output: 1ms;
-  output: 4.2;
-  output: 4.2ms;
-}
-
-<===> case56/input.scss
-@use "sass:meta";
-@if meta.feature-exists(units-level-3) {
-  div {
-    feature: true;
-  }
-}
-
-<===> case56/output.css
-div {
-  feature: true;
-}
-
-<===> case57/input.scss
-@use "sass:meta";
-$continue_inner: true;
-$continue_outer: true;
-$root_default: initial;
-$root_implicit: initial;
-$root_explicit: initial !global;
-
-@function fn() {
-  $root_implicit: outer;
-  $root_explicit: outer !global;
-  $root_default: outer !default;
-  $local_implicit: outer;
-  $local_explicit: outer !global;
-  $local_default: outer !default;
-  @while $continue_inner {
-    $root_implicit: inner;
-    $root_explicit: inner !global;
-    $root_default: inner !default;
-    $local_implicit: inner;
-    $local_explicit: inner !global;
-    $local_default: inner !default;
-    $continue_inner: false;
-  }
-  $continue_outer: false;
-  @return null;
-}
-
-result {
-  fn: fn();
-  @if meta.variable-exists(continue_outer) {
-    continue_outer: $continue_outer;
-  }
-  @if meta.variable-exists(continue_inner) {
-    continue_inner: $continue_inner;
-  }
-  root_default: $root_default;
-  root_implicit: $root_implicit;
-  root_explicit: $root_explicit;
-  @if meta.variable-exists(local_default) {
-    local_default: $local_default;
-  }
-  @if meta.variable-exists(local_implicit) {
-    local_implicit: $local_implicit;
-  }
-  @if meta.variable-exists(local_explicit) {
-    local_explicit: $local_explicit;
-  }
-}
-
-<===> case57/output.css
-result {
-  continue_outer: true;
-  continue_inner: true;
-  root_default: initial;
-  root_implicit: initial;
-  root_explicit: inner;
-  local_explicit: inner;
-}
-
-<===> case58/input.scss
-@use "sass:meta";
-$root_default: initial;
-$root_implicit: initial;
-$root_explicit: initial !global;
-
-@mixin set_variable_inner() {
-  $root_implicit: inner;
-  $root_explicit: inner !global;
-  $root_default: inner !default;
-  $local_implicit: inner;
-  $local_explicit: inner !global;
-  $local_default: inner !default;
-}
-
-@mixin set_variable_outer() {
-  $root_implicit: outer;
-  $root_explicit: outer !global;
-  $root_default: outer !default;
-  $local_implicit: outer;
-  $local_explicit: outer !global;
-  $local_default: outer !default;
-  @include set_variable_inner();
-}
-
-@include set_variable_outer();
-
-result {
-  root_default: $root_default;
-  root_implicit: $root_implicit;
-  root_explicit: $root_explicit;
-  @if meta.variable-exists(local_default) {
-    local_default: $local_default;
-  }
-  @if meta.variable-exists(local_implicit) {
-    local_implicit: $local_implicit;
-  }
-  @if meta.variable-exists(local_explicit) {
-    local_explicit: $local_explicit;
-  }
-}
-
-<===> case58/output.css
-result {
-  root_default: initial;
-  root_implicit: initial;
-  root_explicit: inner;
-  local_explicit: inner;
-}
-
 <===> case59/input.scss
-@use "sass:meta";
-$root_default: initial;
-$root_implicit: initial;
-$root_explicit: initial !global;
-
-ruleset {
-  $root_implicit: outer;
-  $root_explicit: outer !global;
-  $root_default: outer !default;
-  $local_implicit: outer;
-  $local_explicit: outer !global;
-  $local_default: outer !default;
-  inner {
-    $root_implicit: inner;
-    $root_explicit: inner !global;
-    $root_default: inner !default;
-    $local_implicit: inner;
-    $local_explicit: inner !global;
-    $local_default: inner !default;
-  }
-}
-
-result {
-  root_default: $root_default;
-  root_implicit: $root_implicit;
-  root_explicit: $root_explicit;
-  @if meta.variable-exists(local_default) {
-    local_default: $local_default;
-  }
-  @if meta.variable-exists(local_implicit) {
-    local_implicit: $local_implicit;
-  }
-  @if meta.variable-exists(local_explicit) {
-    local_explicit: $local_explicit;
-  }
+@use "sass:selector";
+foo {
+  test-01: selector.simple-selectors(".foo.bar");
+  test-02: selector.simple-selectors(".foo.bar.baz");
 }
 
 <===> case59/output.css
-result {
-  root_default: initial;
-  root_implicit: initial;
-  root_explicit: inner;
-  local_explicit: inner;
+foo {
+  test-01: .foo, .bar;
+  test-02: .foo, .bar, .baz;
 }
 

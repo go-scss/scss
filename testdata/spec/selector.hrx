@@ -1,0 +1,7691 @@
+<===> case0/input.scss
+@use "sass:selector";
+a {b: selector.append(".c, .d", ".e, .f")}
+
+<===> case0/output.css
+a {
+  b: .c.e, .c.f, .d.e, .d.f;
+}
+
+<===> case1/input.scss
+@use "sass:selector";
+a {b: selector.append(".c", ".d")}
+
+<===> case1/output.css
+a {
+  b: .c.d;
+}
+
+<===> case2/input.scss
+@use "sass:selector";
+a {b: selector.append("c", "d ~")}
+
+<===> case2/output.css
+a {
+  b: cd ~;
+}
+
+<===> case3/input.scss
+@use "sass:selector";
+a {b: selector.append("> c", "d")}
+
+<===> case3/output.css
+a {
+  b: > cd;
+}
+
+<===> case4/input.scss
+@use "sass:selector";
+a {b: selector.append("c", "d + >")}
+
+<===> case4/output.css
+a {
+  b: cd + >;
+}
+
+<===> case5/input.scss
+@use "sass:selector";
+a {b: selector.append("~ ~ c", "d")}
+
+<===> case5/output.css
+a {
+  b: ~ ~ cd;
+}
+
+<===> case6/input.scss
+@use "sass:selector";
+a {b: selector.append("c > > d", "e")}
+
+<===> case6/output.css
+a {
+  b: c > > de;
+}
+
+<===> case7/input.scss
+@use "sass:selector";
+a {b: selector.append((c, d e), f)}
+
+<===> case7/output.css
+a {
+  b: cf, d ef;
+}
+
+<===> case8/input.scss
+@use "sass:selector";
+a {b: selector.append(c, (d, e f))}
+
+<===> case8/output.css
+a {
+  b: cd, ce f;
+}
+
+<===> case9/input.scss
+@use "sass:selector";
+$result: selector.append("c d, e f", "g");
+a {
+  result: $result;
+  structure: $result == ("c" "dg", "e" "fg");
+}
+
+<===> case9/output.css
+a {
+  result: c dg, e fg;
+  structure: true;
+}
+
+<===> case10/input.scss
+@use "sass:selector";
+a {b: selector.append(".c", ".d", ".e")}
+
+<===> case10/output.css
+a {
+  b: .c.d.e;
+}
+
+<===> case11/input.scss
+@use "sass:selector";
+a {b: selector.append(".c.d")}
+
+<===> case11/output.css
+a {
+  b: .c.d;
+}
+
+<===> case12/input.scss
+@use "sass:selector";
+a {b: selector.append("c d", "e f")}
+
+<===> case12/output.css
+a {
+  b: c de f;
+}
+
+<===> case13/input.scss
+@use "sass:selector";
+a {b: selector.append(".c, .d", "e, f")}
+
+<===> case13/output.css
+a {
+  b: .ce, .cf, .de, .df;
+}
+
+<===> case14/input.scss
+@use "sass:selector";
+a {b: selector.append(".c", "d")}
+
+<===> case14/output.css
+a {
+  b: .cd;
+}
+
+<===> case15/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c", ".c", ">")}
+
+<===> case15/output.css
+a {
+  b: .c, >;
+}
+
+<===> case16/input.scss
+@use "sass:selector";
+a {b: selector.extend("+", ".c", ".d")}
+
+<===> case16/output.css
+a {
+  b: +;
+}
+
+<===> case17/input.scss
+@use "sass:selector";
+a {b: selector.extend("~ .c.x", ".c", "+ .d")}
+
+<===> case17/output.css
+a {
+  b: ~ .c.x;
+}
+
+<===> case18/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c.x", ".c", "+ .d")}
+
+<===> case18/output.css
+a {
+  b: .c.x, + .x.d;
+}
+
+<===> case19/input.scss
+@use "sass:selector";
+a {b: selector.extend("> .c.x", ".c", ".d")}
+
+<===> case19/output.css
+a {
+  b: > .c.x, > .x.d;
+}
+
+<===> case20/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c.x", ".c", "+ ~ .d")}
+
+<===> case20/output.css
+a {
+  b: .c.x;
+}
+
+<===> case21/input.scss
+@use "sass:selector";
+a {b: selector.extend("> + .c.x", ".c", ".d")}
+
+<===> case21/output.css
+a {
+  b: > + .c.x;
+}
+
+<===> case22/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c.x", ".c", ".d ~ + .e")}
+
+<===> case22/output.css
+a {
+  b: .c.x;
+}
+
+<===> case23/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c.x ~ ~ .d", ".c", ".e")}
+
+<===> case23/output.css
+a {
+  b: .c.x ~ ~ .d;
+}
+
+<===> case24/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c.x", ".c", ".d + +")}
+
+<===> case24/output.css
+a {
+  b: .c.x;
+}
+
+<===> case25/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c.x > ~", ".c", ".d")}
+
+<===> case25/output.css
+a {
+  b: .c.x > ~;
+}
+
+<===> case26/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c .d.x .e", ".d", ".f .g")}
+
+<===> case26/output.css
+a {
+  b: .c .d.x .e, .c .f .x.g .e, .f .c .x.g .e;
+}
+
+<===> case27/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c .d.x .e", ".d", ".f, .g")}
+
+<===> case27/output.css
+a {
+  b: .c .d.x .e, .c .x.f .e, .c .x.g .e;
+}
+
+<===> case28/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c .d.x .e", ".d", ".f")}
+
+<===> case28/output.css
+a {
+  b: .c .d.x .e, .c .x.f .e;
+}
+
+<===> case29/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c.x .d", ".c", ".e .f")}
+
+<===> case29/output.css
+a {
+  b: .c.x .d, .e .x.f .d;
+}
+
+<===> case30/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c.x .d", ".c", ".e, .f")}
+
+<===> case30/output.css
+a {
+  b: .c.x .d, .x.e .d, .x.f .d;
+}
+
+<===> case31/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c.x .d", ".c", ".e")}
+
+<===> case31/output.css
+a {
+  b: .c.x .d, .x.e .d;
+}
+
+<===> case32/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c.x ~", ".c", ".d >")}
+
+<===> case32/output.css
+a {
+  b: .c.x ~;
+}
+
+<===> case33/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c.x .d", ".c", ".e >")}
+
+<===> case33/output.css
+a {
+  b: .c.x .d, .x.e > .d;
+}
+
+<===> case34/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c.x .d", ".c", ".e +")}
+
+<===> case34/output.css
+a {
+  b: .c.x .d, .x.e + .d;
+}
+
+<===> case35/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c.x .d", ".c", ".e ~")}
+
+<===> case35/output.css
+a {
+  b: .c.x .d, .x.e ~ .d;
+}
+
+<===> case36/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c.x +", ".c", ".d")}
+
+<===> case36/output.css
+a {
+  b: .c.x +, .x.d +;
+}
+
+<===> case37/input.scss
+@use "sass:selector";
+a {b: selector.extend("~ .c", ".c", "+ .d")}
+
+<===> case37/output.css
+a {
+  b: ~ .c;
+}
+
+<===> case38/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c", ".c", "+ .d")}
+
+<===> case38/output.css
+a {
+  b: .c, + .d;
+}
+
+<===> case39/input.scss
+@use "sass:selector";
+a {b: selector.extend("> .c", ".c", ".d")}
+
+<===> case39/output.css
+a {
+  b: > .c, > .d;
+}
+
+<===> case40/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c", ".c", "+ ~ .d")}
+
+<===> case40/output.css
+a {
+  b: .c;
+}
+
+<===> case41/input.scss
+@use "sass:selector";
+a {b: selector.extend("> + .c", ".c", ".d")}
+
+<===> case41/output.css
+a {
+  b: > + .c;
+}
+
+<===> case42/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c", ".c", ".d ~ + .e")}
+
+<===> case42/output.css
+a {
+  b: .c;
+}
+
+<===> case43/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c ~ ~ .d", ".c", ".e")}
+
+<===> case43/output.css
+a {
+  b: .c ~ ~ .d;
+}
+
+<===> case44/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c", ".c", ".d + +")}
+
+<===> case44/output.css
+a {
+  b: .c;
+}
+
+<===> case45/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c > ~", ".c", ".d")}
+
+<===> case45/output.css
+a {
+  b: .c > ~;
+}
+
+<===> case46/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c .d .e", ".d", ".f .g")}
+
+<===> case46/output.css
+a {
+  b: .c .d .e, .c .f .g .e, .f .c .g .e;
+}
+
+<===> case47/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c .d .e", ".d", ".f, .g")}
+
+<===> case47/output.css
+a {
+  b: .c .d .e, .c .f .e, .c .g .e;
+}
+
+<===> case48/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c .d .e", ".d", ".f")}
+
+<===> case48/output.css
+a {
+  b: .c .d .e, .c .f .e;
+}
+
+<===> case49/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c .d", ".c", ".e .f")}
+
+<===> case49/output.css
+a {
+  b: .c .d, .e .f .d;
+}
+
+<===> case50/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c .d", ".c", ".e, .f")}
+
+<===> case50/output.css
+a {
+  b: .c .d, .e .d, .f .d;
+}
+
+<===> case51/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c .d", ".c", ".e")}
+
+<===> case51/output.css
+a {
+  b: .c .d, .e .d;
+}
+
+<===> case52/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c ~", ".c", ".d >")}
+
+<===> case52/output.css
+a {
+  b: .c ~;
+}
+
+<===> case53/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c .d", ".c", ".e >")}
+
+<===> case53/output.css
+a {
+  b: .c .d, .e > .d;
+}
+
+<===> case54/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c .d", ".c", ".e +")}
+
+<===> case54/output.css
+a {
+  b: .c .d, .e + .d;
+}
+
+<===> case55/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c .d", ".c", ".e ~")}
+
+<===> case55/output.css
+a {
+  b: .c .d, .e ~ .d;
+}
+
+<===> case56/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c +", ".c", ".d")}
+
+<===> case56/output.css
+a {
+  b: .c +, .d +;
+}
+
+<===> case57/input.scss
+@use "sass:selector";
+a {b: selector.extend("c.d", "c.d", ".e")}
+
+<===> case57/output.css
+a {
+  b: c.d, .e;
+}
+
+<===> case58/input.scss
+@use "sass:selector";
+a {b: selector.extend("c.d", "c, .d", ".e")}
+
+<===> case58/output.css
+a {
+  b: c.d, .e;
+}
+
+<===> case59/input.scss
+@use "sass:selector";
+a {b: selector.extend("c.d.e.f", "c.d, .e.f", ".g")}
+
+<===> case59/output.css
+a {
+  b: c.d.e.f, .g;
+}
+
+<===> case60/input.scss
+@use "sass:selector";
+a {b: selector.extend("c.d", (c, ".d"), ".e")}
+
+<===> case60/output.css
+a {
+  b: c.d, .e;
+}
+
+<===> case61/input.scss
+@use "sass:selector";
+a {b: selector.extend("c", "c", (d, e f))}
+
+<===> case61/output.css
+a {
+  b: c, d, e f;
+}
+
+<===> case62/input.scss
+@use "sass:selector";
+a {b: selector.extend((c, d c), "c", "e")}
+
+<===> case62/output.css
+a {
+  b: c, e, d c;
+}
+
+<===> case63/input.scss
+@use "sass:selector";
+$result: selector.extend("c d, e f", "g", "g");
+a {
+  result: $result;
+  structure: $result == ("c" "d", "e" "f");
+}
+
+<===> case63/output.css
+a {
+  result: c d, e f;
+  structure: true;
+}
+
+<===> case64/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c.d", ".c, .d", ".e")}
+
+<===> case64/output.css
+a {
+  b: .c.d, .e;
+}
+
+<===> case65/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c.d, .c .e, .d .f", ".c, .d", ".g")}
+
+<===> case65/output.css
+a {
+  b: .c.d, .g, .c .e, .g .e, .d .f, .g .f;
+}
+
+<===> case66/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c", ".c, .d", ".e")}
+
+<===> case66/output.css
+a {
+  b: .c, .e;
+}
+
+<===> case67/input.scss
+@use "sass:selector";
+a {b: selector.extend($selector: "c.d", $extendee: "c", $extender: "e")}
+
+<===> case67/output.css
+a {
+  b: c.d, e.d;
+}
+
+<===> case68/input.scss
+@use "sass:selector";
+a {b: selector.extend("c.d", ".d", "e")}
+
+<===> case68/output.css
+a {
+  b: c.d;
+}
+
+<===> case69/input.scss
+@use "sass:selector";
+a {b: selector.extend("c.d", ".d", "e.f")}
+
+<===> case69/output.css
+a {
+  b: c.d;
+}
+
+<===> case70/input.scss
+@use "sass:selector";
+a {b: selector.extend("#c.d", ".d", "#e")}
+
+<===> case70/output.css
+a {
+  b: #c.d;
+}
+
+<===> case71/input.scss
+@use "sass:selector";
+a {b: selector.extend("c + .d", ".d", "e + .f")}
+
+<===> case71/output.css
+a {
+  b: c + .d;
+}
+
+<===> case72/input.scss
+@use "sass:selector";
+a {b: selector.extend("c > .d", ".d", "e > .f")}
+
+<===> case72/output.css
+a {
+  b: c > .d;
+}
+
+<===> case73/input.scss
+@use "sass:selector";
+a {b: selector.extend(":before.c", ".c", ":after")}
+
+<===> case73/output.css
+a {
+  b: :before.c;
+}
+
+<===> case74/input.scss
+@use "sass:selector";
+a {b: selector.extend("::c.d", ".d", "::e")}
+
+<===> case74/output.css
+a {
+  b: ::c.d;
+}
+
+<===> case75/input.scss
+@use "sass:selector";
+a {b: selector.extend("*.c", ".c", "|*")}
+
+<===> case75/output.css
+a {
+  b: *.c;
+}
+
+<===> case76/input.scss
+@use "sass:selector";
+a {b: selector.extend("*.c", ".c", "d|*")}
+
+<===> case76/output.css
+a {
+  b: *.c;
+}
+
+<===> case77/input.scss
+@use "sass:selector";
+a {b: selector.extend("|*.c", ".c", "*")}
+
+<===> case77/output.css
+a {
+  b: |*.c;
+}
+
+<===> case78/input.scss
+@use "sass:selector";
+a {b: selector.extend("|*.c", ".c", "d|*")}
+
+<===> case78/output.css
+a {
+  b: |*.c;
+}
+
+<===> case79/input.scss
+@use "sass:selector";
+a {b: selector.extend("c|*.d", ".d", "*")}
+
+<===> case79/output.css
+a {
+  b: c|*.d;
+}
+
+<===> case80/input.scss
+@use "sass:selector";
+a {b: selector.extend("c|*.d", ".d", "|*")}
+
+<===> case80/output.css
+a {
+  b: c|*.d;
+}
+
+<===> case81/input.scss
+@use "sass:selector";
+a {b: selector.extend("c|*.d", ".d", "e|*")}
+
+<===> case81/output.css
+a {
+  b: c|*.d;
+}
+
+<===> case82/input.scss
+@use "sass:selector";
+a {b: selector.extend("c", "d", "e")}
+
+<===> case82/output.css
+a {
+  b: c;
+}
+
+<===> case83/input.scss
+@use "sass:selector";
+a {b: selector.extend("c", "c", "d c")}
+
+<===> case83/output.css
+a {
+  b: c;
+}
+
+<===> case84/input.scss
+@use "sass:selector";
+a {b: selector.extend("c", "c", "d + c")}
+
+<===> case84/output.css
+a {
+  b: c;
+}
+
+<===> case85/input.scss
+@use "sass:selector";
+a {b: selector.extend("c", "c", "d > c")}
+
+<===> case85/output.css
+a {
+  b: c;
+}
+
+<===> case86/input.scss
+@use "sass:selector";
+a {b: selector.extend("c", "c", "d ~ c")}
+
+<===> case86/output.css
+a {
+  b: c;
+}
+
+<===> case87/input.scss
+@use "sass:selector";
+a {b: selector.extend("c", "c", "c.d")}
+
+<===> case87/output.css
+a {
+  b: c;
+}
+
+<===> case88/input.scss
+@use "sass:selector";
+a {b: selector.extend("c.d", ".d", ".d")}
+
+<===> case88/output.css
+a {
+  b: c.d;
+}
+
+<===> case89/input.scss
+@use "sass:selector";
+a {b: selector.extend("c.d", ".d", "c.d")}
+
+<===> case89/output.css
+a {
+  b: c.d;
+}
+
+<===> case90/input.scss
+@use "sass:selector";
+a {
+  b: selector.extend(":where(.x)", ".x", ".x .y");
+}
+
+<===> case90/output.css
+a {
+  b: :where(.x, .x .y);
+}
+
+<===> case91/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c:is(d)", ":is(d)", "d.e")}
+
+<===> case91/output.css
+a {
+  b: .c:is(d);
+}
+
+<===> case92/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c:matches(d)", ":matches(d)", "d.e")}
+
+<===> case92/output.css
+a {
+  b: .c:matches(d);
+}
+
+<===> case93/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c:where(d)", ":where(d)", "d.e")}
+
+<===> case93/output.css
+a {
+  b: .c:where(d);
+}
+
+<===> case94/input.scss
+@use "sass:selector";
+a {b: selector.extend("[c=d]", "[c=d]", "e")}
+
+<===> case94/output.css
+a {
+  b: [c=d], e;
+}
+
+<===> case95/input.scss
+@use "sass:selector";
+a {b: selector.extend("[c=d]", "[e=d]", "f")}
+
+<===> case95/output.css
+a {
+  b: [c=d];
+}
+
+<===> case96/input.scss
+@use "sass:selector";
+a {b: selector.extend("[c=d]", "[c^=d]", "f")}
+
+<===> case96/output.css
+a {
+  b: [c=d];
+}
+
+<===> case97/input.scss
+@use "sass:selector";
+a {b: selector.extend("[c=d]", "[c=e]", "f")}
+
+<===> case97/output.css
+a {
+  b: [c=d];
+}
+
+<===> case98/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c", ".c", "e")}
+
+<===> case98/output.css
+a {
+  b: .c, e;
+}
+
+<===> case99/input.scss
+@use "sass:selector";
+a {b: selector.extend(".c", ".d", "e")}
+
+<===> case99/output.css
+a {
+  b: .c;
+}
+
+<===> case100/input.scss
+@use "sass:selector";
+a {b: selector.extend("#c", "#c", "e")}
+
+<===> case100/output.css
+a {
+  b: #c, e;
+}
+
+<===> case101/input.scss
+@use "sass:selector";
+a {b: selector.extend("#c", "#d", "e")}
+
+<===> case101/output.css
+a {
+  b: #c;
+}
+
+<===> case102/input.scss
+@use "sass:selector";
+a {b: selector.extend("%c", "%c", "e")}
+
+<===> case102/output.css
+a {
+  b: %c, e;
+}
+
+<===> case103/input.scss
+@use "sass:selector";
+a {b: selector.extend("%c", "%d", "e")}
+
+<===> case103/output.css
+a {
+  b: %c;
+}
+
+<===> case104/input.scss
+@use "sass:selector";
+a {b: selector.extend(":c(@#$)", ":c(@#$)", "e")}
+
+<===> case104/output.css
+a {
+  b: :c(@#$), e;
+}
+
+<===> case105/input.scss
+@use "sass:selector";
+a {b: selector.extend(":c(@#$)", ":c(*&^)", "e")}
+
+<===> case105/output.css
+a {
+  b: :c(@#$);
+}
+
+<===> case106/input.scss
+@use "sass:selector";
+a {b: selector.extend(":c(@#$)", ":c", "e")}
+
+<===> case106/output.css
+a {
+  b: :c(@#$);
+}
+
+<===> case107/input.scss
+@use "sass:selector";
+a {b: selector.extend(":c(@#$)", ":d(@#$)", "e")}
+
+<===> case107/output.css
+a {
+  b: :c(@#$);
+}
+
+<===> case108/input.scss
+@use "sass:selector";
+a {b: selector.extend("::c(@#$)", "::c(@#$)", "e")}
+
+<===> case108/output.css
+a {
+  b: ::c(@#$), e;
+}
+
+<===> case109/input.scss
+@use "sass:selector";
+a {b: selector.extend("::c(@#$)", "::c(*&^)", "e")}
+
+<===> case109/output.css
+a {
+  b: ::c(@#$);
+}
+
+<===> case110/input.scss
+@use "sass:selector";
+a {b: selector.extend("::c(@#$)", "::c", "e")}
+
+<===> case110/output.css
+a {
+  b: ::c(@#$);
+}
+
+<===> case111/input.scss
+@use "sass:selector";
+a {b: selector.extend("::c(@#$)", ":d(@#$)", "e")}
+
+<===> case111/output.css
+a {
+  b: ::c(@#$);
+}
+
+<===> case112/input.scss
+@use "sass:selector";
+a {b: selector.extend(":c", "::c", "e")}
+
+<===> case112/output.css
+a {
+  b: :c;
+}
+
+<===> case113/input.scss
+@use "sass:selector";
+a {b: selector.extend(":c", ":c", "e")}
+
+<===> case113/output.css
+a {
+  b: :c, e;
+}
+
+<===> case114/input.scss
+@use "sass:selector";
+a {b: selector.extend(":c", ":d", "e")}
+
+<===> case114/output.css
+a {
+  b: :c;
+}
+
+<===> case115/input.scss
+@use "sass:selector";
+a {b: selector.extend("::c", ":c", "e")}
+
+<===> case115/output.css
+a {
+  b: ::c;
+}
+
+<===> case116/input.scss
+@use "sass:selector";
+a {b: selector.extend("::c", "::c", "e")}
+
+<===> case116/output.css
+a {
+  b: ::c, e;
+}
+
+<===> case117/input.scss
+@use "sass:selector";
+a {b: selector.extend("::c", "::d", "e")}
+
+<===> case117/output.css
+a {
+  b: ::c;
+}
+
+<===> case118/input.scss
+@use "sass:selector";
+a {b: selector.extend(":any(.c)", ".c", ":any(.d, .e)")}
+
+<===> case118/output.css
+a {
+  b: :any(.c, .d, .e);
+}
+
+<===> case119/input.scss
+@use "sass:selector";
+a {b: selector.extend(":any(.c)", ".c", ".d, .e")}
+
+<===> case119/output.css
+a {
+  b: :any(.c, .d, .e);
+}
+
+<===> case120/input.scss
+@use "sass:selector";
+a {b: selector.extend(":any(.c)", ".c", ".d")}
+
+<===> case120/output.css
+a {
+  b: :any(.c, .d);
+}
+
+<===> case121/input.scss
+@use "sass:selector";
+a {b: selector.extend(":current(.c)", ".c", ":current(.d, .e)")}
+
+<===> case121/output.css
+a {
+  b: :current(.c, .d, .e);
+}
+
+<===> case122/input.scss
+@use "sass:selector";
+a {b: selector.extend(":current(.c)", ".c", ".d, .e")}
+
+<===> case122/output.css
+a {
+  b: :current(.c, .d, .e);
+}
+
+<===> case123/input.scss
+@use "sass:selector";
+a {b: selector.extend(":current(.c)", ".c", ".d")}
+
+<===> case123/output.css
+a {
+  b: :current(.c, .d);
+}
+
+<===> case124/input.scss
+@use "sass:selector";
+a {b: selector.extend(":is(.c)", ".c", ":is(.d, .e)")}
+
+<===> case124/output.css
+a {
+  b: :is(.c, .d, .e);
+}
+
+<===> case125/input.scss
+@use "sass:selector";
+a {b: selector.extend(":is(.c)", ".c", ".d, .e")}
+
+<===> case125/output.css
+a {
+  b: :is(.c, .d, .e);
+}
+
+<===> case126/input.scss
+@use "sass:selector";
+a {b: selector.extend(":is(.c)", ".c", ".d")}
+
+<===> case126/output.css
+a {
+  b: :is(.c, .d);
+}
+
+<===> case127/input.scss
+@use "sass:selector";
+a {b: selector.extend(":matches(.c)", ".c", ".d, .e")}
+
+<===> case127/output.css
+a {
+  b: :matches(.c, .d, .e);
+}
+
+<===> case128/input.scss
+@use "sass:selector";
+a {b: selector.extend(":matches(.c)", ".c", ":matches(.d, .e)")}
+
+<===> case128/output.css
+a {
+  b: :matches(.c, .d, .e);
+}
+
+<===> case129/input.scss
+@use "sass:selector";
+a {b: selector.extend(":matches(.c)", ".c", ".d")}
+
+<===> case129/output.css
+a {
+  b: :matches(.c, .d);
+}
+
+<===> case130/input.scss
+@use "sass:selector";
+a {b: selector.extend(":not(.c .d)", ".d", ".e .f")}
+
+<===> case130/output.css
+a {
+  b: :not(.c .d):not(.c .e .f):not(.e .c .f);
+}
+
+<===> case131/input.scss
+@use "sass:selector";
+a {b: selector.extend(":not(.c.d)", ".c", ".e")}
+
+<===> case131/output.css
+a {
+  b: :not(.c.d):not(.d.e);
+}
+
+<===> case132/input.scss
+@use "sass:selector";
+a {b: selector.extend(":not(.c)", ".c", ".d:is(.e, .f)")}
+
+<===> case132/output.css
+a {
+  b: :not(.c):not(.d:is(.e, .f));
+}
+
+<===> case133/input.scss
+@use "sass:selector";
+a {b: selector.extend(":not(.c)", ".c", ":is(.d, .e)")}
+
+<===> case133/output.css
+a {
+  b: :not(.c):not(.d):not(.e);
+}
+
+<===> case134/input.scss
+@use "sass:selector";
+a {b: selector.extend(":not(.c)", ".c", ":is(.d .e, .f .g)")}
+
+<===> case134/output.css
+a {
+  b: :not(.c):not(.d .e):not(.f .g);
+}
+
+<===> case135/input.scss
+@use "sass:selector";
+a {b: selector.extend(":not(.c)", ".c", ".d, .e")}
+
+<===> case135/output.css
+a {
+  b: :not(.c):not(.d):not(.e);
+}
+
+<===> case136/input.scss
+@use "sass:selector";
+// If the original :not() already contains a selector list, we add new selectors
+// to that list because there's no risk of breaking additional browsers.
+a {b: selector.extend(":not(.c, .d)", ".c", ".e")}
+
+<===> case136/output.css
+a {
+  b: :not(.c, .e, .d);
+}
+
+<===> case137/input.scss
+@use "sass:selector";
+a {b: selector.extend(":not(.c)", ".c", ".d:matches(.e, .f)")}
+
+<===> case137/output.css
+a {
+  b: :not(.c):not(.d:matches(.e, .f));
+}
+
+<===> case138/input.scss
+@use "sass:selector";
+a {b: selector.extend(":not(.c)", ".c", ":matches(.d, .e)")}
+
+<===> case138/output.css
+a {
+  b: :not(.c):not(.d):not(.e);
+}
+
+<===> case139/input.scss
+@use "sass:selector";
+a {b: selector.extend(":not(.c)", ".c", ":matches(.d .e, .f .g)")}
+
+<===> case139/output.css
+a {
+  b: :not(.c):not(.d .e):not(.f .g);
+}
+
+<===> case140/input.scss
+@use "sass:selector";
+// Ideally, this should emit `.d, :not(.c)`, but that would be the only
+// situation where extending a pseudo selector could produce a full-on selector
+// list. For the sake of simplicity of the `@extend` algorithm, we just ignore
+// nested `:not()`s instead.
+a {b: selector.extend(":not(.c)", ".c", ":not(.d)")}
+
+<===> case140/output.css
+a {
+  b: :not(.c);
+}
+
+<===> case141/input.scss
+@use "sass:selector";
+a {b: selector.extend(":not(.c)", ".c", ".d")}
+
+<===> case141/output.css
+a {
+  b: :not(.c):not(.d);
+}
+
+<===> case142/input.scss
+@use "sass:selector";
+a {b: selector.extend(":not(.c)", ".c", ".d:where(.e, .f)")}
+
+<===> case142/output.css
+a {
+  b: :not(.c):not(.d:where(.e, .f));
+}
+
+<===> case143/input.scss
+@use "sass:selector";
+a {b: selector.extend(":not(.c)", ".c", ":where(.d, .e)")}
+
+<===> case143/output.css
+a {
+  b: :not(.c):not(.d):not(.e);
+}
+
+<===> case144/input.scss
+@use "sass:selector";
+a {b: selector.extend(":not(.c)", ".c", ":where(.d .e, .f .g)")}
+
+<===> case144/output.css
+a {
+  b: :not(.c):not(.d .e):not(.f .g);
+}
+
+<===> case145/input.scss
+@use "sass:selector";
+// This should produce `:nth-child(2n + 1 of .c, :nth-child(2n + 1 of .d, .e))`.
+// See sass/sass#2828.
+a {
+  b: selector.extend(
+      ":nth-child(2n + 1 of .c)",
+      ".c",
+      ":nth-child(2n + 2 of .d, .e)");
+}
+
+<===> case145/output.css
+a {
+  b: :nth-child(2n+1 of .c);
+}
+
+<===> case146/input.scss
+@use "sass:selector";
+a {b: selector.extend(":nth-child(2n + 1 of .c)", ".c", ".d, .e")}
+
+<===> case146/output.css
+a {
+  b: :nth-child(2n+1 of .c, .d, .e);
+}
+
+<===> case147/input.scss
+@use "sass:selector";
+a {
+  b: selector.extend(
+      ":nth-child(2n + 1 of .c)",
+      ".c",
+      ":nth-child(2n + 1 of .d, .e)");
+}
+
+<===> case147/output.css
+a {
+  b: :nth-child(2n+1 of .c, .d, .e);
+}
+
+<===> case148/input.scss
+@use "sass:selector";
+a {b: selector.extend(":nth-child(2n + 1 of .c)", ".c", ".d")}
+
+<===> case148/output.css
+a {
+  b: :nth-child(2n+1 of .c, .d);
+}
+
+<===> case149/input.scss
+@use "sass:selector";
+// This should produce
+// `:nth-last-child(2n + 1 of .c, :nth-last-child(2n + 1 of .d, .e))`.
+// See sass/sass#2828.
+a {
+  b: selector.extend(
+      ":nth-last-child(2n + 1 of .c)",
+      ".c",
+      ":nth-last-child(2n + 2 of .d, .e)");
+}
+
+<===> case149/output.css
+a {
+  b: :nth-last-child(2n+1 of .c);
+}
+
+<===> case150/input.scss
+@use "sass:selector";
+a {b: selector.extend(":nth-last-child(2n + 1 of .c)", ".c", ".d, .e")}
+
+<===> case150/output.css
+a {
+  b: :nth-last-child(2n+1 of .c, .d, .e);
+}
+
+<===> case151/input.scss
+@use "sass:selector";
+a {
+  b: selector.extend(
+      ":nth-last-child(2n + 1 of .c)",
+      ".c",
+      ":nth-last-child(2n + 1 of .d, .e)");
+}
+
+<===> case151/output.css
+a {
+  b: :nth-last-child(2n+1 of .c, .d, .e);
+}
+
+<===> case152/input.scss
+@use "sass:selector";
+a {b: selector.extend(":nth-last-child(2n + 1 of .c)", ".c", ".d")}
+
+<===> case152/output.css
+a {
+  b: :nth-last-child(2n+1 of .c, .d);
+}
+
+<===> case153/input.scss
+@use "sass:selector";
+a {b: selector.extend(":-ms-matches(.c)", ".c", ":-moz-matches(.d, .e)")}
+
+<===> case153/output.css
+a {
+  b: :-ms-matches(.c);
+}
+
+<===> case154/input.scss
+@use "sass:selector";
+a {b: selector.extend(":-ms-matches(.c)", ".c", ".d, .e")}
+
+<===> case154/output.css
+a {
+  b: :-ms-matches(.c, .d, .e);
+}
+
+<===> case155/input.scss
+@use "sass:selector";
+a {b: selector.extend(":-ms-matches(.c)", ".c", ":-ms-matches(.d, .e)")}
+
+<===> case155/output.css
+a {
+  b: :-ms-matches(.c, .d, .e);
+}
+
+<===> case156/input.scss
+@use "sass:selector";
+a {b: selector.extend(":-ms-matches(.c)", ".c", ".d")}
+
+<===> case156/output.css
+a {
+  b: :-ms-matches(.c, .d);
+}
+
+<===> case157/input.scss
+@use "sass:selector";
+a {b: selector.extend(":where(.c)", ".c", ":where(.d, .e)")}
+
+<===> case157/output.css
+a {
+  b: :where(.c, .d, .e);
+}
+
+<===> case158/input.scss
+@use "sass:selector";
+a {b: selector.extend(":where(.c)", ".c", ".d, .e")}
+
+<===> case158/output.css
+a {
+  b: :where(.c, .d, .e);
+}
+
+<===> case159/input.scss
+@use "sass:selector";
+a {b: selector.extend(":where(.c)", ".c", ".d")}
+
+<===> case159/output.css
+a {
+  b: :where(.c, .d);
+}
+
+<===> case160/input.scss
+@use "sass:selector";
+a {
+  b: selector.extend(
+      ":nth-child(2n + 1 of c d.e, f g)",
+      ":nth-child(2n + 1 of c d.e, f g)",
+      "h");
+}
+
+<===> case160/output.css
+a {
+  b: :nth-child(2n+1 of c d.e, f g), h;
+}
+
+<===> case161/input.scss
+@use "sass:selector";
+a {
+  b: selector.extend(
+      ":nth-child(2n + 1 of c d.e, f g)",
+      ":nth-child(2n + 1 of d, g)",
+      "h");
+}
+
+<===> case161/output.css
+a {
+  b: :nth-child(2n+1 of c d.e, f g);
+}
+
+<===> case162/input.scss
+@use "sass:selector";
+a {b: selector.extend(":nth-child(2n + 1 of c d.e, f g)", ":nth-child", "h")}
+
+<===> case162/output.css
+a {
+  b: :nth-child(2n+1 of c d.e, f g);
+}
+
+<===> case163/input.scss
+@use "sass:selector";
+a {
+  b: selector.extend(
+      ":nth-child(2n + 1 of c d.e, f g)",
+      ":nth-last-child(2n + 1 of c d.e, f g)",
+      "h");
+}
+
+<===> case163/output.css
+a {
+  b: :nth-child(2n+1 of c d.e, f g);
+}
+
+<===> case164/input.scss
+@use "sass:selector";
+a {
+  b: selector.extend(
+      ":nth-child(2n + 1 of c d.e, f g)",
+      ":nth-child(2n of c d.e, f g)",
+      "h");
+}
+
+<===> case164/output.css
+a {
+  b: :nth-child(2n+1 of c d.e, f g);
+}
+
+<===> case165/input.scss
+@use "sass:selector";
+a {b: selector.extend("::slotted(c.d, e.f)", "::slotted(c.d, e.f)", "g")}
+
+<===> case165/output.css
+a {
+  b: ::slotted(c.d, e.f), g;
+}
+
+<===> case166/input.scss
+@use "sass:selector";
+a {b: selector.extend("::slotted(c.d, e.f)", "::slotted(d, g)", "g")}
+
+<===> case166/output.css
+a {
+  b: ::slotted(c.d, e.f);
+}
+
+<===> case167/input.scss
+@use "sass:selector";
+a {b: selector.extend("::slotted(c.d, e.f)", "::slotted", "g")}
+
+<===> case167/output.css
+a {
+  b: ::slotted(c.d, e.f);
+}
+
+<===> case168/input.scss
+@use "sass:selector";
+a {b: selector.extend("::slotted(c.d, e.f)", "::-pfx-slotted(c.d, e.f)", "g")}
+
+<===> case168/output.css
+a {
+  b: ::slotted(c.d, e.f);
+}
+
+<===> case169/input.scss
+@use "sass:selector";
+a {b: selector.extend(":is(c d.e, f g)", ":is(c d.e, f g)", "h")}
+
+<===> case169/output.css
+a {
+  b: :is(c d.e, f g), h;
+}
+
+<===> case170/input.scss
+@use "sass:selector";
+a {b: selector.extend(":is(c d.e, f g)", ":is(d, g)", "h")}
+
+<===> case170/output.css
+a {
+  b: :is(c d.e, f g);
+}
+
+<===> case171/input.scss
+@use "sass:selector";
+a {b: selector.extend(":is(c d.e, f g)", ":is", "h")}
+
+<===> case171/output.css
+a {
+  b: :is(c d.e, f g);
+}
+
+<===> case172/input.scss
+@use "sass:selector";
+a {b: selector.extend(":is(c d.e, f g)", ":-pfx-is(c d.e, f g)", "h")}
+
+<===> case172/output.css
+a {
+  b: :is(c d.e, f g);
+}
+
+<===> case173/input.scss
+@use "sass:selector";
+a {b: selector.extend(":matches(c d.e, f g)", ":matches(c d.e, f g)", "h")}
+
+<===> case173/output.css
+a {
+  b: :matches(c d.e, f g), h;
+}
+
+<===> case174/input.scss
+@use "sass:selector";
+a {b: selector.extend(":matches(c d.e, f g)", ":matches(d, g)", "h")}
+
+<===> case174/output.css
+a {
+  b: :matches(c d.e, f g);
+}
+
+<===> case175/input.scss
+@use "sass:selector";
+a {b: selector.extend(":matches(c d.e, f g)", ":matches", "h")}
+
+<===> case175/output.css
+a {
+  b: :matches(c d.e, f g);
+}
+
+<===> case176/input.scss
+@use "sass:selector";
+a {b: selector.extend(":matches(c d.e, f g)", ":-pfx-matches(c d.e, f g)", "h")}
+
+<===> case176/output.css
+a {
+  b: :matches(c d.e, f g);
+}
+
+<===> case177/input.scss
+@use "sass:selector";
+a {b: selector.extend(":where(c d.e, f g)", ":where(c d.e, f g)", "h")}
+
+<===> case177/output.css
+a {
+  b: :where(c d.e, f g), h;
+}
+
+<===> case178/input.scss
+@use "sass:selector";
+a {b: selector.extend(":where(c d.e, f g)", ":where(d, g)", "h")}
+
+<===> case178/output.css
+a {
+  b: :where(c d.e, f g);
+}
+
+<===> case179/input.scss
+@use "sass:selector";
+a {b: selector.extend(":where(c d.e, f g)", ":where", "h")}
+
+<===> case179/output.css
+a {
+  b: :where(c d.e, f g);
+}
+
+<===> case180/input.scss
+@use "sass:selector";
+a {b: selector.extend(":where(c d.e, f g)", ":-pfx-where(c d.e, f g)", "h")}
+
+<===> case180/output.css
+a {
+  b: :where(c d.e, f g);
+}
+
+<===> case181/input.scss
+@use "sass:selector";
+a {b: selector.extend(":has(.c)", ".c", ":has(.d)")}
+
+<===> case181/output.css
+a {
+  b: :has(.c, :has(.d));
+}
+
+<===> case182/input.scss
+@use "sass:selector";
+a {b: selector.extend(":has(.c)", ".c", ".d, .e")}
+
+<===> case182/output.css
+a {
+  b: :has(.c, .d, .e);
+}
+
+<===> case183/input.scss
+@use "sass:selector";
+a {b: selector.extend(":has(.c)", ".c", ".d")}
+
+<===> case183/output.css
+a {
+  b: :has(.c, .d);
+}
+
+<===> case184/input.scss
+@use "sass:selector";
+a {b: selector.extend(":host(.c)", ".c", ":host(.d)")}
+
+<===> case184/output.css
+a {
+  b: :host(.c, :host(.d));
+}
+
+<===> case185/input.scss
+@use "sass:selector";
+a {b: selector.extend(":host(.c)", ".c", ".d, .e")}
+
+<===> case185/output.css
+a {
+  b: :host(.c, .d, .e);
+}
+
+<===> case186/input.scss
+@use "sass:selector";
+a {b: selector.extend(":host(.c)", ".c", ".d")}
+
+<===> case186/output.css
+a {
+  b: :host(.c, .d);
+}
+
+<===> case187/input.scss
+@use "sass:selector";
+a {b: selector.extend(":host-context(.c)", ".c", ":host-context(.d)")}
+
+<===> case187/output.css
+a {
+  b: :host-context(.c, :host-context(.d));
+}
+
+<===> case188/input.scss
+@use "sass:selector";
+a {b: selector.extend(":host-context(.c)", ".c", ".d, .e")}
+
+<===> case188/output.css
+a {
+  b: :host-context(.c, .d, .e);
+}
+
+<===> case189/input.scss
+@use "sass:selector";
+a {b: selector.extend(":host-context(.c)", ".c", ".d")}
+
+<===> case189/output.css
+a {
+  b: :host-context(.c, .d);
+}
+
+<===> case190/input.scss
+@use "sass:selector";
+a {b: selector.extend("::slotted(.c)", ".c", ".d, .e")}
+
+<===> case190/output.css
+a {
+  b: ::slotted(.c, .d, .e);
+}
+
+<===> case191/input.scss
+@use "sass:selector";
+a {b: selector.extend("::slotted(.c)", ".c", ".d")}
+
+<===> case191/output.css
+a {
+  b: ::slotted(.c, .d);
+}
+
+<===> case192/input.scss
+@use "sass:selector";
+a {b: selector.extend("::slotted(.c)", ".c", "::slotted(.d)")}
+
+<===> case192/output.css
+a {
+  b: ::slotted(.c, ::slotted(.d));
+}
+
+<===> case193/input.scss
+@use "sass:selector";
+a {b: selector.extend("c", "*", "d")}
+
+<===> case193/output.css
+a {
+  b: c;
+}
+
+<===> case194/input.scss
+@use "sass:selector";
+a {b: selector.extend("c", "c", "e")}
+
+<===> case194/output.css
+a {
+  b: c, e;
+}
+
+<===> case195/input.scss
+@use "sass:selector";
+a {b: selector.extend("|c", "|c", "d")}
+
+<===> case195/output.css
+a {
+  b: |c, d;
+}
+
+<===> case196/input.scss
+@use "sass:selector";
+a {b: selector.extend("|c", "d|c", "e")}
+
+<===> case196/output.css
+a {
+  b: |c;
+}
+
+<===> case197/input.scss
+@use "sass:selector";
+a {b: selector.extend("|c", "c", "d")}
+
+<===> case197/output.css
+a {
+  b: |c;
+}
+
+<===> case198/input.scss
+@use "sass:selector";
+a {b: selector.extend("|c", "*|c", "d")}
+
+<===> case198/output.css
+a {
+  b: |c;
+}
+
+<===> case199/input.scss
+@use "sass:selector";
+a {b: selector.extend("c|d", "|d", "e")}
+
+<===> case199/output.css
+a {
+  b: c|d;
+}
+
+<===> case200/input.scss
+@use "sass:selector";
+a {b: selector.extend("c|d", "c|d", "e")}
+
+<===> case200/output.css
+a {
+  b: c|d, e;
+}
+
+<===> case201/input.scss
+@use "sass:selector";
+a {b: selector.extend("c|d", "e|d", "e")}
+
+<===> case201/output.css
+a {
+  b: c|d;
+}
+
+<===> case202/input.scss
+@use "sass:selector";
+a {b: selector.extend("c|d", "d", "e")}
+
+<===> case202/output.css
+a {
+  b: c|d;
+}
+
+<===> case203/input.scss
+@use "sass:selector";
+a {b: selector.extend("c|d", "*|d", "e")}
+
+<===> case203/output.css
+a {
+  b: c|d;
+}
+
+<===> case204/input.scss
+@use "sass:selector";
+a {b: selector.extend("*|c", "|c", "d")}
+
+<===> case204/output.css
+a {
+  b: *|c;
+}
+
+<===> case205/input.scss
+@use "sass:selector";
+a {b: selector.extend("*|c", "d|c", "d")}
+
+<===> case205/output.css
+a {
+  b: *|c;
+}
+
+<===> case206/input.scss
+@use "sass:selector";
+a {b: selector.extend("*|c", "c", "d")}
+
+<===> case206/output.css
+a {
+  b: *|c;
+}
+
+<===> case207/input.scss
+@use "sass:selector";
+a {b: selector.extend("*|c", "*|c", "d")}
+
+<===> case207/output.css
+a {
+  b: *|c, d;
+}
+
+<===> case208/input.scss
+@use "sass:selector";
+a {b: selector.extend("c", "d", "e")}
+
+<===> case208/output.css
+a {
+  b: c;
+}
+
+<===> case209/input.scss
+@use "sass:selector";
+a {b: selector.extend("*", ".c", "d")}
+
+<===> case209/output.css
+a {
+  b: *;
+}
+
+<===> case210/input.scss
+@use "sass:selector";
+a {b: selector.extend("*", "c", "d")}
+
+<===> case210/output.css
+a {
+  b: *;
+}
+
+<===> case211/input.scss
+@use "sass:selector";
+a {b: selector.extend("*", "*", "c")}
+
+<===> case211/output.css
+a {
+  b: *;
+}
+
+<===> case212/input.scss
+@use "sass:selector";
+a {b: selector.extend("|*", ".c", "d")}
+
+<===> case212/output.css
+a {
+  b: |*;
+}
+
+<===> case213/input.scss
+@use "sass:selector";
+a {b: selector.extend("|*", "|d", "e")}
+
+<===> case213/output.css
+a {
+  b: |*;
+}
+
+<===> case214/input.scss
+@use "sass:selector";
+a {b: selector.extend("|*", "c|d", "e")}
+
+<===> case214/output.css
+a {
+  b: |*;
+}
+
+<===> case215/input.scss
+@use "sass:selector";
+a {b: selector.extend("|*", "d", "e")}
+
+<===> case215/output.css
+a {
+  b: |*;
+}
+
+<===> case216/input.scss
+@use "sass:selector";
+a {b: selector.extend("|*", "|*", "c")}
+
+<===> case216/output.css
+a {
+  b: |*, c;
+}
+
+<===> case217/input.scss
+@use "sass:selector";
+a {b: selector.extend("|*", "c|*", "d")}
+
+<===> case217/output.css
+a {
+  b: |*;
+}
+
+<===> case218/input.scss
+@use "sass:selector";
+a {b: selector.extend("|*", "*", "c")}
+
+<===> case218/output.css
+a {
+  b: |*;
+}
+
+<===> case219/input.scss
+@use "sass:selector";
+a {b: selector.extend("|*", "*|*", "c")}
+
+<===> case219/output.css
+a {
+  b: |*;
+}
+
+<===> case220/input.scss
+@use "sass:selector";
+a {b: selector.extend("c|*", ".d", "e")}
+
+<===> case220/output.css
+a {
+  b: c|*;
+}
+
+<===> case221/input.scss
+@use "sass:selector";
+a {b: selector.extend("c|*", "|d", "e")}
+
+<===> case221/output.css
+a {
+  b: c|*;
+}
+
+<===> case222/input.scss
+@use "sass:selector";
+a {b: selector.extend("c|*", "c|d", "e")}
+
+<===> case222/output.css
+a {
+  b: c|*;
+}
+
+<===> case223/input.scss
+@use "sass:selector";
+a {b: selector.extend("c|*", "e|d", "e")}
+
+<===> case223/output.css
+a {
+  b: c|*;
+}
+
+<===> case224/input.scss
+@use "sass:selector";
+a {b: selector.extend("c|*", "d", "e")}
+
+<===> case224/output.css
+a {
+  b: c|*;
+}
+
+<===> case225/input.scss
+@use "sass:selector";
+a {b: selector.extend("c|*", "|*", "e")}
+
+<===> case225/output.css
+a {
+  b: c|*;
+}
+
+<===> case226/input.scss
+@use "sass:selector";
+a {b: selector.extend("c|*", "c|*", "e")}
+
+<===> case226/output.css
+a {
+  b: c|*, e;
+}
+
+<===> case227/input.scss
+@use "sass:selector";
+a {b: selector.extend("c|*", "d|*", "e")}
+
+<===> case227/output.css
+a {
+  b: c|*;
+}
+
+<===> case228/input.scss
+@use "sass:selector";
+a {b: selector.extend("c|*", "*", "e")}
+
+<===> case228/output.css
+a {
+  b: c|*;
+}
+
+<===> case229/input.scss
+@use "sass:selector";
+a {b: selector.extend("c|*", "*|*", "e")}
+
+<===> case229/output.css
+a {
+  b: c|*;
+}
+
+<===> case230/input.scss
+@use "sass:selector";
+a {b: selector.extend("*|*", ".c", "d")}
+
+<===> case230/output.css
+a {
+  b: *|*;
+}
+
+<===> case231/input.scss
+@use "sass:selector";
+a {b: selector.extend("*|*", "|c", "d")}
+
+<===> case231/output.css
+a {
+  b: *|*;
+}
+
+<===> case232/input.scss
+@use "sass:selector";
+a {b: selector.extend("*|*", "c|d", "e")}
+
+<===> case232/output.css
+a {
+  b: *|*;
+}
+
+<===> case233/input.scss
+@use "sass:selector";
+a {b: selector.extend("*|*", "c", "d")}
+
+<===> case233/output.css
+a {
+  b: *|*;
+}
+
+<===> case234/input.scss
+@use "sass:selector";
+a {b: selector.extend("*|*", "|*", "c")}
+
+<===> case234/output.css
+a {
+  b: *|*;
+}
+
+<===> case235/input.scss
+@use "sass:selector";
+a {b: selector.extend("*|*", "c|*", "d")}
+
+<===> case235/output.css
+a {
+  b: *|*;
+}
+
+<===> case236/input.scss
+@use "sass:selector";
+a {b: selector.extend("*|*", "*", "c")}
+
+<===> case236/output.css
+a {
+  b: *|*;
+}
+
+<===> case237/input.scss
+@use "sass:selector";
+a {b: selector.extend("*|*", "*|*", "c")}
+
+<===> case237/output.css
+a {
+  b: *|*;
+}
+
+<===> case238/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("a + b + c", "a + x > b + c")}
+
+<===> case238/output.css
+a {
+  b: false;
+}
+
+<===> case239/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("a + b + c", "a + x b + c")}
+
+<===> case239/output.css
+a {
+  b: false;
+}
+
+<===> case240/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("a + b + c", "a + x ~ b + c")}
+
+<===> case240/output.css
+a {
+  b: false;
+}
+
+<===> case241/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("a + b + c", "a + x + b + c")}
+
+<===> case241/output.css
+a {
+  b: false;
+}
+
+<===> case242/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("d + c", "d + e + c")}
+
+<===> case242/output.css
+a {
+  b: false;
+}
+
+<===> case243/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c", "d + e + c")}
+
+<===> case243/output.css
+a {
+  b: true;
+}
+
+<===> case244/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("f + c", "d + e + c")}
+
+<===> case244/output.css
+a {
+  b: false;
+}
+
+<===> case245/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("e + c", "d + e + c")}
+
+<===> case245/output.css
+a {
+  b: true;
+}
+
+<===> case246/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c + d", "c + d")}
+
+<===> case246/output.css
+a {
+  b: true;
+}
+
+<===> case247/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c + d", "c.e + d.f")}
+
+<===> case247/output.css
+a {
+  b: true;
+}
+
+<===> case248/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c.e + d.f", "c + d")}
+
+<===> case248/output.css
+a {
+  b: false;
+}
+
+<===> case249/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c", "d + c")}
+
+<===> case249/output.css
+a {
+  b: true;
+}
+
+<===> case250/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c + d", "d")}
+
+<===> case250/output.css
+a {
+  b: false;
+}
+
+<===> case251/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c", "d + ~ c")}
+
+<===> case251/output.css
+a {
+  b: false;
+}
+
+<===> case252/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("> c", "c")}
+
+<===> case252/output.css
+a {
+  b: false;
+}
+
+<===> case253/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("a > b > c", "a > x > b > c")}
+
+<===> case253/output.css
+a {
+  b: false;
+}
+
+<===> case254/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("a > b > c", "a > x b > c")}
+
+<===> case254/output.css
+a {
+  b: false;
+}
+
+<===> case255/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("a > b > c", "a > x ~ b > c")}
+
+<===> case255/output.css
+a {
+  b: false;
+}
+
+<===> case256/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("a > b > c", "a > x + b > c")}
+
+<===> case256/output.css
+a {
+  b: false;
+}
+
+<===> case257/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("d > c", "d > e > c")}
+
+<===> case257/output.css
+a {
+  b: false;
+}
+
+<===> case258/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c", "d > e > c")}
+
+<===> case258/output.css
+a {
+  b: true;
+}
+
+<===> case259/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("f > c", "d > e > c")}
+
+<===> case259/output.css
+a {
+  b: false;
+}
+
+<===> case260/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("e > c", "d > e > c")}
+
+<===> case260/output.css
+a {
+  b: true;
+}
+
+<===> case261/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c > d", "c > d")}
+
+<===> case261/output.css
+a {
+  b: true;
+}
+
+<===> case262/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c > d", "c.e > d.f")}
+
+<===> case262/output.css
+a {
+  b: true;
+}
+
+<===> case263/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c.e > d.f", "c > d")}
+
+<===> case263/output.css
+a {
+  b: false;
+}
+
+<===> case264/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c", "d > c")}
+
+<===> case264/output.css
+a {
+  b: true;
+}
+
+<===> case265/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c > d", "d")}
+
+<===> case265/output.css
+a {
+  b: false;
+}
+
+<===> case266/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("d c", "d > e > c")}
+
+<===> case266/output.css
+a {
+  b: true;
+}
+
+<===> case267/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("f c", "d > e > c")}
+
+<===> case267/output.css
+a {
+  b: false;
+}
+
+<===> case268/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("e c", "d > e > c")}
+
+<===> case268/output.css
+a {
+  b: true;
+}
+
+<===> case269/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("d > c", "d c")}
+
+<===> case269/output.css
+a {
+  b: false;
+}
+
+<===> case270/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("d c", "d > c")}
+
+<===> case270/output.css
+a {
+  b: true;
+}
+
+<===> case271/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("a b c", "a x > b c")}
+
+<===> case271/output.css
+a {
+  b: true;
+}
+
+<===> case272/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("a b c", "a x b c")}
+
+<===> case272/output.css
+a {
+  b: true;
+}
+
+<===> case273/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("a b c", "a x ~ b c")}
+
+<===> case273/output.css
+a {
+  b: true;
+}
+
+<===> case274/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("a b c", "a x + b c")}
+
+<===> case274/output.css
+a {
+  b: true;
+}
+
+<===> case275/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c", "d e c")}
+
+<===> case275/output.css
+a {
+  b: true;
+}
+
+<===> case276/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("d c", "d e c")}
+
+<===> case276/output.css
+a {
+  b: true;
+}
+
+<===> case277/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("f c", "d e c")}
+
+<===> case277/output.css
+a {
+  b: false;
+}
+
+<===> case278/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("e c", "d e c")}
+
+<===> case278/output.css
+a {
+  b: true;
+}
+
+<===> case279/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c d", "c d")}
+
+<===> case279/output.css
+a {
+  b: true;
+}
+
+<===> case280/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c d", "c.e d.f")}
+
+<===> case280/output.css
+a {
+  b: true;
+}
+
+<===> case281/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c.e d.f", "c d")}
+
+<===> case281/output.css
+a {
+  b: false;
+}
+
+<===> case282/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c", "d c")}
+
+<===> case282/output.css
+a {
+  b: true;
+}
+
+<===> case283/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c d", "d")}
+
+<===> case283/output.css
+a {
+  b: false;
+}
+
+<===> case284/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("d ~ c", "d + e + c")}
+
+<===> case284/output.css
+a {
+  b: true;
+}
+
+<===> case285/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("f ~ c", "d + e + c")}
+
+<===> case285/output.css
+a {
+  b: false;
+}
+
+<===> case286/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("e ~ c", "d + e + c")}
+
+<===> case286/output.css
+a {
+  b: true;
+}
+
+<===> case287/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("d + c", "d ~ c")}
+
+<===> case287/output.css
+a {
+  b: false;
+}
+
+<===> case288/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("d ~ c", "d + c")}
+
+<===> case288/output.css
+a {
+  b: true;
+}
+
+<===> case289/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("a ~ b ~ c", "a ~ x > b ~ c")}
+
+<===> case289/output.css
+a {
+  b: false;
+}
+
+<===> case290/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("a ~ b ~ c", "a ~ x b ~ c")}
+
+<===> case290/output.css
+a {
+  b: false;
+}
+
+<===> case291/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("a ~ b ~ c", "a ~ x ~ b ~ c")}
+
+<===> case291/output.css
+a {
+  b: true;
+}
+
+<===> case292/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("a ~ b ~ c", "a ~ x + b ~ c")}
+
+<===> case292/output.css
+a {
+  b: true;
+}
+
+<===> case293/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("d ~ c", "d ~ e ~ c")}
+
+<===> case293/output.css
+a {
+  b: true;
+}
+
+<===> case294/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c", "d ~ e ~ c")}
+
+<===> case294/output.css
+a {
+  b: true;
+}
+
+<===> case295/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("f ~ c", "d ~ e ~ c")}
+
+<===> case295/output.css
+a {
+  b: false;
+}
+
+<===> case296/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("e ~ c", "d ~ e ~ c")}
+
+<===> case296/output.css
+a {
+  b: true;
+}
+
+<===> case297/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c ~ d", "c ~ d")}
+
+<===> case297/output.css
+a {
+  b: true;
+}
+
+<===> case298/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c ~ d", "c.e ~ d.f")}
+
+<===> case298/output.css
+a {
+  b: true;
+}
+
+<===> case299/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c.e ~ d.f", "c ~ d")}
+
+<===> case299/output.css
+a {
+  b: false;
+}
+
+<===> case300/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c", "d ~ c")}
+
+<===> case300/output.css
+a {
+  b: true;
+}
+
+<===> case301/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c ~ d", "d")}
+
+<===> case301/output.css
+a {
+  b: false;
+}
+
+<===> case302/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c.e", "c:d.e")}
+
+<===> case302/output.css
+a {
+  b: true;
+}
+
+<===> case303/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c", "c::d")}
+
+<===> case303/output.css
+a {
+  b: false;
+}
+
+<===> case304/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c::d", "c")}
+
+<===> case304/output.css
+a {
+  b: false;
+}
+
+<===> case305/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c", "c:after")}
+
+<===> case305/output.css
+a {
+  b: false;
+}
+
+<===> case306/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c", "c:before")}
+
+<===> case306/output.css
+a {
+  b: false;
+}
+
+<===> case307/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c", "c:first-letter")}
+
+<===> case307/output.css
+a {
+  b: false;
+}
+
+<===> case308/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c", "c:first-line")}
+
+<===> case308/output.css
+a {
+  b: false;
+}
+
+<===> case309/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":e::d", "::d:e")}
+
+<===> case309/output.css
+a {
+  b: false;
+}
+
+<===> case310/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("::d", "c::d")}
+
+<===> case310/output.css
+a {
+  b: true;
+}
+
+<===> case311/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("::d:e", "::d:e")}
+
+<===> case311/output.css
+a {
+  b: true;
+}
+
+<===> case312/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("::d:c", "::d:c:e")}
+
+<===> case312/output.css
+a {
+  b: true;
+}
+
+<===> case313/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(".c::d", ".c.e::d")}
+
+<===> case313/output.css
+a {
+  b: true;
+}
+
+<===> case314/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("::d:c:e", "::d:c")}
+
+<===> case314/output.css
+a {
+  b: false;
+}
+
+<===> case315/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(".c.e::d", ".c::d")}
+
+<===> case315/output.css
+a {
+  b: false;
+}
+
+<===> case316/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c", "c.d")}
+
+<===> case316/output.css
+a {
+  b: true;
+}
+
+<===> case317/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c.d", "c")}
+
+<===> case317/output.css
+a {
+  b: false;
+}
+
+<===> case318/input.scss
+@use "sass:selector";
+// The full set of possible input formats is tested with `selector-parse()`;
+// this spec just verifies one example for `is-superselector()`.
+a {b: selector.is-superselector((c, d e), (c, d e))}
+
+<===> case318/output.css
+a {
+  b: true;
+}
+
+<===> case319/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c, d, e", "d")}
+
+<===> case319/output.css
+a {
+  b: true;
+}
+
+<===> case320/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c, d, e", "d, c, e")}
+
+<===> case320/output.css
+a {
+  b: true;
+}
+
+<===> case321/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c, d, e", "e, c")}
+
+<===> case321/output.css
+a {
+  b: true;
+}
+
+<===> case322/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c, d, e", "c, f")}
+
+<===> case322/output.css
+a {
+  b: false;
+}
+
+<===> case323/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(".c", "d.c, e.c")}
+
+<===> case323/output.css
+a {
+  b: true;
+}
+
+<===> case324/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c, d", "c, d")}
+
+<===> case324/output.css
+a {
+  b: true;
+}
+
+<===> case325/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c, d", "c.e, d.f")}
+
+<===> case325/output.css
+a {
+  b: true;
+}
+
+<===> case326/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c.e, d.f", "c, d")}
+
+<===> case326/output.css
+a {
+  b: false;
+}
+
+<===> case327/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c", "c, d")}
+
+<===> case327/output.css
+a {
+  b: false;
+}
+
+<===> case328/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c, d", "c")}
+
+<===> case328/output.css
+a {
+  b: true;
+}
+
+<===> case329/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector($super: "c", $sub: "c.d")}
+
+<===> case329/output.css
+a {
+  b: true;
+}
+
+<===> case330/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("[c=d]", "[c=d]")}
+
+<===> case330/output.css
+a {
+  b: true;
+}
+
+<===> case331/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("[c=d]", "[e=d]")}
+
+<===> case331/output.css
+a {
+  b: false;
+}
+
+<===> case332/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("[c=d]", "[c^=d]")}
+
+<===> case332/output.css
+a {
+  b: false;
+}
+
+<===> case333/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("[c=d]", "[c=e]")}
+
+<===> case333/output.css
+a {
+  b: false;
+}
+
+<===> case334/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(".c", ".c")}
+
+<===> case334/output.css
+a {
+  b: true;
+}
+
+<===> case335/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(".c", ".d")}
+
+<===> case335/output.css
+a {
+  b: false;
+}
+
+<===> case336/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("#c", "#c")}
+
+<===> case336/output.css
+a {
+  b: true;
+}
+
+<===> case337/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("#c", "#d")}
+
+<===> case337/output.css
+a {
+  b: false;
+}
+
+<===> case338/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("%c", "%c")}
+
+<===> case338/output.css
+a {
+  b: true;
+}
+
+<===> case339/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("%c", "%d")}
+
+<===> case339/output.css
+a {
+  b: false;
+}
+
+<===> case340/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":c(@#$)", ":c(@#$)")}
+
+<===> case340/output.css
+a {
+  b: true;
+}
+
+<===> case341/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":c(@#$)", ":c(*&^)")}
+
+<===> case341/output.css
+a {
+  b: false;
+}
+
+<===> case342/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":c(@#$)", ":c")}
+
+<===> case342/output.css
+a {
+  b: false;
+}
+
+<===> case343/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":c(@#$)", ":d(@#$)")}
+
+<===> case343/output.css
+a {
+  b: false;
+}
+
+<===> case344/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("::c(@#$)", "::c(@#$)")}
+
+<===> case344/output.css
+a {
+  b: true;
+}
+
+<===> case345/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("::c(@#$)", "::c(*&^)")}
+
+<===> case345/output.css
+a {
+  b: false;
+}
+
+<===> case346/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("::c(@#$)", "::c")}
+
+<===> case346/output.css
+a {
+  b: false;
+}
+
+<===> case347/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("::c(@#$)", ":d(@#$)")}
+
+<===> case347/output.css
+a {
+  b: false;
+}
+
+<===> case348/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":c", "::c")}
+
+<===> case348/output.css
+a {
+  b: false;
+}
+
+<===> case349/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":c", ":c")}
+
+<===> case349/output.css
+a {
+  b: true;
+}
+
+<===> case350/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":c", ":d")}
+
+<===> case350/output.css
+a {
+  b: false;
+}
+
+<===> case351/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("::c", ":c")}
+
+<===> case351/output.css
+a {
+  b: false;
+}
+
+<===> case352/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("::c", "::c")}
+
+<===> case352/output.css
+a {
+  b: true;
+}
+
+<===> case353/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("::c", "::d")}
+
+<===> case353/output.css
+a {
+  b: false;
+}
+
+<===> case354/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":-pfx-any(c d.i, e j f)", "c d, e f, g h")}
+
+<===> case354/output.css
+a {
+  b: false;
+}
+
+<===> case355/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":-pfx-any(c d, e f, g h)", "c d.i, e j f")}
+
+<===> case355/output.css
+a {
+  b: true;
+}
+
+<===> case356/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":any(c d.i, e j f)", "c d, e f, g h")}
+
+<===> case356/output.css
+a {
+  b: false;
+}
+
+<===> case357/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":any(c d, e f, g h)", "c d.i, e j f")}
+
+<===> case357/output.css
+a {
+  b: true;
+}
+
+<===> case358/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":current(c d, e f)", "c d, e f")}
+
+<===> case358/output.css
+a {
+  b: false;
+}
+
+<===> case359/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":current(c d, e f)", ":current(c d, e f)")}
+
+<===> case359/output.css
+a {
+  b: true;
+}
+
+<===> case360/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":-pfx-current(c d, e f)", ":-pfx-current(c d, e f)")}
+
+<===> case360/output.css
+a {
+  b: true;
+}
+
+<===> case361/input.scss
+@use "sass:selector";
+a {
+  b: selector.is-superselector(
+      ":-pfx-current(c d.i, e j f)",
+      ":-pfx-current(c d, e f, g h)");
+}
+
+<===> case361/output.css
+a {
+  b: false;
+}
+
+<===> case362/input.scss
+@use "sass:selector";
+a {
+  b: selector.is-superselector(
+      ":-pfx-current(c d, e f, g h)",
+      ":-pfx-current(c d.i, e j f)");
+}
+
+<===> case362/output.css
+a {
+  b: false;
+}
+
+<===> case363/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":current(c d.i, e j f)", ":current(c d, e f, g h)")}
+
+<===> case363/output.css
+a {
+  b: false;
+}
+
+<===> case364/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":current(c d, e f, g h)", ":current(c d.i, e j f)")}
+
+<===> case364/output.css
+a {
+  b: false;
+}
+
+<===> case365/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":has(c d, e f, g h)", "c d, e f, g h")}
+
+<===> case365/output.css
+a {
+  b: false;
+}
+
+<===> case366/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":-pfx-has(c d.i, e j f)", ":-pfx-has(c d, e f, g h)")}
+
+<===> case366/output.css
+a {
+  b: false;
+}
+
+<===> case367/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":-pfx-has(c d, e f, g h)", ":-pfx-has(c d.i, e j f)")}
+
+<===> case367/output.css
+a {
+  b: true;
+}
+
+<===> case368/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":has(c d.i, e j f)", ":has(c d, e f, g h)")}
+
+<===> case368/output.css
+a {
+  b: false;
+}
+
+<===> case369/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":has(c d, e f, g h)", ":has(c d.i, e j f)")}
+
+<===> case369/output.css
+a {
+  b: true;
+}
+
+<===> case370/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":host(c d, e f, g h)", "c d, e f, g h")}
+
+<===> case370/output.css
+a {
+  b: false;
+}
+
+<===> case371/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":-pfx-host(c d.i, e j f)", ":-pfx-host(c d, e f, g h)")}
+
+<===> case371/output.css
+a {
+  b: false;
+}
+
+<===> case372/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":-pfx-host(c d, e f, g h)", ":-pfx-host(c d.i, e j f)")}
+
+<===> case372/output.css
+a {
+  b: true;
+}
+
+<===> case373/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":host(c d.i, e j f)", ":host(c d, e f, g h)")}
+
+<===> case373/output.css
+a {
+  b: false;
+}
+
+<===> case374/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":host(c d, e f, g h)", ":host(c d.i, e j f)")}
+
+<===> case374/output.css
+a {
+  b: true;
+}
+
+<===> case375/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":host-context(c d, e f, g h)", "c d, e f, g h")}
+
+<===> case375/output.css
+a {
+  b: false;
+}
+
+<===> case376/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":-pfx-host-context(c d.i, e j f)", ":-pfx-host-context(c d, e f, g h)")}
+
+<===> case376/output.css
+a {
+  b: false;
+}
+
+<===> case377/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":-pfx-host-context(c d, e f, g h)", ":-pfx-host-context(c d.i, e j f)")}
+
+<===> case377/output.css
+a {
+  b: true;
+}
+
+<===> case378/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":host-context(c d.i, e j f)", ":host-context(c d, e f, g h)")}
+
+<===> case378/output.css
+a {
+  b: false;
+}
+
+<===> case379/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":host-context(c d, e f, g h)", ":host-context(c d.i, e j f)")}
+
+<===> case379/output.css
+a {
+  b: true;
+}
+
+<===> case380/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":is(c d.i, e j f)", ":is(c d, e f, g h)")}
+
+<===> case380/output.css
+a {
+  b: false;
+}
+
+<===> case381/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":is(c d, e f, g h)", ":is(c d.i, e j f)")}
+
+<===> case381/output.css
+a {
+  b: true;
+}
+
+<===> case382/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":is(c d e)", "c e")}
+
+<===> case382/output.css
+a {
+  b: false;
+}
+
+<===> case383/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":is(c e)", "c d e")}
+
+<===> case383/output.css
+a {
+  b: true;
+}
+
+<===> case384/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":is(c.d.e)", "c e")}
+
+<===> case384/output.css
+a {
+  b: false;
+}
+
+<===> case385/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":is(c.e)", "c.d.e")}
+
+<===> case385/output.css
+a {
+  b: true;
+}
+
+<===> case386/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":is(c d, e f)", "c d, e f, g h")}
+
+<===> case386/output.css
+a {
+  b: false;
+}
+
+<===> case387/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":is(c d, e f, g h)", "c d, e f")}
+
+<===> case387/output.css
+a {
+  b: true;
+}
+
+<===> case388/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":is(c, d)", ":any(c, d)")}
+
+<===> case388/output.css
+a {
+  b: false;
+}
+
+<===> case389/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":is(c, d)", ":-pfx-is(c, d)")}
+
+<===> case389/output.css
+a {
+  b: false;
+}
+
+<===> case390/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":-pfx-is(c d.i, e j f)", "c d, e f, g h")}
+
+<===> case390/output.css
+a {
+  b: false;
+}
+
+<===> case391/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":-pfx-is(c d, e f, g h)", "c d.i, e j f")}
+
+<===> case391/output.css
+a {
+  b: true;
+}
+
+<===> case392/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":is(c)", "c")}
+
+<===> case392/output.css
+a {
+  b: true;
+}
+
+<===> case393/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":is(c)", "d")}
+
+<===> case393/output.css
+a {
+  b: false;
+}
+
+<===> case394/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":matches(c d.i, e j f)", ":matches(c d, e f, g h)")}
+
+<===> case394/output.css
+a {
+  b: false;
+}
+
+<===> case395/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":matches(c d, e f, g h)", ":matches(c d.i, e j f)")}
+
+<===> case395/output.css
+a {
+  b: true;
+}
+
+<===> case396/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":matches(c d e)", "c e")}
+
+<===> case396/output.css
+a {
+  b: false;
+}
+
+<===> case397/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":matches(c e)", "c d e")}
+
+<===> case397/output.css
+a {
+  b: true;
+}
+
+<===> case398/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":matches(c.d.e)", "c e")}
+
+<===> case398/output.css
+a {
+  b: false;
+}
+
+<===> case399/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":matches(c.e)", "c.d.e")}
+
+<===> case399/output.css
+a {
+  b: true;
+}
+
+<===> case400/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":matches(c d, e f)", "c d, e f, g h")}
+
+<===> case400/output.css
+a {
+  b: false;
+}
+
+<===> case401/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":matches(c d, e f, g h)", "c d, e f")}
+
+<===> case401/output.css
+a {
+  b: true;
+}
+
+<===> case402/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":matches(c, d)", ":any(c, d)")}
+
+<===> case402/output.css
+a {
+  b: false;
+}
+
+<===> case403/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":matches(c, d)", ":-pfx-matches(c, d)")}
+
+<===> case403/output.css
+a {
+  b: false;
+}
+
+<===> case404/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":-pfx-matches(c d.i, e j f)", "c d, e f, g h")}
+
+<===> case404/output.css
+a {
+  b: false;
+}
+
+<===> case405/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":-pfx-matches(c d, e f, g h)", "c d.i, e j f")}
+
+<===> case405/output.css
+a {
+  b: true;
+}
+
+<===> case406/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":matches(c)", "c")}
+
+<===> case406/output.css
+a {
+  b: true;
+}
+
+<===> case407/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":matches(c)", "d")}
+
+<===> case407/output.css
+a {
+  b: false;
+}
+
+<===> case408/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":not(c d, e f, g h)", "c d, e f, g h")}
+
+<===> case408/output.css
+a {
+  b: false;
+}
+
+<===> case409/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":not(c d.i, e j f)", ":not(c d):not(e f):not(g h)")}
+
+<===> case409/output.css
+a {
+  b: true;
+}
+
+<===> case410/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":not(c d, e f, g h)", ":not(c d.i):not(e j f)")}
+
+<===> case410/output.css
+a {
+  b: false;
+}
+
+<===> case411/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":not(c d.i):not(e j f)", ":not(c d, e f, g h)")}
+
+<===> case411/output.css
+a {
+  b: true;
+}
+
+<===> case412/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":not(c d):not(e f):not(g h)", ":not(c d.i, e j f)")}
+
+<===> case412/output.css
+a {
+  b: false;
+}
+
+<===> case413/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":not(#c.d)", "#e")}
+
+<===> case413/output.css
+a {
+  b: true;
+}
+
+<===> case414/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":-pfx-not(c d.i, e j f)", ":-pfx-not(c d, e f, g h)")}
+
+<===> case414/output.css
+a {
+  b: true;
+}
+
+<===> case415/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":-pfx-not(c d, e f, g h)", ":-pfx-not(c d.i, e j f)")}
+
+<===> case415/output.css
+a {
+  b: false;
+}
+
+<===> case416/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":not(c d.i, e j f)", ":not(c d, e f, g h)")}
+
+<===> case416/output.css
+a {
+  b: true;
+}
+
+<===> case417/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":not(c d, e f, g h)", ":not(c d.i, e j f)")}
+
+<===> case417/output.css
+a {
+  b: false;
+}
+
+<===> case418/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":not(c.d)", "e")}
+
+<===> case418/output.css
+a {
+  b: true;
+}
+
+<===> case419/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":nth-child(n+1 of c d, e f, g h)", "c d, e f, g h")}
+
+<===> case419/output.css
+a {
+  b: false;
+}
+
+<===> case420/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c", ":nth-child(n+1 of c)")}
+
+<===> case420/output.css
+a {
+  b: true;
+}
+
+<===> case421/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":nth-child(n+1 of c)", ":nth-child(n+2 of c)")}
+
+<===> case421/output.css
+a {
+  b: false;
+}
+
+<===> case422/input.scss
+@use "sass:selector";
+a {
+  b: selector.is-superselector(
+      ":-pfx-nth-child(n+1 of c d.i, e j f)",
+      ":-pfx-nth-child(n+1 of c d, e f, g h)");
+}
+
+<===> case422/output.css
+a {
+  b: false;
+}
+
+<===> case423/input.scss
+@use "sass:selector";
+a {
+  b: selector.is-superselector(
+      ":-pfx-nth-child(n+1 of c d, e f, g h)",
+      ":-pfx-nth-child(n+1 of c d.i, e j f)");
+}
+
+<===> case423/output.css
+a {
+  b: true;
+}
+
+<===> case424/input.scss
+@use "sass:selector";
+a {
+  b: selector.is-superselector(
+      ":nth-child(n+1 of c d.i, e j f)",
+      ":nth-child(n+1 of c d, e f, g h)");
+}
+
+<===> case424/output.css
+a {
+  b: false;
+}
+
+<===> case425/input.scss
+@use "sass:selector";
+a {
+  b: selector.is-superselector(
+    ":nth-child(n+1 of c d, e f, g h)",
+    ":nth-child(n+1 of c d.i, e j f)");
+}
+
+<===> case425/output.css
+a {
+  b: true;
+}
+
+<===> case426/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":nth-last-child(n+1 of c d, e f, g h)", "c d, e f, g h")}
+
+<===> case426/output.css
+a {
+  b: false;
+}
+
+<===> case427/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c", ":nth-last-child(n+1 of c)")}
+
+<===> case427/output.css
+a {
+  b: true;
+}
+
+<===> case428/input.scss
+@use "sass:selector";
+a {
+  b: selector.is-superselector(
+      ":nth-last-child(n+1 of c)",
+      ":nth-last-child(n+2 of c)");
+}
+
+<===> case428/output.css
+a {
+  b: false;
+}
+
+<===> case429/input.scss
+@use "sass:selector";
+a {
+  b: selector.is-superselector(
+      ":-pfx-nth-last-child(n+1 of c d.i, e j f)",
+      ":-pfx-nth-last-child(n+1 of c d, e f, g h)");
+}
+
+<===> case429/output.css
+a {
+  b: false;
+}
+
+<===> case430/input.scss
+@use "sass:selector";
+a {
+  b: selector.is-superselector(
+      ":-pfx-nth-last-child(n+1 of c d, e f, g h)",
+      ":-pfx-nth-last-child(n+1 of c d.i, e j f)");
+}
+
+<===> case430/output.css
+a {
+  b: true;
+}
+
+<===> case431/input.scss
+@use "sass:selector";
+a {
+  b: selector.is-superselector(
+      ":nth-last-child(n+1 of c d.i, e j f)",
+      ":nth-last-child(n+1 of c d, e f, g h)");
+}
+
+<===> case431/output.css
+a {
+  b: false;
+}
+
+<===> case432/input.scss
+@use "sass:selector";
+a {
+  b: selector.is-superselector(
+      ":nth-last-child(n+1 of c d, e f, g h)",
+      ":nth-last-child(n+1 of c d.i, e j f)");
+}
+
+<===> case432/output.css
+a {
+  b: true;
+}
+
+<===> case433/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("::slotted(c d, e f, g h)", "c d, e f, g h")}
+
+<===> case433/output.css
+a {
+  b: false;
+}
+
+<===> case434/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("::-pfx-slotted(c d.i, e j f)", "::-pfx-slotted(c d, e f, g h)")}
+
+<===> case434/output.css
+a {
+  b: false;
+}
+
+<===> case435/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("::-pfx-slotted(c d, e f, g h)", "::-pfx-slotted(c d.i, e j f)")}
+
+<===> case435/output.css
+a {
+  b: true;
+}
+
+<===> case436/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("::slotted(c d.i, e j f)", "::slotted(c d, e f, g h)")}
+
+<===> case436/output.css
+a {
+  b: false;
+}
+
+<===> case437/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("::slotted(c d, e f, g h)", "::slotted(c d.i, e j f)")}
+
+<===> case437/output.css
+a {
+  b: true;
+}
+
+<===> case438/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":where(c d.i, e j f)", ":where(c d, e f, g h)")}
+
+<===> case438/output.css
+a {
+  b: false;
+}
+
+<===> case439/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":where(c d, e f, g h)", ":where(c d.i, e j f)")}
+
+<===> case439/output.css
+a {
+  b: true;
+}
+
+<===> case440/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":where(c d e)", "c e")}
+
+<===> case440/output.css
+a {
+  b: false;
+}
+
+<===> case441/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":where(c e)", "c d e")}
+
+<===> case441/output.css
+a {
+  b: true;
+}
+
+<===> case442/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":where(c.d.e)", "c e")}
+
+<===> case442/output.css
+a {
+  b: false;
+}
+
+<===> case443/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":where(c.e)", "c.d.e")}
+
+<===> case443/output.css
+a {
+  b: true;
+}
+
+<===> case444/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":where(c d, e f)", "c d, e f, g h")}
+
+<===> case444/output.css
+a {
+  b: false;
+}
+
+<===> case445/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":where(c d, e f, g h)", "c d, e f")}
+
+<===> case445/output.css
+a {
+  b: true;
+}
+
+<===> case446/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":where(c, d)", ":any(c, d)")}
+
+<===> case446/output.css
+a {
+  b: false;
+}
+
+<===> case447/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":where(c, d)", ":-pfx-where(c, d)")}
+
+<===> case447/output.css
+a {
+  b: false;
+}
+
+<===> case448/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":-pfx-is(c d.i, e j f)", "c d, e f, g h")}
+
+<===> case448/output.css
+a {
+  b: false;
+}
+
+<===> case449/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":-pfx-is(c d, e f, g h)", "c d.i, e j f")}
+
+<===> case449/output.css
+a {
+  b: true;
+}
+
+<===> case450/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":where(c)", "c")}
+
+<===> case450/output.css
+a {
+  b: true;
+}
+
+<===> case451/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector(":where(c)", "d")}
+
+<===> case451/output.css
+a {
+  b: false;
+}
+
+<===> case452/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c", "*")}
+
+<===> case452/output.css
+a {
+  b: false;
+}
+
+<===> case453/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c", "c")}
+
+<===> case453/output.css
+a {
+  b: true;
+}
+
+<===> case454/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("|c", "|c")}
+
+<===> case454/output.css
+a {
+  b: true;
+}
+
+<===> case455/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("|c", "d|c")}
+
+<===> case455/output.css
+a {
+  b: false;
+}
+
+<===> case456/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("|c", "c")}
+
+<===> case456/output.css
+a {
+  b: false;
+}
+
+<===> case457/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("|c", "*|c")}
+
+<===> case457/output.css
+a {
+  b: false;
+}
+
+<===> case458/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c|d", "|d")}
+
+<===> case458/output.css
+a {
+  b: false;
+}
+
+<===> case459/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c|d", "c|d")}
+
+<===> case459/output.css
+a {
+  b: true;
+}
+
+<===> case460/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c|d", "e|d")}
+
+<===> case460/output.css
+a {
+  b: false;
+}
+
+<===> case461/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c|d", "d")}
+
+<===> case461/output.css
+a {
+  b: false;
+}
+
+<===> case462/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c|d", "*|d")}
+
+<===> case462/output.css
+a {
+  b: false;
+}
+
+<===> case463/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("*|c", "|c")}
+
+<===> case463/output.css
+a {
+  b: true;
+}
+
+<===> case464/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("*|c", "d|c")}
+
+<===> case464/output.css
+a {
+  b: true;
+}
+
+<===> case465/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("*|c", "c")}
+
+<===> case465/output.css
+a {
+  b: true;
+}
+
+<===> case466/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("*|c", "*|c")}
+
+<===> case466/output.css
+a {
+  b: true;
+}
+
+<===> case467/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c", "d")}
+
+<===> case467/output.css
+a {
+  b: false;
+}
+
+<===> case468/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("*", ".c")}
+
+<===> case468/output.css
+a {
+  b: true;
+}
+
+<===> case469/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("*", "c")}
+
+<===> case469/output.css
+a {
+  b: true;
+}
+
+<===> case470/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("*", "*")}
+
+<===> case470/output.css
+a {
+  b: true;
+}
+
+<===> case471/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("|*", ".d")}
+
+<===> case471/output.css
+a {
+  b: false;
+}
+
+<===> case472/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("|*", "|d")}
+
+<===> case472/output.css
+a {
+  b: true;
+}
+
+<===> case473/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("|*", "c|d")}
+
+<===> case473/output.css
+a {
+  b: false;
+}
+
+<===> case474/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("|*", "d")}
+
+<===> case474/output.css
+a {
+  b: false;
+}
+
+<===> case475/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("|*", "|*")}
+
+<===> case475/output.css
+a {
+  b: true;
+}
+
+<===> case476/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("|*", "c|*")}
+
+<===> case476/output.css
+a {
+  b: false;
+}
+
+<===> case477/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("|*", "*")}
+
+<===> case477/output.css
+a {
+  b: false;
+}
+
+<===> case478/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("|*", "*|*")}
+
+<===> case478/output.css
+a {
+  b: false;
+}
+
+<===> case479/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c|*", ".d")}
+
+<===> case479/output.css
+a {
+  b: false;
+}
+
+<===> case480/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c|*", "|d")}
+
+<===> case480/output.css
+a {
+  b: false;
+}
+
+<===> case481/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c|*", "c|d")}
+
+<===> case481/output.css
+a {
+  b: true;
+}
+
+<===> case482/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c|*", "e|d")}
+
+<===> case482/output.css
+a {
+  b: false;
+}
+
+<===> case483/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c|*", "d")}
+
+<===> case483/output.css
+a {
+  b: false;
+}
+
+<===> case484/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c|*", "|*")}
+
+<===> case484/output.css
+a {
+  b: false;
+}
+
+<===> case485/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c|*", "c|*")}
+
+<===> case485/output.css
+a {
+  b: true;
+}
+
+<===> case486/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c|*", "d|*")}
+
+<===> case486/output.css
+a {
+  b: false;
+}
+
+<===> case487/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c|*", "*")}
+
+<===> case487/output.css
+a {
+  b: false;
+}
+
+<===> case488/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("c|*", "*|*")}
+
+<===> case488/output.css
+a {
+  b: false;
+}
+
+<===> case489/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("*|*", ".d")}
+
+<===> case489/output.css
+a {
+  b: true;
+}
+
+<===> case490/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("*|*", "|d")}
+
+<===> case490/output.css
+a {
+  b: true;
+}
+
+<===> case491/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("*|*", "c|d")}
+
+<===> case491/output.css
+a {
+  b: true;
+}
+
+<===> case492/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("*|*", "d")}
+
+<===> case492/output.css
+a {
+  b: true;
+}
+
+<===> case493/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("*|*", "|*")}
+
+<===> case493/output.css
+a {
+  b: true;
+}
+
+<===> case494/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("*|*", "c|*")}
+
+<===> case494/output.css
+a {
+  b: true;
+}
+
+<===> case495/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("*|*", "*")}
+
+<===> case495/output.css
+a {
+  b: true;
+}
+
+<===> case496/input.scss
+@use "sass:selector";
+a {b: selector.is-superselector("*|*", "*|*")}
+
+<===> case496/output.css
+a {
+  b: true;
+}
+
+<===> case497/input.scss
+@use "sass:selector";
+a {b: selector.nest("c", "+ d")}
+
+<===> case497/output.css
+a {
+  b: c + d;
+}
+
+<===> case498/input.scss
+@use "sass:selector";
+a {b: selector.nest("> c", "d")}
+
+<===> case498/output.css
+a {
+  b: > c d;
+}
+
+<===> case499/input.scss
+@use "sass:selector";
+a {b: selector.nest("c", "+ > d")}
+
+<===> case499/output.css
+a {
+  b: c + > d;
+}
+
+<===> case500/input.scss
+@use "sass:selector";
+a {b: selector.nest("~ ~ c", "d")}
+
+<===> case500/output.css
+a {
+  b: ~ ~ c d;
+}
+
+<===> case501/input.scss
+@use "sass:selector";
+a {b: selector.nest("c > > d", "e")}
+
+<===> case501/output.css
+a {
+  b: c > > d e;
+}
+
+<===> case502/input.scss
+@use "sass:selector";
+a {b: selector.nest("c", "d + >")}
+
+<===> case502/output.css
+a {
+  b: c d + >;
+}
+
+<===> case503/input.scss
+@use "sass:selector";
+a {b: selector.nest("c > ~", "d")}
+
+<===> case503/output.css
+a {
+  b: c > ~ d;
+}
+
+<===> case504/input.scss
+@use "sass:selector";
+a {b: selector.nest("c", "+")}
+
+<===> case504/output.css
+a {
+  b: c +;
+}
+
+<===> case505/input.scss
+@use "sass:selector";
+a {b: selector.nest("~", "c")}
+
+<===> case505/output.css
+a {
+  b: ~ c;
+}
+
+<===> case506/input.scss
+@use "sass:selector";
+a {b: selector.nest("c", ">", "d")}
+
+<===> case506/output.css
+a {
+  b: c > d;
+}
+
+<===> case507/input.scss
+@use "sass:selector";
+a {b: selector.nest("c", "d >")}
+
+<===> case507/output.css
+a {
+  b: c d >;
+}
+
+<===> case508/input.scss
+@use "sass:selector";
+a {b: selector.nest("c ~", "d")}
+
+<===> case508/output.css
+a {
+  b: c ~ d;
+}
+
+<===> case509/input.scss
+@use "sass:selector";
+a {b: selector.nest((c, d e), "f")}
+
+<===> case509/output.css
+a {
+  b: c f, d e f;
+}
+
+<===> case510/input.scss
+@use "sass:selector";
+a {b: selector.nest("c", (d, e f))}
+
+<===> case510/output.css
+a {
+  b: c d, c e f;
+}
+
+<===> case511/input.scss
+@use "sass:selector";
+a {b: selector.nest("c", "d, e")}
+
+<===> case511/output.css
+a {
+  b: c d, c e;
+}
+
+<===> case512/input.scss
+@use "sass:selector";
+a {b: selector.nest("c, d", "e")}
+
+<===> case512/output.css
+a {
+  b: c e, d e;
+}
+
+<===> case513/input.scss
+@use "sass:selector";
+a {b: selector.nest("c, d", "e, f", "g, h")}
+
+<===> case513/output.css
+a {
+  b: c e g, c e h, c f g, c f h, d e g, d e h, d f g, d f h;
+}
+
+<===> case514/input.scss
+@use "sass:selector";
+a {b: selector.nest("c, d", "&")}
+
+<===> case514/output.css
+a {
+  b: c, d;
+}
+
+<===> case515/input.scss
+@use "sass:selector";
+a {b: selector.nest("c, d", "e &.f")}
+
+<===> case515/output.css
+a {
+  b: e c.f, e d.f;
+}
+
+<===> case516/input.scss
+@use "sass:selector";
+a {b: selector.nest("c, d", "&.e")}
+
+<===> case516/output.css
+a {
+  b: c.e, d.e;
+}
+
+<===> case517/input.scss
+@use "sass:selector";
+a {b: selector.nest("c, d", "&.e, f")}
+
+<===> case517/output.css
+a {
+  b: c.e, c f, d.e, d f;
+}
+
+<===> case518/input.scss
+@use "sass:selector";
+a {b: selector.nest("c, d", "&.e &.f")}
+
+<===> case518/output.css
+a {
+  b: c.e c.f, c.e d.f, d.e c.f, d.e d.f;
+}
+
+<===> case519/input.scss
+@use "sass:selector";
+a {b: selector.nest("c, d", ":is(&)")}
+
+<===> case519/output.css
+a {
+  b: :is(c, d);
+}
+
+<===> case520/input.scss
+@use "sass:selector";
+a {b: selector.nest("c, d", ":matches(&)")}
+
+<===> case520/output.css
+a {
+  b: :matches(c, d);
+}
+
+<===> case521/input.scss
+@use "sass:selector";
+a {b: selector.nest("c, d", ":where(&)")}
+
+<===> case521/output.css
+a {
+  b: :where(c, d);
+}
+
+<===> case522/input.scss
+@use "sass:selector";
+a {b: selector.nest("c, d", "&e")}
+
+<===> case522/output.css
+a {
+  b: ce, de;
+}
+
+<===> case523/input.scss
+@use "sass:selector";
+a {b: selector.nest("c", "d", "e", "f", "g")}
+
+<===> case523/output.css
+a {
+  b: c d e f g;
+}
+
+<===> case524/input.scss
+@use "sass:selector";
+a {b: selector.nest("c")}
+
+<===> case524/output.css
+a {
+  b: c;
+}
+
+<===> case525/input.scss
+@use "sass:selector";
+a {b: selector.nest("&")}
+
+<===> case525/output.css
+a {
+  b: &;
+}
+
+<===> case526/input.scss
+@use "sass:selector";
+a {b: selector.nest("c", "&")}
+
+<===> case526/output.css
+a {
+  b: c;
+}
+
+<===> case527/input.scss
+@use "sass:selector";
+a {b: selector.nest("c d", "e &.f")}
+
+<===> case527/output.css
+a {
+  b: e c d.f;
+}
+
+<===> case528/input.scss
+@use "sass:selector";
+a {b: selector.nest("c", "d &.e")}
+
+<===> case528/output.css
+a {
+  b: d c.e;
+}
+
+<===> case529/input.scss
+@use "sass:selector";
+a {b: selector.nest("c", "&.d")}
+
+<===> case529/output.css
+a {
+  b: c.d;
+}
+
+<===> case530/input.scss
+@use "sass:selector";
+a {b: selector.nest("c", "&.d, e")}
+
+<===> case530/output.css
+a {
+  b: c.d, c e;
+}
+
+<===> case531/input.scss
+@use "sass:selector";
+a {b: selector.nest("c", "&.d &.e")}
+
+<===> case531/output.css
+a {
+  b: c.d c.e;
+}
+
+<===> case532/input.scss
+@use "sass:selector";
+a {b: selector.nest("c d", ":is(&)")}
+
+<===> case532/output.css
+a {
+  b: :is(c d);
+}
+
+<===> case533/input.scss
+@use "sass:selector";
+a {b: selector.nest("c d", ":matches(&)")}
+
+<===> case533/output.css
+a {
+  b: :matches(c d);
+}
+
+<===> case534/input.scss
+@use "sass:selector";
+a {b: selector.nest("c d", ":where(&)")}
+
+<===> case534/output.css
+a {
+  b: :where(c d);
+}
+
+<===> case535/input.scss
+@use "sass:selector";
+a {b: selector.nest("c", ":is(&)")}
+
+<===> case535/output.css
+a {
+  b: :is(c);
+}
+
+<===> case536/input.scss
+@use "sass:selector";
+a {b: selector.nest("c", ":matches(&)")}
+
+<===> case536/output.css
+a {
+  b: :matches(c);
+}
+
+<===> case537/input.scss
+@use "sass:selector";
+a {b: selector.nest("c", ":where(&)")}
+
+<===> case537/output.css
+a {
+  b: :where(c);
+}
+
+<===> case538/input.scss
+@use "sass:selector";
+a {b: selector.nest("c", "&d")}
+
+<===> case538/output.css
+a {
+  b: cd;
+}
+
+<===> case539/input.scss
+@use "sass:selector";
+a {b: selector.parse($selector: "c")}
+
+<===> case539/output.css
+a {
+  b: c;
+}
+
+<===> case540/input.scss
+@use "sass:selector";
+$result: selector.parse("b + c + d");
+a {
+  result: $result;
+  structure: $result == (b "+" c "+" d,);
+}
+
+<===> case540/output.css
+a {
+  result: b + c + d;
+  structure: true;
+}
+
+<===> case541/input.scss
+@use "sass:selector";
+$result: selector.parse("> b");
+a {
+  result: $result;
+  structure: $result == (">" b,);
+}
+
+<===> case541/output.css
+a {
+  result: > b;
+  structure: true;
+}
+
+<===> case542/input.scss
+@use "sass:selector";
+$result: selector.parse("b + ~ c");
+a {
+  result: $result;
+  structure: $result == (b "+" "~" c,);
+}
+
+<===> case542/output.css
+a {
+  result: b + ~ c;
+  structure: true;
+}
+
+<===> case543/input.scss
+@use "sass:selector";
+$result: selector.parse("b ~~");
+a {
+  result: $result;
+  structure: $result == (b "~" "~",);
+}
+
+<===> case543/output.css
+a {
+  result: b ~ ~;
+  structure: true;
+}
+
+<===> case544/input.scss
+@use "sass:list";
+@use "sass:selector";
+$result: selector.parse(">");
+a {
+  result: $result;
+  structure: $result == (list.append((), ">"),);
+}
+
+<===> case544/output.css
+a {
+  result: >;
+  structure: true;
+}
+
+<===> case545/input.scss
+@use "sass:selector";
+$result: selector.parse("b +");
+a {
+  result: $result;
+  structure: $result == (b "+",);
+}
+
+<===> case545/output.css
+a {
+  result: b +;
+  structure: true;
+}
+
+<===> case546/input.scss
+@use "sass:selector";
+$result: selector.parse("b > c > d");
+a {
+  result: $result;
+  structure: $result == (b ">" c ">" d,);
+}
+
+<===> case546/output.css
+a {
+  result: b > c > d;
+  structure: true;
+}
+
+<===> case547/input.scss
+@use "sass:selector";
+$result: selector.parse("b c d");
+a {
+  result: $result;
+  structure: $result == (b c d,);
+}
+
+<===> case547/output.css
+a {
+  result: b c d;
+  structure: true;
+}
+
+<===> case548/input.scss
+@use "sass:selector";
+$result: selector.parse("b ~ c ~ d");
+a {
+  result: $result;
+  structure: $result == (b "~" c "~" d,);
+}
+
+<===> case548/output.css
+a {
+  result: b ~ c ~ d;
+  structure: true;
+}
+
+<===> case549/input.scss
+@use "sass:list";
+@use "sass:selector";
+$result: selector.parse("b.c:d");
+a {
+  result: $result;
+  structure: $result == (list.append((), "b.c:d"),);
+}
+
+<===> case549/output.css
+a {
+  result: b.c:d;
+  structure: true;
+}
+
+<===> case550/input.scss
+@use "sass:selector";
+$result: selector.parse("b c, d e, f g");
+a {
+  result: $result;
+  structure: $result == (b c, d e, f g);
+}
+
+<===> case550/output.css
+a {
+  result: b c, d e, f g;
+  structure: true;
+}
+
+<===> case551/input.scss
+@use "sass:selector";
+a {b: selector.parse("[c^=d]")}
+
+<===> case551/output.css
+a {
+  b: [c^=d];
+}
+
+<===> case552/input.scss
+@use "sass:selector";
+a {b: selector.parse(".c")}
+
+<===> case552/output.css
+a {
+  b: .c;
+}
+
+<===> case553/input.scss
+@use "sass:selector";
+a {b: selector.parse("#c")}
+
+<===> case553/output.css
+a {
+  b: #c;
+}
+
+<===> case554/input.scss
+@use "sass:selector";
+a {b: selector.parse("%c")}
+
+<===> case554/output.css
+a {
+  b: %c;
+}
+
+<===> case555/input.scss
+@use "sass:selector";
+a {b: selector.parse(":c(@#$)")}
+
+<===> case555/output.css
+a {
+  b: :c(@#$);
+}
+
+<===> case556/input.scss
+@use "sass:list";
+@use "sass:selector";
+$result: selector.parse(":nth-child(2n+1 of b, c)");
+a {
+  result: $result;
+  structure: $result == (list.append((), ":nth-child(2n+1 of b, c)"),);
+}
+
+<===> case556/output.css
+a {
+  result: :nth-child(2n+1 of b, c);
+  structure: true;
+}
+
+<===> case557/input.scss
+@use "sass:selector";
+a {b: selector.parse(":c")}
+
+<===> case557/output.css
+a {
+  b: :c;
+}
+
+<===> case558/input.scss
+@use "sass:list";
+@use "sass:selector";
+$result: selector.parse(":is(b, c)");
+a {
+  result: $result;
+  structure: $result == (list.append((), ":is(b, c)"),);
+}
+
+<===> case558/output.css
+a {
+  result: :is(b, c);
+  structure: true;
+}
+
+<===> case559/input.scss
+@use "sass:list";
+@use "sass:selector";
+$result: selector.parse(":matches(b, c)");
+a {
+  result: $result;
+  structure: $result == (list.append((), ":matches(b, c)"),);
+}
+
+<===> case559/output.css
+a {
+  result: :matches(b, c);
+  structure: true;
+}
+
+<===> case560/input.scss
+@use "sass:list";
+@use "sass:selector";
+$result: selector.parse(":where(b, c)");
+a {
+  result: $result;
+  structure: $result == (list.append((), ":where(b, c)"),);
+}
+
+<===> case560/output.css
+a {
+  result: :where(b, c);
+  structure: true;
+}
+
+<===> case561/input.scss
+@use "sass:selector";
+a {b: selector.parse("::c(@#$)")}
+
+<===> case561/output.css
+a {
+  b: ::c(@#$);
+}
+
+<===> case562/input.scss
+@use "sass:selector";
+a {b: selector.parse("::c")}
+
+<===> case562/output.css
+a {
+  b: ::c;
+}
+
+<===> case563/input.scss
+@use "sass:list";
+@use "sass:selector";
+$result: selector.parse("::slotted(b, c)");
+a {
+  result: $result;
+  structure: $result == (list.append((), "::slotted(b, c)"),);
+}
+
+<===> case563/output.css
+a {
+  result: ::slotted(b, c);
+  structure: true;
+}
+
+<===> case564/input.scss
+@use "sass:selector";
+a {b: selector.parse("c")}
+
+<===> case564/output.css
+a {
+  b: c;
+}
+
+<===> case565/input.scss
+@use "sass:selector";
+a {b: selector.parse("*")}
+
+<===> case565/output.css
+a {
+  b: *;
+}
+
+<===> case566/input.scss
+@use "sass:selector";
+a {b: selector.parse(c "d" e)}
+
+<===> case566/output.css
+a {
+  b: c d e;
+}
+
+<===> case567/input.scss
+@use "sass:selector";
+a {b: selector.parse("c" "d" "e")}
+
+<===> case567/output.css
+a {
+  b: c d e;
+}
+
+<===> case568/input.scss
+@use "sass:selector";
+a {b: selector.parse(c d e)}
+
+<===> case568/output.css
+a {
+  b: c d e;
+}
+
+<===> case569/input.scss
+@use "sass:selector";
+a {b: selector.parse((c "d", e "f"))}
+
+<===> case569/output.css
+a {
+  b: c d, e f;
+}
+
+<===> case570/input.scss
+@use "sass:selector";
+a {b: selector.parse(("c" "d", "e" "f"))}
+
+<===> case570/output.css
+a {
+  b: c d, e f;
+}
+
+<===> case571/input.scss
+@use "sass:selector";
+a {b: selector.parse((c d, e f))}
+
+<===> case571/output.css
+a {
+  b: c d, e f;
+}
+
+<===> case572/input.scss
+@use "sass:selector";
+a {b: selector.parse(c "d, e" f)}
+
+<===> case572/output.css
+a {
+  b: c d, e f;
+}
+
+<===> case573/input.scss
+@use "sass:selector";
+a {b: selector.parse("c" "d, e" "f")}
+
+<===> case573/output.css
+a {
+  b: c d, e f;
+}
+
+<===> case574/input.scss
+@use "sass:selector";
+@use "sass:string";
+a {b: selector.parse(c string.unquote("d, e") f)}
+
+<===> case574/output.css
+a {
+  b: c d, e f;
+}
+
+<===> case575/input.scss
+@use "sass:selector";
+@use "sass:string";
+a {b: selector.parse((c d, string.unquote("e f")))}
+
+<===> case575/output.css
+a {
+  b: c d, e f;
+}
+
+<===> case576/input.scss
+@use "sass:selector";
+a {b: selector.parse(("c d", "e f"))}
+
+<===> case576/output.css
+a {
+  b: c d, e f;
+}
+
+<===> case577/input.scss
+@use "sass:selector";
+@use "sass:string";
+a {b: selector.parse((string.unquote("c d"), string.unquote("e f")))}
+
+<===> case577/output.css
+a {
+  b: c d, e f;
+}
+
+<===> case578/input.scss
+@use "sass:selector";
+a {b: selector.parse("c d, e f")}
+
+<===> case578/output.css
+a {
+  b: c d, e f;
+}
+
+<===> case579/input.scss
+@use "sass:selector";
+@use "sass:string";
+a {b: selector.parse(string.unquote("c d, e f"))}
+
+<===> case579/output.css
+a {
+  b: c d, e f;
+}
+
+<===> case580/input.scss
+@use "sass:selector";
+a {b: selector.replace("c d", "d", "e f")}
+
+<===> case580/output.css
+a {
+  b: c e f, e c f;
+}
+
+<===> case581/input.scss
+@use "sass:selector";
+a {b: selector.replace("c.d", "c", "e")}
+
+<===> case581/output.css
+a {
+  b: e.d;
+}
+
+<===> case582/input.scss
+@use "sass:selector";
+a {b: selector.replace("c.d", "c.d", ".e")}
+
+<===> case582/output.css
+a {
+  b: .e;
+}
+
+<===> case583/input.scss
+@use "sass:selector";
+a {b: selector.replace("c.d", "c, .d", ".e")}
+
+<===> case583/output.css
+a {
+  b: .e;
+}
+
+<===> case584/input.scss
+@use "sass:selector";
+a {b: selector.replace("c.d.e.f", "c.d, .e.f", ".g")}
+
+<===> case584/output.css
+a {
+  b: .g;
+}
+
+<===> case585/input.scss
+@use "sass:selector";
+a {b: selector.replace("c.d", (c, ".d"), ".e")}
+
+<===> case585/output.css
+a {
+  b: .e;
+}
+
+<===> case586/input.scss
+@use "sass:selector";
+a {b: selector.replace("c", "c", (d, e f))}
+
+<===> case586/output.css
+a {
+  b: d, e f;
+}
+
+<===> case587/input.scss
+@use "sass:selector";
+a {b: selector.replace((c, d c), "c", "e")}
+
+<===> case587/output.css
+a {
+  b: e, d e;
+}
+
+<===> case588/input.scss
+@use "sass:selector";
+$result: selector.replace("c d, e f", "g", "g");
+a {
+  result: $result;
+  structure: $result == ("c" "d", "e" "f");
+}
+
+<===> case588/output.css
+a {
+  result: c d, e f;
+  structure: true;
+}
+
+<===> case589/input.scss
+@use "sass:selector";
+a {b: selector.replace($selector: "c.d", $original: "c", $replacement: "e")}
+
+<===> case589/output.css
+a {
+  b: e.d;
+}
+
+<===> case590/input.scss
+@use "sass:selector";
+a {b: selector.replace("c", "d", "e")}
+
+<===> case590/output.css
+a {
+  b: c;
+}
+
+<===> case591/input.scss
+@use "sass:selector";
+a {b: selector.replace("c, d", "d", "e")}
+
+<===> case591/output.css
+a {
+  b: c, e;
+}
+
+<===> case592/input.scss
+@use "sass:selector";
+a {b: selector.replace(":is(c)", "c", "d")}
+
+<===> case592/output.css
+a {
+  b: :is(d);
+}
+
+<===> case593/input.scss
+@use "sass:selector";
+a {b: selector.replace(":matches(c)", "c", "d")}
+
+<===> case593/output.css
+a {
+  b: :matches(d);
+}
+
+<===> case594/input.scss
+@use "sass:selector";
+a {b: selector.replace(":not(c)", "c", "d")}
+
+<===> case594/output.css
+a {
+  b: :not(d);
+}
+
+<===> case595/input.scss
+@use "sass:selector";
+a {b: selector.replace(":where(c)", "c", "d")}
+
+<===> case595/output.css
+a {
+  b: :where(d);
+}
+
+<===> case596/input.scss
+@use "sass:selector";
+a {b: selector.replace("c", "c", "d")}
+
+<===> case596/output.css
+a {
+  b: d;
+}
+
+<===> case597/input.scss
+@use "sass:selector";
+a {b: selector.unify("c d", "c.e .f")}
+
+<===> case597/output.css
+a {
+  b: c.e d.f;
+}
+
+<===> case598/input.scss
+@use "sass:selector";
+a {b: selector.unify("c.e .f", "c d")}
+
+<===> case598/output.css
+a {
+  b: c.e d.f;
+}
+
+<===> case599/input.scss
+@use "sass:selector";
+a {b: selector.unify("c", "d c.e")}
+
+<===> case599/output.css
+a {
+  b: d c.e;
+}
+
+<===> case600/input.scss
+@use "sass:selector";
+a {b: selector.unify("d c.e", "c")}
+
+<===> case600/output.css
+a {
+  b: d c.e;
+}
+
+<===> case601/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("#s1-1 > .s1-2", "#s2-1 > .s2-2"))}
+
+<===> case601/output.css
+a {
+  b: null;
+}
+
+<===> case602/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c > .d", ".e > .f")}
+
+<===> case602/output.css
+a {
+  b: .c.e > .d.f;
+}
+
+<===> case603/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c.s1-1 > .s1-2", ".c.s2-1 > .s2-2")}
+
+<===> case603/output.css
+a {
+  b: .c.s1-1.s2-1 > .s1-2.s2-2;
+}
+
+<===> case604/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c.s1-1 > .s1-2", ".c > .s2")}
+
+<===> case604/output.css
+a {
+  b: .c.s1-1 > .s1-2.s2;
+}
+
+<===> case605/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c > .d", ".e .f")}
+
+<===> case605/output.css
+a {
+  b: .e .c > .d.f;
+}
+
+<===> case606/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c > .s1", ".c .s2")}
+
+<===> case606/output.css
+a {
+  b: .c > .s1.s2;
+}
+
+<===> case607/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c.s1-1 > .s1-2", ".c.s2-1 .s2-2")}
+
+<===> case607/output.css
+a {
+  b: .c.s2-1 .c.s1-1 > .s1-2.s2-2;
+}
+
+<===> case608/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c.s1-1 > .s1-2", ".c .s2")}
+
+<===> case608/output.css
+a {
+  b: .c.s1-1 > .s1-2.s2;
+}
+
+<===> case609/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c > .s1", ".c + .s2")}
+
+<===> case609/output.css
+a {
+  b: .c > .c + .s1.s2;
+}
+
+<===> case610/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c > .s1", ".c ~ .s2")}
+
+<===> case610/output.css
+a {
+  b: .c > .c ~ .s1.s2;
+}
+
+<===> case611/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("+ ~ > .c", "+ > ~ ~ .d"))}
+
+<===> case611/output.css
+a {
+  b: null;
+}
+
+<===> case612/input.scss
+@use "sass:selector";
+a {b: selector.unify("> .c", ".d")}
+
+<===> case612/output.css
+a {
+  b: > .c.d;
+}
+
+<===> case613/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c", "~ .d")}
+
+<===> case613/output.css
+a {
+  b: ~ .c.d;
+}
+
+<===> case614/input.scss
+@use "sass:selector";
+a {b: selector.unify("+ .c", "+ .d")}
+
+<===> case614/output.css
+a {
+  b: + .c.d;
+}
+
+<===> case615/input.scss
+@use "sass:selector";
+a {b: selector.unify("+ ~ > .c", "> + ~ > > .d")}
+
+<===> case615/output.css
+
+
+<===> case616/input.scss
+@use "sass:selector";
+a {b: selector.unify("+ ~ > .c", "+ > ~ ~ > .d")}
+
+<===> case616/output.css
+
+
+<===> case617/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify(".c + ~ > .d", ".e + > ~ ~ .f"))}
+
+<===> case617/output.css
+a {
+  b: null;
+}
+
+<===> case618/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c + ~ > .d", ".e + ~ > .f")}
+
+<===> case618/output.css
+
+
+<===> case619/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c + ~ > .d", ".e > + ~ > > .f")}
+
+<===> case619/output.css
+
+
+<===> case620/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c + ~ > .d", ".e + > ~ ~ > .f")}
+
+<===> case620/output.css
+
+
+<===> case621/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c > .d + .e", ".f .g ~ .h")}
+
+<===> case621/output.css
+a {
+  b: .f .c > .g ~ .d + .e.h, .f .c > .g.d + .e.h;
+}
+
+<===> case622/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c + .s1", ".c > .s2")}
+
+<===> case622/output.css
+a {
+  b: .c > .c + .s1.s2;
+}
+
+<===> case623/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c + .s1", ".c .s2")}
+
+<===> case623/output.css
+a {
+  b: .c .c + .s1.s2;
+}
+
+<===> case624/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("#s1-1 + .s1-2", "#s2-1 + .s2-2"))}
+
+<===> case624/output.css
+a {
+  b: null;
+}
+
+<===> case625/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c + .d", ".e + .f")}
+
+<===> case625/output.css
+a {
+  b: .c.e + .d.f;
+}
+
+<===> case626/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c.s1-1 + .s1-2", ".c.s2-1 + .s2-2")}
+
+<===> case626/output.css
+a {
+  b: .c.s1-1.s2-1 + .s1-2.s2-2;
+}
+
+<===> case627/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c.s1-1 + .s1-2", ".c + .s2")}
+
+<===> case627/output.css
+a {
+  b: .c.s1-1 + .s1-2.s2;
+}
+
+<===> case628/input.scss
+@use "sass:selector";
+a {b: selector.unify("#s1-1 + .s1-2", "#s2-1 ~ .s2-2")}
+
+<===> case628/output.css
+a {
+  b: #s2-1 ~ #s1-1 + .s1-2.s2-2;
+}
+
+<===> case629/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c + .d", ".e ~ .f")}
+
+<===> case629/output.css
+a {
+  b: .e ~ .c + .d.f, .e.c + .d.f;
+}
+
+<===> case630/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c + .s1", ".c ~ .s2")}
+
+<===> case630/output.css
+a {
+  b: .c + .s1.s2;
+}
+
+<===> case631/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c.s1-1 + .s1-2", ".c.s2-1 ~ .s2-2")}
+
+<===> case631/output.css
+a {
+  b: .c.s2-1 ~ .c.s1-1 + .s1-2.s2-2, .c.s2-1.s1-1 + .s1-2.s2-2;
+}
+
+<===> case632/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c.s1-1 + .s1-2", ".c ~ .s2")}
+
+<===> case632/output.css
+a {
+  b: .c.s1-1 + .s1-2.s2;
+}
+
+<===> case633/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c ~ .s1", ".c > .s2")}
+
+<===> case633/output.css
+a {
+  b: .c > .c ~ .s1.s2;
+}
+
+<===> case634/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c ~ .s1", ".c .s2")}
+
+<===> case634/output.css
+a {
+  b: .c .c ~ .s1.s2;
+}
+
+<===> case635/input.scss
+@use "sass:selector";
+a {b: selector.unify("#s1-1 ~ .s1-2", "#s2-1 + .s2-2")}
+
+<===> case635/output.css
+a {
+  b: #s1-1 ~ #s2-1 + .s1-2.s2-2;
+}
+
+<===> case636/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c ~ .d", ".e + .f")}
+
+<===> case636/output.css
+a {
+  b: .c ~ .e + .d.f, .c.e + .d.f;
+}
+
+<===> case637/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c ~ .s1", ".c + .s2")}
+
+<===> case637/output.css
+a {
+  b: .c + .s1.s2;
+}
+
+<===> case638/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c.s1-1 ~ .s1-2", ".c.s2-1 + .s2-2")}
+
+<===> case638/output.css
+a {
+  b: .c.s1-1 ~ .c.s2-1 + .s1-2.s2-2, .c.s1-1.s2-1 + .s1-2.s2-2;
+}
+
+<===> case639/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c.s1-1 ~ .s1-2", ".c + .s2")}
+
+<===> case639/output.css
+a {
+  b: .c.s1-1 ~ .c + .s1-2.s2, .c.s1-1 + .s1-2.s2;
+}
+
+<===> case640/input.scss
+@use "sass:selector";
+a {b: selector.unify("#s1-1 ~ .s1-2", "#s2-1 ~ .s2-2")}
+
+<===> case640/output.css
+a {
+  b: #s1-1 ~ #s2-1 ~ .s1-2.s2-2, #s2-1 ~ #s1-1 ~ .s1-2.s2-2;
+}
+
+<===> case641/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c ~ .d", ".e ~ .f")}
+
+<===> case641/output.css
+a {
+  b: .c ~ .e ~ .d.f, .e ~ .c ~ .d.f, .c.e ~ .d.f;
+}
+
+<===> case642/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c ~ .s1", ".c ~ .s2")}
+
+<===> case642/output.css
+a {
+  b: .c ~ .s1.s2;
+}
+
+<===> case643/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c.s1-1 ~ .s1-2", ".c.s2-1 ~ .s2-2")}
+
+<===> case643/output.css
+a {
+  b: .c.s1-1 ~ .c.s2-1 ~ .s1-2.s2-2, .c.s2-1 ~ .c.s1-1 ~ .s1-2.s2-2, .c.s1-1.s2-1 ~ .s1-2.s2-2;
+}
+
+<===> case644/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c.s1-1 ~ .s1-2", ".c ~ .s2")}
+
+<===> case644/output.css
+a {
+  b: .c.s1-1 ~ .s1-2.s2;
+}
+
+<===> case645/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c .d .e", ".f .g .h")}
+
+<===> case645/output.css
+a {
+  b: .c .d .f .g .e.h, .f .g .c .d .e.h;
+}
+
+<===> case646/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c .d", ".e .f")}
+
+<===> case646/output.css
+a {
+  b: .c .e .d.f, .e .c .d.f;
+}
+
+<===> case647/input.scss
+@use "sass:selector";
+a {b: selector.unify(".s1-1 .d .s1-2", ".s2-1 .d .s2-2")}
+
+<===> case647/output.css
+a {
+  b: .s1-1 .s2-1 .d .s1-2.s2-2, .s2-1 .s1-1 .d .s1-2.s2-2;
+}
+
+<===> case648/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c .s1-1 .s1-2", ".c .s2-1 .s2-2")}
+
+<===> case648/output.css
+a {
+  b: .c .s1-1 .s2-1 .s1-2.s2-2, .c .s2-1 .s1-1 .s1-2.s2-2;
+}
+
+<===> case649/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c .s1", ".c .s2")}
+
+<===> case649/output.css
+a {
+  b: .c .s1.s2;
+}
+
+<===> case650/input.scss
+@use "sass:selector";
+a {b: selector.unify(".s1-1 .c .d .s1-2 .e .s1-3", ".c .s2-1 .d .e .s2-2 .s2-3")}
+
+<===> case650/output.css
+a {
+  b: .s1-1 .c .s2-1 .d .s1-2 .e .s2-2 .s1-3.s2-3;
+}
+
+<===> case651/input.scss
+@use "sass:selector";
+a {b: selector.unify(".s1-1 .c .d .s1-2 .e .s1-3", ".s2-1 .c .d .s2-2 .e .s2-3")}
+
+<===> case651/output.css
+a {
+  b: .s1-1 .s2-1 .c .d .s1-2 .s2-2 .e .s1-3.s2-3, .s2-1 .s1-1 .c .d .s1-2 .s2-2 .e .s1-3.s2-3, .s1-1 .s2-1 .c .d .s2-2 .s1-2 .e .s1-3.s2-3, .s2-1 .s1-1 .c .d .s2-2 .s1-2 .e .s1-3.s2-3;
+}
+
+<===> case652/input.scss
+@use "sass:selector";
+// The longest common subsequence is `.c .d .e`, which is longer than `.f g`, so
+// `.c .d .e` gets unified while `.f .g` gets duplicated.
+a {b: selector.unify(".c .d .e .f .g .s1", ".f .g .c .d .e .s2")}
+
+<===> case652/output.css
+a {
+  b: .f .g .c .d .e .f .g .s1.s2;
+}
+
+<===> case653/input.scss
+@use "sass:selector";
+// The longest common subsequence is `.c .d`, which is longer than `.e`, so `.c
+// .d` gets unified while `.e` gets duplicated.
+a {b: selector.unify(".c .d .e .s1", ".e .c .d .s2")}
+
+<===> case653/output.css
+a {
+  b: .e .c .d .e .s1.s2;
+}
+
+<===> case654/input.scss
+@use "sass:selector";
+// Because neither compound selector containing `.c` is a superselector of the
+// other, they aren't unified.
+a {b: selector.unify(".c.s1-1 .s1-2", ".c.s2-1 .s2-2")}
+
+<===> case654/output.css
+a {
+  b: .c.s1-1 .c.s2-1 .s1-2.s2-2, .c.s2-1 .c.s1-1 .s1-2.s2-2;
+}
+
+<===> case655/input.scss
+@use "sass:selector";
+// Even though neither selector containing `#c` is a superselector of the other,
+// they're still unified because the selector can't meainingfully contain two
+// instances of `#c`.
+a {b: selector.unify("#c.s1-1 .s1-2", "#c.s2-1 .s2-2")}
+
+<===> case655/output.css
+a {
+  b: #c.s2-1.s1-1 .s1-2.s2-2;
+}
+
+<===> case656/input.scss
+@use "sass:selector";
+a {b: selector.unify("#s1-1.c .s1-2", "#s2-1.c .s2-2")}
+
+<===> case656/output.css
+a {
+  b: #s1-1.c #s2-1.c .s1-2.s2-2, #s2-1.c #s1-1.c .s1-2.s2-2;
+}
+
+<===> case657/input.scss
+@use "sass:selector";
+a {b: selector.unify(".s1-1::c .s1-2", ".s2-1::c .s2-2")}
+
+<===> case657/output.css
+a {
+  b: .s2-1.s1-1::c .s1-2.s2-2;
+}
+
+<===> case658/input.scss
+@use "sass:selector";
+a {b: selector.unify("::s1-1.c .s1-2", "::s2-1.c .s2-2")}
+
+<===> case658/output.css
+a {
+  b: ::s1-1.c ::s2-1.c .s1-2.s2-2, ::s2-1.c ::s1-1.c .s1-2.s2-2;
+}
+
+<===> case659/input.scss
+@use "sass:selector";
+a {b: selector.unify(":host .c", ".d .e")}
+
+<===> case659/output.css
+a {
+  b: :host .d .c.e;
+}
+
+<===> case660/input.scss
+@use "sass:selector";
+a {b: selector.unify(":host-context(f g) .c", ".d .e")}
+
+<===> case660/output.css
+a {
+  b: :host-context(f g) .d .c.e;
+}
+
+<===> case661/input.scss
+@use "sass:selector";
+a {b: selector.unify(":root .c .d", ":scope .e .f")}
+
+<===> case661/output.css
+a {
+  b: :root:scope .c .e .d.f, :root:scope .e .c .d.f;
+}
+
+<===> case662/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c:root .d", ".e:root .f")}
+
+<===> case662/output.css
+a {
+  b: .c.e:root .d.f;
+}
+
+<===> case663/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("c:root .d", "e:root .f"))}
+
+<===> case663/output.css
+a {
+  b: null;
+}
+
+<===> case664/input.scss
+@use "sass:selector";
+a {b: selector.unify("c:root .d", ":root .e")}
+
+<===> case664/output.css
+a {
+  b: c:root .d.e;
+}
+
+<===> case665/input.scss
+@use "sass:selector";
+a {b: selector.unify(":root .c .d", ".e .f")}
+
+<===> case665/output.css
+a {
+  b: :root .c .e .d.f, :root .e .c .d.f;
+}
+
+<===> case666/input.scss
+@use "sass:selector";
+a {b: selector.unify(":root .c", ".d .e")}
+
+<===> case666/output.css
+a {
+  b: :root .d .c.e;
+}
+
+<===> case667/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c .d", ":root .e .f")}
+
+<===> case667/output.css
+a {
+  b: :root .c .e .d.f, :root .e .c .d.f;
+}
+
+<===> case668/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c .d", ":root .e")}
+
+<===> case668/output.css
+a {
+  b: :root .c .d.e;
+}
+
+<===> case669/input.scss
+@use "sass:selector";
+a {b: selector.unify(":scope .c", ".d .e")}
+
+<===> case669/output.css
+a {
+  b: :scope .d .c.e;
+}
+
+<===> case670/input.scss
+@use "sass:selector";
+a {b: selector.unify(".s1-1 .c.s1-2 .s1-3", ".s2-1 .c .s2-2")}
+
+<===> case670/output.css
+a {
+  b: .s1-1 .s2-1 .c.s1-2 .s1-3.s2-2, .s2-1 .s1-1 .c.s1-2 .s1-3.s2-2;
+}
+
+<===> case671/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c.s1-1 .s1-2 .s1-3", ".c .s2-1 .s2-2")}
+
+<===> case671/output.css
+a {
+  b: .c.s1-1 .s1-2 .s2-1 .s1-3.s2-2, .c.s1-1 .s2-1 .s1-2 .s1-3.s2-2;
+}
+
+<===> case672/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c.s1-1 .s1-2", ".c .s2")}
+
+<===> case672/output.css
+a {
+  b: .c.s1-1 .s1-2.s2;
+}
+
+<===> case673/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c.d", ".c.d")}
+
+<===> case673/output.css
+a {
+  b: .c.d;
+}
+
+<===> case674/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c:d", ".c:d")}
+
+<===> case674/output.css
+a {
+  b: .c:d;
+}
+
+<===> case675/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c::d", ".c::d")}
+
+<===> case675/output.css
+a {
+  b: .c::d;
+}
+
+<===> case676/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c:d::e", ".c:d::e")}
+
+<===> case676/output.css
+a {
+  b: .c:d::e;
+}
+
+<===> case677/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c.d", ".e.f")}
+
+<===> case677/output.css
+a {
+  b: .c.d.e.f;
+}
+
+<===> case678/input.scss
+@use "sass:selector";
+a {b: selector.unify("::foo:bar", "::other:baz")}
+
+<===> case678/output.css
+
+
+<===> case679/input.scss
+@use "sass:selector";
+a {b: selector.unify("::bar:baz", ":foo")}
+
+<===> case679/output.css
+a {
+  b: :foo::bar:baz;
+}
+
+<===> case680/input.scss
+@use "sass:selector";
+a {b: selector.unify("::foo:bar", "::foo:baz")}
+
+<===> case680/output.css
+a {
+  b: ::foo:bar:baz;
+}
+
+<===> case681/input.scss
+@use "sass:selector";
+a {b: selector.unify(".x::scrollbar:horizontal", ".y")}
+
+<===> case681/output.css
+a {
+  b: .x.y::scrollbar:horizontal;
+}
+
+<===> case682/input.scss
+@use "sass:selector";
+a {b: selector.unify(":foo", "::bar:baz")}
+
+<===> case682/output.css
+a {
+  b: :foo::bar:baz;
+}
+
+<===> case683/input.scss
+@use "sass:selector";
+a {b: selector.unify(".x", ".y::scrollbar:horizontal")}
+
+<===> case683/output.css
+a {
+  b: .x.y::scrollbar:horizontal;
+}
+
+<===> case684/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c", "d")}
+
+<===> case684/output.css
+a {
+  b: d.c;
+}
+
+<===> case685/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c.d", ".e.f")}
+
+<===> case685/output.css
+a {
+  b: .c.d.e.f;
+}
+
+<===> case686/input.scss
+@use "sass:selector";
+a {b: selector.unify(":c", ".d")}
+
+<===> case686/output.css
+a {
+  b: .d:c;
+}
+
+<===> case687/input.scss
+@use "sass:selector";
+a {b: selector.unify(":c", "::d")}
+
+<===> case687/output.css
+a {
+  b: :c::d;
+}
+
+<===> case688/input.scss
+@use "sass:selector";
+a {b: selector.unify("::c", ":d")}
+
+<===> case688/output.css
+a {
+  b: :d::c;
+}
+
+<===> case689/input.scss
+@use "sass:selector";
+a {b: selector.unify("::c", ".d")}
+
+<===> case689/output.css
+a {
+  b: .d::c;
+}
+
+<===> case690/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c.d", ".d.e")}
+
+<===> case690/output.css
+a {
+  b: .c.d.e;
+}
+
+<===> case691/input.scss
+@use "sass:selector";
+a {b: selector.unify((c, d c), ".e")}
+
+<===> case691/output.css
+a {
+  b: c.e, d c.e;
+}
+
+<===> case692/input.scss
+@use "sass:selector";
+a {b: selector.unify(".e", (c, d c))}
+
+<===> case692/output.css
+a {
+  b: c.e, d c.e;
+}
+
+<===> case693/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c, .d", ".e, .f")}
+
+<===> case693/output.css
+a {
+  b: .c.e, .c.f, .d.e, .d.f;
+}
+
+<===> case694/input.scss
+@use "sass:selector";
+$result: selector.unify("c d, e f", ".g");
+a {
+  result: $result;
+  structure: $result == ("c" "d.g", "e" "f.g");
+}
+
+<===> case694/output.css
+a {
+  result: c d.g, e f.g;
+  structure: true;
+}
+
+<===> case695/input.scss
+@use "sass:selector";
+a {b: selector.unify("[c]", "[d]")}
+
+<===> case695/output.css
+a {
+  b: [c][d];
+}
+
+<===> case696/input.scss
+@use "sass:selector";
+a {b: selector.unify("[c]", "[c]")}
+
+<===> case696/output.css
+a {
+  b: [c];
+}
+
+<===> case697/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c", ".d")}
+
+<===> case697/output.css
+a {
+  b: .c.d;
+}
+
+<===> case698/input.scss
+@use "sass:selector";
+a {b: selector.unify(".c", ".c")}
+
+<===> case698/output.css
+a {
+  b: .c;
+}
+
+<===> case699/input.scss
+@use "sass:selector";
+a {b: selector.unify("c", "#d")}
+
+<===> case699/output.css
+a {
+  b: c#d;
+}
+
+<===> case700/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("#c", "#d"))}
+
+<===> case700/output.css
+a {
+  b: null;
+}
+
+<===> case701/input.scss
+@use "sass:selector";
+a {b: selector.unify("#c", "#c")}
+
+<===> case701/output.css
+a {
+  b: #c;
+}
+
+<===> case702/input.scss
+@use "sass:selector";
+a {b: selector.unify("%c", "%d")}
+
+<===> case702/output.css
+a {
+  b: %c%d;
+}
+
+<===> case703/input.scss
+@use "sass:selector";
+a {b: selector.unify("%c", "%c")}
+
+<===> case703/output.css
+a {
+  b: %c;
+}
+
+<===> case704/input.scss
+@use "sass:selector";
+a {b: selector.unify(":c(@#$)", ":c(*&^)")}
+
+<===> case704/output.css
+a {
+  b: :c(@#$):c(*&^);
+}
+
+<===> case705/input.scss
+@use "sass:selector";
+a {b: selector.unify(":c(@#$)", ":c(@#$)")}
+
+<===> case705/output.css
+a {
+  b: :c(@#$);
+}
+
+<===> case706/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("::c(@#$)", "::c(*&^)"))}
+
+<===> case706/output.css
+a {
+  b: null;
+}
+
+<===> case707/input.scss
+@use "sass:selector";
+a {b: selector.unify("::c(@#$)", "::c(@#$)")}
+
+<===> case707/output.css
+a {
+  b: ::c(@#$);
+}
+
+<===> case708/input.scss
+@use "sass:selector";
+a {b: selector.unify(":host(.c)", ":is(.d)")}
+
+<===> case708/output.css
+a {
+  b: :is(.d):host(.c);
+}
+
+<===> case709/input.scss
+@use "sass:selector";
+a {b: selector.unify(":is(.c)", ":host(.d)")}
+
+<===> case709/output.css
+a {
+  b: :is(.c):host(.d);
+}
+
+<===> case710/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify(":host(.c)", ".d"))}
+
+<===> case710/output.css
+a {
+  b: null;
+}
+
+<===> case711/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify(".c", ":host(.d)"))}
+
+<===> case711/output.css
+a {
+  b: null;
+}
+
+<===> case712/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify(":host", ".c"))}
+
+<===> case712/output.css
+a {
+  b: null;
+}
+
+<===> case713/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify(".c", ":host"))}
+
+<===> case713/output.css
+a {
+  b: null;
+}
+
+<===> case714/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify(":host", ".c:is(.d)"))}
+
+<===> case714/output.css
+a {
+  b: null;
+}
+
+<===> case715/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify(".c:is(.d)", ":host"))}
+
+<===> case715/output.css
+a {
+  b: null;
+}
+
+<===> case716/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify(":host", ":host.c"))}
+
+<===> case716/output.css
+a {
+  b: null;
+}
+
+<===> case717/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify(":host.c", ":host"))}
+
+<===> case717/output.css
+a {
+  b: null;
+}
+
+<===> case718/input.scss
+@use "sass:selector";
+a {b: selector.unify(":host", ":is(.c):is(.d)")}
+
+<===> case718/output.css
+a {
+  b: :is(.c):host:is(.d);
+}
+
+<===> case719/input.scss
+@use "sass:selector";
+a {b: selector.unify(":is(.c):is(.d)", ":host")}
+
+<===> case719/output.css
+a {
+  b: :is(.c):is(.d):host;
+}
+
+<===> case720/input.scss
+@use "sass:selector";
+a {b: selector.unify(":host", ":host(.c)")}
+
+<===> case720/output.css
+a {
+  b: :host:host(.c);
+}
+
+<===> case721/input.scss
+@use "sass:selector";
+a {b: selector.unify(":host", ":host")}
+
+<===> case721/output.css
+a {
+  b: :host;
+}
+
+<===> case722/input.scss
+@use "sass:selector";
+a {b: selector.unify(":host", ":host-context(.c)")}
+
+<===> case722/output.css
+a {
+  b: :host:host-context(.c);
+}
+
+<===> case723/input.scss
+@use "sass:selector";
+a {b: selector.unify(":host-context(.c)", ":host")}
+
+<===> case723/output.css
+a {
+  b: :host-context(.c):host;
+}
+
+<===> case724/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify(":host", ":hover"))}
+
+<===> case724/output.css
+a {
+  b: null;
+}
+
+<===> case725/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify(":hover", ":host"))}
+
+<===> case725/output.css
+a {
+  b: null;
+}
+
+<===> case726/input.scss
+@use "sass:selector";
+a {b: selector.unify(":host", ":is(.c)")}
+
+<===> case726/output.css
+a {
+  b: :is(.c):host;
+}
+
+<===> case727/input.scss
+@use "sass:selector";
+a {b: selector.unify(":is(.c)", ":host")}
+
+<===> case727/output.css
+a {
+  b: :is(.c):host;
+}
+
+<===> case728/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify(":host", "*"))}
+
+<===> case728/output.css
+a {
+  b: null;
+}
+
+<===> case729/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("*", ":host"))}
+
+<===> case729/output.css
+a {
+  b: null;
+}
+
+<===> case730/input.scss
+@use "sass:selector";
+a {b: selector.unify(":host-context(.c)", ":is(.d)")}
+
+<===> case730/output.css
+a {
+  b: :is(.d):host-context(.c);
+}
+
+<===> case731/input.scss
+@use "sass:selector";
+a {b: selector.unify(":is(.c)", ":host-context(.d)")}
+
+<===> case731/output.css
+a {
+  b: :is(.c):host-context(.d);
+}
+
+<===> case732/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify(":host-context(.c)", ".d"))}
+
+<===> case732/output.css
+a {
+  b: null;
+}
+
+<===> case733/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify(".c", ":host-context(.d)"))}
+
+<===> case733/output.css
+a {
+  b: null;
+}
+
+<===> case734/input.scss
+@use "sass:selector";
+a {b: selector.unify(":c", ":d")}
+
+<===> case734/output.css
+a {
+  b: :c:d;
+}
+
+<===> case735/input.scss
+@use "sass:selector";
+a {b: selector.unify(":c", ":c")}
+
+<===> case735/output.css
+a {
+  b: :c;
+}
+
+<===> case736/input.scss
+@use "sass:selector";
+a {b: selector.unify(":after", "::after")}
+
+<===> case736/output.css
+a {
+  b: :after;
+}
+
+<===> case737/input.scss
+@use "sass:selector";
+a {b: selector.unify(":before", "::before")}
+
+<===> case737/output.css
+a {
+  b: :before;
+}
+
+<===> case738/input.scss
+@use "sass:selector";
+a {b: selector.unify(":first-letter", "::first-letter")}
+
+<===> case738/output.css
+a {
+  b: :first-letter;
+}
+
+<===> case739/input.scss
+@use "sass:selector";
+a {b: selector.unify(":first-line", "::first-line")}
+
+<===> case739/output.css
+a {
+  b: :first-line;
+}
+
+<===> case740/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("::c", "::d"))}
+
+<===> case740/output.css
+a {
+  b: null;
+}
+
+<===> case741/input.scss
+@use "sass:selector";
+a {b: selector.unify("::c", "::c")}
+
+<===> case741/output.css
+a {
+  b: ::c;
+}
+
+<===> case742/input.scss
+@use "sass:selector";
+a {b: selector.unify(":is(.c)", ":is(.d)")}
+
+<===> case742/output.css
+a {
+  b: :is(.c):is(.d);
+}
+
+<===> case743/input.scss
+@use "sass:selector";
+a {b: selector.unify(":is(.c)", ":is(.c)")}
+
+<===> case743/output.css
+a {
+  b: :is(.c);
+}
+
+<===> case744/input.scss
+@use "sass:selector";
+a {b: selector.unify(":matches(.c)", ":matches(.d)")}
+
+<===> case744/output.css
+a {
+  b: :matches(.c):matches(.d);
+}
+
+<===> case745/input.scss
+@use "sass:selector";
+a {b: selector.unify(":matches(.c)", ":matches(.c)")}
+
+<===> case745/output.css
+a {
+  b: :matches(.c);
+}
+
+<===> case746/input.scss
+@use "sass:selector";
+a {b: selector.unify(":where(.c)", ":where(.d)")}
+
+<===> case746/output.css
+a {
+  b: :where(.c):where(.d);
+}
+
+<===> case747/input.scss
+@use "sass:selector";
+a {b: selector.unify(":where(.c)", ":where(.c)")}
+
+<===> case747/output.css
+a {
+  b: :where(.c);
+}
+
+<===> case748/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("*|c", "*|d"))}
+
+<===> case748/output.css
+a {
+  b: null;
+}
+
+<===> case749/input.scss
+@use "sass:selector";
+a {b: selector.unify("*|c", "*|c")}
+
+<===> case749/output.css
+a {
+  b: *|c;
+}
+
+<===> case750/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("*|c", "d"))}
+
+<===> case750/output.css
+a {
+  b: null;
+}
+
+<===> case751/input.scss
+@use "sass:selector";
+a {b: selector.unify("*|c", "c")}
+
+<===> case751/output.css
+a {
+  b: c;
+}
+
+<===> case752/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("*|c", "|d"))}
+
+<===> case752/output.css
+a {
+  b: null;
+}
+
+<===> case753/input.scss
+@use "sass:selector";
+a {b: selector.unify("*|c", "|c")}
+
+<===> case753/output.css
+a {
+  b: |c;
+}
+
+<===> case754/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("*|c", "d|e"))}
+
+<===> case754/output.css
+a {
+  b: null;
+}
+
+<===> case755/input.scss
+@use "sass:selector";
+a {b: selector.unify("*|c", "d|c")}
+
+<===> case755/output.css
+a {
+  b: d|c;
+}
+
+<===> case756/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("c", "*|d"))}
+
+<===> case756/output.css
+a {
+  b: null;
+}
+
+<===> case757/input.scss
+@use "sass:selector";
+a {b: selector.unify("c", "*|c")}
+
+<===> case757/output.css
+a {
+  b: c;
+}
+
+<===> case758/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("c", "d"))}
+
+<===> case758/output.css
+a {
+  b: null;
+}
+
+<===> case759/input.scss
+@use "sass:selector";
+a {b: selector.unify("c", "c")}
+
+<===> case759/output.css
+a {
+  b: c;
+}
+
+<===> case760/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("c", "|c"))}
+
+<===> case760/output.css
+a {
+  b: null;
+}
+
+<===> case761/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("c", "d|c"))}
+
+<===> case761/output.css
+a {
+  b: null;
+}
+
+<===> case762/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("|c", "*|d"))}
+
+<===> case762/output.css
+a {
+  b: null;
+}
+
+<===> case763/input.scss
+@use "sass:selector";
+a {b: selector.unify("|c", "*|c")}
+
+<===> case763/output.css
+a {
+  b: |c;
+}
+
+<===> case764/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("|c", "c"))}
+
+<===> case764/output.css
+a {
+  b: null;
+}
+
+<===> case765/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("|c", "|d"))}
+
+<===> case765/output.css
+a {
+  b: null;
+}
+
+<===> case766/input.scss
+@use "sass:selector";
+a {b: selector.unify("|c", "|c")}
+
+<===> case766/output.css
+a {
+  b: |c;
+}
+
+<===> case767/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("|c", "e|c"))}
+
+<===> case767/output.css
+a {
+  b: null;
+}
+
+<===> case768/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("c|d", "*|e"))}
+
+<===> case768/output.css
+a {
+  b: null;
+}
+
+<===> case769/input.scss
+@use "sass:selector";
+a {b: selector.unify("c|d", "*|d")}
+
+<===> case769/output.css
+a {
+  b: c|d;
+}
+
+<===> case770/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("c|d", "d"))}
+
+<===> case770/output.css
+a {
+  b: null;
+}
+
+<===> case771/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("c|d", "|d"))}
+
+<===> case771/output.css
+a {
+  b: null;
+}
+
+<===> case772/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("c|d", "e|d"))}
+
+<===> case772/output.css
+a {
+  b: null;
+}
+
+<===> case773/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("c|d", "c|e"))}
+
+<===> case773/output.css
+a {
+  b: null;
+}
+
+<===> case774/input.scss
+@use "sass:selector";
+a {b: selector.unify("c|d", "c|d")}
+
+<===> case774/output.css
+a {
+  b: c|d;
+}
+
+<===> case775/input.scss
+@use "sass:selector";
+a {b: selector.unify("*|c", "*|*")}
+
+<===> case775/output.css
+a {
+  b: *|c;
+}
+
+<===> case776/input.scss
+@use "sass:selector";
+a {b: selector.unify("*|c", "*")}
+
+<===> case776/output.css
+a {
+  b: c;
+}
+
+<===> case777/input.scss
+@use "sass:selector";
+a {b: selector.unify("*|c", "|*")}
+
+<===> case777/output.css
+a {
+  b: |c;
+}
+
+<===> case778/input.scss
+@use "sass:selector";
+a {b: selector.unify("*|c", "d|*")}
+
+<===> case778/output.css
+a {
+  b: d|c;
+}
+
+<===> case779/input.scss
+@use "sass:selector";
+a {b: selector.unify("c", "*|*")}
+
+<===> case779/output.css
+a {
+  b: c;
+}
+
+<===> case780/input.scss
+@use "sass:selector";
+a {b: selector.unify("c", "*")}
+
+<===> case780/output.css
+a {
+  b: c;
+}
+
+<===> case781/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("c", "|*"))}
+
+<===> case781/output.css
+a {
+  b: null;
+}
+
+<===> case782/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("c", "e|*"))}
+
+<===> case782/output.css
+a {
+  b: null;
+}
+
+<===> case783/input.scss
+@use "sass:selector";
+a {b: selector.unify("|c", "*|*")}
+
+<===> case783/output.css
+a {
+  b: |c;
+}
+
+<===> case784/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("|c", "*"))}
+
+<===> case784/output.css
+a {
+  b: null;
+}
+
+<===> case785/input.scss
+@use "sass:selector";
+a {b: selector.unify("|c", "|*")}
+
+<===> case785/output.css
+a {
+  b: |c;
+}
+
+<===> case786/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("|c", "e|*"))}
+
+<===> case786/output.css
+a {
+  b: null;
+}
+
+<===> case787/input.scss
+@use "sass:selector";
+a {b: selector.unify("c|d", "*|*")}
+
+<===> case787/output.css
+a {
+  b: c|d;
+}
+
+<===> case788/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("c|d", "*"))}
+
+<===> case788/output.css
+a {
+  b: null;
+}
+
+<===> case789/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("c|d", "|*"))}
+
+<===> case789/output.css
+a {
+  b: null;
+}
+
+<===> case790/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("c|d", "e|*"))}
+
+<===> case790/output.css
+a {
+  b: null;
+}
+
+<===> case791/input.scss
+@use "sass:selector";
+a {b: selector.unify("c|d", "c|*")}
+
+<===> case791/output.css
+a {
+  b: c|d;
+}
+
+<===> case792/input.scss
+@use "sass:selector";
+a {b: selector.unify("*|*", "*|c")}
+
+<===> case792/output.css
+a {
+  b: *|c;
+}
+
+<===> case793/input.scss
+@use "sass:selector";
+a {b: selector.unify("*|*", "c")}
+
+<===> case793/output.css
+a {
+  b: c;
+}
+
+<===> case794/input.scss
+@use "sass:selector";
+a {b: selector.unify("*|*", "|c")}
+
+<===> case794/output.css
+a {
+  b: |c;
+}
+
+<===> case795/input.scss
+@use "sass:selector";
+a {b: selector.unify("*|*", "c|d")}
+
+<===> case795/output.css
+a {
+  b: c|d;
+}
+
+<===> case796/input.scss
+@use "sass:selector";
+a {b: selector.unify("*", "*|c")}
+
+<===> case796/output.css
+a {
+  b: c;
+}
+
+<===> case797/input.scss
+@use "sass:selector";
+a {b: selector.unify("*", "c")}
+
+<===> case797/output.css
+a {
+  b: c;
+}
+
+<===> case798/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("*", "|c"))}
+
+<===> case798/output.css
+a {
+  b: null;
+}
+
+<===> case799/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("*", "c|d"))}
+
+<===> case799/output.css
+a {
+  b: null;
+}
+
+<===> case800/input.scss
+@use "sass:selector";
+a {b: selector.unify("|*", "*|c")}
+
+<===> case800/output.css
+a {
+  b: |c;
+}
+
+<===> case801/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("|*", "c"))}
+
+<===> case801/output.css
+a {
+  b: null;
+}
+
+<===> case802/input.scss
+@use "sass:selector";
+a {b: selector.unify("|*", "|c")}
+
+<===> case802/output.css
+a {
+  b: |c;
+}
+
+<===> case803/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("|*", "c|d"))}
+
+<===> case803/output.css
+a {
+  b: null;
+}
+
+<===> case804/input.scss
+@use "sass:selector";
+a {b: selector.unify("c|*", "*|d")}
+
+<===> case804/output.css
+a {
+  b: c|d;
+}
+
+<===> case805/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("c|*", "d"))}
+
+<===> case805/output.css
+a {
+  b: null;
+}
+
+<===> case806/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("c|*", "|d"))}
+
+<===> case806/output.css
+a {
+  b: null;
+}
+
+<===> case807/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("c|*", "d|e"))}
+
+<===> case807/output.css
+a {
+  b: null;
+}
+
+<===> case808/input.scss
+@use "sass:selector";
+a {b: selector.unify("c|*", "c|d")}
+
+<===> case808/output.css
+a {
+  b: c|d;
+}
+
+<===> case809/input.scss
+@use "sass:selector";
+a {b: selector.unify("*|*", "*|*")}
+
+<===> case809/output.css
+a {
+  b: *|*;
+}
+
+<===> case810/input.scss
+@use "sass:selector";
+a {b: selector.unify("*|*", "*")}
+
+<===> case810/output.css
+a {
+  b: *;
+}
+
+<===> case811/input.scss
+@use "sass:selector";
+a {b: selector.unify("*|*", "|*")}
+
+<===> case811/output.css
+a {
+  b: |*;
+}
+
+<===> case812/input.scss
+@use "sass:selector";
+a {b: selector.unify("*|*", "c|*")}
+
+<===> case812/output.css
+a {
+  b: c|*;
+}
+
+<===> case813/input.scss
+@use "sass:selector";
+a {b: selector.unify("*", "*|*")}
+
+<===> case813/output.css
+a {
+  b: *;
+}
+
+<===> case814/input.scss
+@use "sass:selector";
+a {b: selector.unify("*", "*")}
+
+<===> case814/output.css
+a {
+  b: *;
+}
+
+<===> case815/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("*", "|*"))}
+
+<===> case815/output.css
+a {
+  b: null;
+}
+
+<===> case816/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("*", "e|*"))}
+
+<===> case816/output.css
+a {
+  b: null;
+}
+
+<===> case817/input.scss
+@use "sass:selector";
+a {b: selector.unify("|*", "*|*")}
+
+<===> case817/output.css
+a {
+  b: |*;
+}
+
+<===> case818/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("|*", "*"))}
+
+<===> case818/output.css
+a {
+  b: null;
+}
+
+<===> case819/input.scss
+@use "sass:selector";
+a {b: selector.unify("|*", "|*")}
+
+<===> case819/output.css
+a {
+  b: |*;
+}
+
+<===> case820/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("|*", "e|*"))}
+
+<===> case820/output.css
+a {
+  b: null;
+}
+
+<===> case821/input.scss
+@use "sass:selector";
+a {b: selector.unify("c|*", "*|*")}
+
+<===> case821/output.css
+a {
+  b: c|*;
+}
+
+<===> case822/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("c|*", "*"))}
+
+<===> case822/output.css
+a {
+  b: null;
+}
+
+<===> case823/input.scss
+@use "sass:meta";
+@use "sass:selector";
+a {b: meta.inspect(selector.unify("c|*", "|*"))}
+
+<===> case823/output.css
+a {
+  b: null;
+}
+
+<===> case824/input.scss
+@use "sass:selector";
+a {b: selector.unify("c|*", "c|*")}
+
+<===> case824/output.css
+a {
+  b: c|*;
+}
+

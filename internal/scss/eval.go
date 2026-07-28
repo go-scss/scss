@@ -17,7 +17,7 @@ type evaluator struct {
 	importer      Importer
 	loadedURLs    []string
 	warnings      []string
-	extends       []extendRule
+	extendEvents  []extendEvent
 	loadStack     []string
 	loaded        map[string]*module
 	currentParent selectorList
@@ -40,17 +40,32 @@ func (e *evaluator) enter() {
 
 func (e *evaluator) leave() { e.callDepth-- }
 
-type extendRule struct {
-	target    string // compound selector being extended (e.g. ".foo" or "%bar")
-	extenders selectorList
-	optional  bool
+// extendEvent records, in document order, either a style rule to register with
+// the extension store (rule != nil) or an @extend to apply (ext != nil). This
+// mirrors Dart Sass's evaluator, which calls addSelector/addExtension as it
+// visits, so boxes update transitively in the correct order.
+type extendEvent struct {
+	rule *cssStyleRule
+	ext  *pendingExtend
+}
+
+// pendingExtend captures an @extend: the enclosing rule (its box supplies the
+// extender), the parsed target selector list, whether it's !optional and the
+// enclosing media-query context.
+type pendingExtend struct {
+	rule     *cssStyleRule
+	targets  *selList
+	optional bool
+	media    []string
 }
 
 type frame struct {
 	container     cssContainer
 	rootContainer cssContainer
-	mediaParent   cssContainer // nearest non-media ancestor (where @media nodes go)
-	mediaQuery    string       // effective enclosing media query (for merging)
+	mediaParent   cssContainer    // nearest non-media ancestor (where @media nodes go)
+	mediaQueries  []mediaQuery    // effective enclosing media queries (nil at top)
+	mediaSources  map[string]bool // source query strings for bubbling decisions
+	mediaRuleNode cssContainer    // immediate enclosing @media node (for nesting)
 	parentSel     selectorList
 	hasParent     bool
 	directDecls   bool
@@ -89,7 +104,6 @@ func (e *evaluator) run(stmts []Stmt) {
 	}
 	e.evalBody(stmts, fr, true)
 	e.applyExtends()
-	e.prunePlaceholders(e.root)
 }
 
 func (e *evaluator) evalBody(stmts []Stmt, fr *frame, containerBody bool) {
@@ -232,9 +246,12 @@ func (e *evaluator) addDecl(fr *frame, d *cssDeclaration) {
 		return
 	}
 	if fr.block == nil {
-		fr.block = &cssStyleRule{selector: fr.parentSel, original: fr.parentSel}
+		fr.block = &cssStyleRule{selector: fr.parentSel, original: fr.parentSel, mediaContext: mediaContextOf(fr)}
 		fr.block.blankBefore = e.consumeGroup(fr)
 		fr.container.appendNode(fr.block)
+		if !fr.parentSel.isEmpty() {
+			e.extendEvents = append(e.extendEvents, extendEvent{rule: fr.block})
+		}
 	}
 	fr.block.appendNode(d)
 }
@@ -250,14 +267,17 @@ func (e *evaluator) evalStyleRule(n *StyleRule, fr *frame) {
 	} else {
 		resolved = child
 	}
-	rule := &cssStyleRule{selector: resolved, original: resolved}
+	rule := &cssStyleRule{selector: resolved, original: resolved, mediaContext: mediaContextOf(fr)}
 	rule.blankBefore = e.consumeGroup(fr)
 	fr.container.appendNode(rule)
+	e.extendEvents = append(e.extendEvents, extendEvent{rule: rule})
 	child2 := &frame{
 		container:     fr.container,
 		rootContainer: fr.rootContainer,
 		mediaParent:   fr.mediaParent,
-		mediaQuery:    fr.mediaQuery,
+		mediaQueries:  fr.mediaQueries,
+		mediaSources:  fr.mediaSources,
+		mediaRuleNode: fr.mediaRuleNode,
 		parentSel:     resolved,
 		hasParent:     true,
 		block:         rule,
@@ -444,23 +464,56 @@ func (e *evaluator) evalWhile(n *While, fr *frame) {
 // --- media / supports / at-root ---
 
 func (e *evaluator) evalMedia(n *Media, fr *frame) {
-	query := normalizeMediaQuery(e.resolveInterp(n.Query))
-	merged := query
-	if fr.mediaQuery != "" {
-		merged = query + " and " + fr.mediaQuery
+	queries := parseMediaQueryList(e.resolveInterp(n.Query))
+
+	var mergedQueries []mediaQuery
+	representable := true
+	if fr.mediaQueries != nil {
+		mergedQueries, representable = mergeMediaQueryLists(fr.mediaQueries, queries)
+		if representable && len(mergedQueries) == 0 {
+			return // empty intersection: this rule matches nothing.
+		}
 	}
-	parent := fr.mediaParent
+
+	var effective []mediaQuery
+	var sources map[string]bool
+	var parent cssContainer
+	switch {
+	case fr.mediaQueries == nil:
+		effective, sources, parent = queries, mediaQuerySet(queries), fr.mediaParent
+	case representable:
+		// Bubble above the enclosing media rules, merging with them.
+		effective = mergedQueries
+		sources = map[string]bool{}
+		for k := range fr.mediaSources {
+			sources[k] = true
+		}
+		for _, q := range fr.mediaQueries {
+			sources[q.String()] = true
+		}
+		for _, q := range queries {
+			sources[q.String()] = true
+		}
+		parent = fr.mediaParent
+	default:
+		// Unrepresentable merge: keep nested inside the enclosing media rule.
+		effective, sources = queries, mediaQuerySet(queries)
+		parent = fr.mediaRuleNode
+	}
 	if parent == nil {
 		parent = fr.rootContainer
 	}
-	at := &cssAtRule{name: "media", params: merged, hasBody: true}
+
+	at := &cssAtRule{name: "media", params: mediaQueriesString(effective), hasBody: true}
 	at.blankBefore = e.consumeGroup(fr)
 	parent.appendNode(at)
 	child := &frame{
 		container:     at,
 		rootContainer: at,
 		mediaParent:   parent,
-		mediaQuery:    merged,
+		mediaQueries:  effective,
+		mediaSources:  sources,
+		mediaRuleNode: at,
 		parentSel:     fr.parentSel,
 		hasParent:     fr.hasParent,
 		atContainer:   !fr.hasParent,
@@ -544,12 +597,72 @@ func (e *evaluator) evalLoudComment(n *LoudComment, fr *frame) {
 // --- @extend ---
 
 func (e *evaluator) evalExtend(n *Extend, fr *frame) {
+	if fr.block == nil {
+		e.fail("@extend may only be used within style rules.")
+	}
 	target := strings.TrimSpace(e.resolveInterp(n.Selector))
-	e.extends = append(e.extends, extendRule{
-		target:    target,
-		extenders: fr.parentSel,
-		optional:  n.Optional,
-	})
+	list, err := parseSelectorListStrErr(target, false, false)
+	if err != nil {
+		panic(err)
+	}
+	e.extendEvents = append(e.extendEvents, extendEvent{ext: &pendingExtend{
+		rule:     fr.block,
+		targets:  list,
+		optional: n.Optional,
+		media:    mediaContextOf(fr),
+	}})
+}
+
+// mediaContextOf returns the @extend media-query context for a frame: nil at the
+// top level, otherwise a single-element key from the effective merged query.
+func mediaContextOf(fr *frame) []string {
+	if len(fr.mediaQueries) == 0 {
+		return nil
+	}
+	out := make([]string, len(fr.mediaQueries))
+	for i, q := range fr.mediaQueries {
+		out[i] = q.String()
+	}
+	return out
+}
+
+// applyExtends replays recorded selector/extend events into an extension store
+// (mirroring Dart Sass's evaluator visitation order), then writes each rule's
+// extended selector back for serialization.
+func (e *evaluator) applyExtends() {
+	if len(e.extendEvents) == 0 {
+		return
+	}
+	store := newExtensionStore(extendNormal)
+	for _, ev := range e.extendEvents {
+		if ev.rule != nil {
+			ev.rule.box = store.addSelector(ev.rule.selector.list, ev.rule.mediaContext)
+			continue
+		}
+		ext := ev.ext
+		if ext.rule.box == nil {
+			// The enclosing block never registered a selector (e.g. an @extend
+			// nested inside a property-declaration block, which has no style-rule
+			// selector of its own): there is nothing to extend from.
+			continue
+		}
+		for _, complex := range ext.targets.components {
+			compound := complex.singleCompound()
+			if compound == nil {
+				e.fail("complex selectors may not be extended.")
+			}
+			simple := compound.singleSimple()
+			if simple == nil {
+				e.fail("compound selectors may no longer be extended.")
+			}
+			store.addExtension(ext.rule.box.value, simple, ext.optional, ext.media)
+		}
+	}
+	for _, ev := range e.extendEvents {
+		if ev.rule != nil {
+			ev.rule.selector = selectorList{list: ev.rule.box.value}
+		}
+	}
 }
 
 // --- interpolation ---

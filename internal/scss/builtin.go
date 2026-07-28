@@ -491,64 +491,216 @@ func fnMapRemove(ci *callInfo) Value {
 	return out
 }
 
-// --- selector module (minimal) ---
+// --- sass:selector module ---
 
 var selectorFns = map[string]builtinFunc{
-	"nest":   fnSelectorNest,
-	"append": fnSelectorAppend,
-	"unify":  fnSelectorUnify,
+	"nest":             fnSelectorNest,
+	"append":           fnSelectorAppend,
+	"unify":            fnSelectorUnify,
+	"extend":           fnSelectorExtend,
+	"replace":          fnSelectorReplace,
+	"is-superselector": fnSelectorIsSuperselector,
+	"simple-selectors": fnSelectorSimpleSelectors,
+	"parse":            fnSelectorParse,
 }
 
 func fnSelectorNest(ci *callInfo) Value {
-	cur := selectorList{}
-	for i, v := range ci.positional {
-		child := parseSelectorList(selectorText(v))
-		if i == 0 {
-			cur = child
-		} else {
-			cur = resolveNesting(child, cur)
-		}
+	selectors := ci.positional
+	if len(selectors) == 0 {
+		selPanic("$selectors: At least one selector must be passed.")
 	}
-	return selectorToValue(cur)
+	var parent *selList
+	for _, v := range selectors {
+		child := valueToSelectorList(v, true)
+		child = child.nestWithin(parent, true, false)
+		parent = child
+	}
+	return selListToSassList(parent)
 }
 
 func fnSelectorAppend(ci *callInfo) Value {
-	var parts []string
-	for _, v := range ci.positional {
-		parts = append(parts, selectorText(v))
+	selectors := ci.positional
+	if len(selectors) == 0 {
+		selPanic("$selectors: At least one selector must be passed.")
 	}
-	return &SassString{Text: strings.Join(parts, ""), Quoted: false}
+	parent := valueToSelectorList(selectors[0], false)
+	for _, v := range selectors[1:] {
+		child := valueToSelectorList(v, false)
+		var complexes []*selComplex
+		for _, complex := range child.components {
+			if len(complex.leadingCombinators) != 0 {
+				selPanic("Can't append " + complex.String() + " to " + parent.String() + ".")
+			}
+			component := complex.components[0]
+			newCompound := prependParentCompound(component.selector)
+			if newCompound == nil {
+				selPanic("Can't append " + complex.String() + " to " + parent.String() + ".")
+			}
+			comps := []complexComponent{{selector: newCompound, combinators: component.combinators}}
+			comps = append(comps, complex.components[1:]...)
+			complexes = append(complexes, &selComplex{components: comps})
+		}
+		parent = (&selList{components: complexes}).nestWithin(parent, true, false)
+	}
+	return selListToSassList(parent)
 }
 
 func fnSelectorUnify(ci *callInfo) Value {
-	a := selectorText(ci.require(0, "selector1"))
-	b := selectorText(ci.require(1, "selector2"))
-	return &SassString{Text: a + b, Quoted: false}
-}
-
-func selectorText(v Value) string {
-	switch x := v.(type) {
-	case *SassString:
-		return x.Text
-	case *List:
-		parts := make([]string, len(x.Elements))
-		for i, e := range x.Elements {
-			parts[i] = selectorText(e)
-		}
-		if x.Sep == SepComma {
-			return strings.Join(parts, ", ")
-		}
-		return strings.Join(parts, " ")
+	a := valueToSelectorList(ci.require(0, "selector1"), false)
+	b := valueToSelectorList(ci.require(1, "selector2"), false)
+	u := a.unify(b)
+	if u == nil {
+		return sassNull
 	}
-	return serializeValue(v, false)
+	return selListToSassList(u)
 }
 
-func selectorToValue(sl selectorList) Value {
-	elems := make([]Value, len(sl.complexes))
-	for i, cx := range sl.complexes {
-		elems[i] = &SassString{Text: cx.serialize(false), Quoted: false}
+func fnSelectorExtend(ci *callInfo) Value {
+	selector := valueToSelectorList(ci.require(0, "selector"), false)
+	target := valueToSelectorList(ci.require(1, "extendee"), false)
+	source := valueToSelectorList(ci.require(2, "extender"), false)
+	return selListToSassList(extendOrReplace(selector, source, target, extendAllTargets))
+}
+
+func fnSelectorReplace(ci *callInfo) Value {
+	selector := valueToSelectorList(ci.require(0, "selector"), false)
+	target := valueToSelectorList(ci.require(1, "original"), false)
+	source := valueToSelectorList(ci.require(2, "replacement"), false)
+	return selListToSassList(extendOrReplace(selector, source, target, extendReplace))
+}
+
+func fnSelectorIsSuperselector(ci *callInfo) Value {
+	a := valueToSelectorList(ci.require(0, "super"), false)
+	b := valueToSelectorList(ci.require(1, "sub"), false)
+	return boolean(a.isSuperList(b))
+}
+
+func fnSelectorSimpleSelectors(ci *callInfo) Value {
+	compound := valueToCompoundSelector(ci.require(0, "selector"))
+	elems := make([]Value, len(compound.components))
+	for i, simple := range compound.components {
+		elems[i] = &SassString{Text: selSimpleString(simple), Quoted: false}
 	}
 	return &List{Elements: elems, Sep: SepComma}
+}
+
+func fnSelectorParse(ci *callInfo) Value {
+	return selListToSassList(valueToSelectorList(ci.require(0, "selector"), false))
+}
+
+// prependParentCompound adds a ParentSelector to the front of a compound, per
+// Dart Sass's _prependParent; returns nil if that wouldn't be valid.
+func prependParentCompound(compound *compoundSel) *compoundSel {
+	switch first := compound.components[0].(type) {
+	case *universalSel:
+		return nil
+	case *typeSel:
+		if first.name.ns != nil {
+			return nil
+		}
+		rest := append([]simpleSel{&parentSel{suffix: strptr(first.name.name)}}, compound.components[1:]...)
+		return &compoundSel{components: rest}
+	default:
+		comps := append([]simpleSel{&parentSel{}}, compound.components...)
+		return &compoundSel{components: comps}
+	}
+}
+
+// valueToSelectorList converts a selector-parse()-style value to a *selList.
+func valueToSelectorList(v Value, allowParent bool) *selList {
+	str, ok := selectorStringOrNil(v)
+	if !ok {
+		selPanic(serializeValue(v, false) + " is not a valid selector: it must be a string,\n" +
+			"a list of strings, or a list of lists of strings.")
+	}
+	list, err := parseSelectorListStrErr(str, allowParent, false)
+	if err != nil {
+		panic(err)
+	}
+	return list
+}
+
+func valueToCompoundSelector(v Value) *compoundSel {
+	str, ok := selectorStringOrNil(v)
+	if !ok {
+		selPanic(serializeValue(v, false) + " is not a valid selector: it must be a string,\n" +
+			"a list of strings, or a list of lists of strings.")
+	}
+	return parseCompoundSelectorStr(str, false)
+}
+
+// selectorStringOrNil implements Dart Sass's Value._selectorStringOrNull.
+func selectorStringOrNil(v Value) (string, bool) {
+	switch x := v.(type) {
+	case *SassString:
+		return x.Text, true
+	case *List:
+		if len(x.Elements) == 0 {
+			return "", false
+		}
+		var parts []string
+		switch x.Sep {
+		case SepComma:
+			for _, complex := range x.Elements {
+				switch c := complex.(type) {
+				case *SassString:
+					parts = append(parts, c.Text)
+				case *List:
+					if c.Sep != SepSpace {
+						return "", false
+					}
+					s, ok := selectorStringOrNil(c)
+					if !ok {
+						return "", false
+					}
+					parts = append(parts, s)
+				default:
+					return "", false
+				}
+			}
+			return strings.Join(parts, ", "), true
+		case SepSlash:
+			return "", false
+		default:
+			for _, compound := range x.Elements {
+				s, ok := compound.(*SassString)
+				if !ok {
+					return "", false
+				}
+				parts = append(parts, s.Text)
+			}
+			return strings.Join(parts, " "), true
+		}
+	}
+	return "", false
+}
+
+func selPanic(msg string) { panic(&SassError{Msg: msg}) }
+
+// selListToSassList renders a selector list as a comma list of space lists of
+// strings, matching Dart Sass's SelectorList.asSassList.
+func selListToSassList(sl *selList) Value {
+	complexes := make([]Value, len(sl.components))
+	for i, complex := range sl.components {
+		var items []Value
+		for _, comb := range complex.leadingCombinators {
+			items = append(items, &SassString{Text: comb.String(), Quoted: false})
+		}
+		for _, component := range complex.components {
+			items = append(items, &SassString{Text: compoundString(component.selector), Quoted: false})
+			for _, comb := range component.combinators {
+				items = append(items, &SassString{Text: comb.String(), Quoted: false})
+			}
+		}
+		complexes[i] = &List{Elements: items, Sep: SepSpace}
+	}
+	return &List{Elements: complexes, Sep: SepComma}
+}
+
+func compoundString(c *compoundSel) string {
+	var sb strings.Builder
+	c.write(&sb, false)
+	return sb.String()
 }
 
 // --- meta module (subset) ---
