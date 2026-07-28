@@ -170,13 +170,33 @@ func TestStringHelpers(t *testing.T) {
 	for _, s := range []string{`a"b`, `a'b`, `a"b'c`, `plain`, `back\slash`} {
 		_ = serializeQuoted(s)
 	}
-	// formatFloat branches (compressed leading-zero, negative, trailing zeros).
-	for _, f := range []float64{0, -0, 0.5, -0.5, 1.5, 100, 1.2500000000, -0.0} {
+	// formatFloat branches (compressed leading-zero, negative, trailing zeros,
+	// whole-integer exact path, negative whole, and the >=1e21 shortest path).
+	for _, f := range []float64{0, -0, 0.5, -0.5, 1.5, 100, -42, 1.2500000000, -0.0, 1e21, -1e21} {
 		_ = formatFloat(f, true)
 		_ = formatFloat(f, false)
 	}
 	if !strings.Contains(formatFloat(0.5, true), ".5") {
 		t.Error("compressed leading zero not stripped")
+	}
+	// Whole doubles below 1e21 print their exact integer value (Dart's
+	// double.toString()), not Go strconv's shorter round-trip form.
+	for _, tc := range []struct {
+		in   float64
+		want string
+	}{
+		{76837657717023024, "76837657717023024"},
+		{-197290257783187296, "-197290257783187296"},
+		{5, "5"},
+		{0, "0"},
+	} {
+		if got := formatFloat(tc.in, false); got != tc.want {
+			t.Errorf("formatFloat(%v) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+	// At and above 1e21 Dart switches to the shortest (trailing-zero) form.
+	if got := formatFloat(1e21, false); got != "1000000000000000000000" {
+		t.Errorf("formatFloat(1e21) = %q, want shortest trailing-zero form", got)
 	}
 }
 
