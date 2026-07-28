@@ -46,7 +46,7 @@ func (e *evaluator) evalExpr(expr Expr) Value {
 	case *Paren:
 		return e.evalExpr(x.Expr)
 	case *InterpExpr:
-		return &SassString{Text: e.stringifyInterp(e.evalExpr(x.Expr))}
+		return &SassString{Text: e.evalInterpPart(x.Expr)}
 	}
 	e.fail("Unsupported expression.")
 	return nil
@@ -59,6 +59,19 @@ func unitSlice(u string) []string {
 	return []string{u}
 }
 
+// evalInterpPart evaluates a `#{...}` interpolation expression to its unquoted
+// interpolation text. Interpolation is a fresh evaluation context, so any
+// enclosing @supports-declaration state is cleared: calculations inside `#{}`
+// are fully simplified (dart-sass resets _inSupportsDeclaration for interpolated
+// content).
+func (e *evaluator) evalInterpPart(expr Expr) string {
+	old := e.inSupportsDecl
+	e.inSupportsDecl = false
+	v := e.evalExpr(expr)
+	e.inSupportsDecl = old
+	return e.stringifyInterp(v)
+}
+
 func (e *evaluator) evalString(x *StringLit) Value {
 	var sb strings.Builder
 	for _, part := range x.Parts.Parts {
@@ -66,7 +79,7 @@ func (e *evaluator) evalString(x *StringLit) Value {
 		case string:
 			sb.WriteString(p)
 		case *InterpExpr:
-			sb.WriteString(e.stringifyInterp(e.evalExpr(p.Expr)))
+			sb.WriteString(e.evalInterpPart(p.Expr))
 		}
 	}
 	return &SassString{Text: sb.String(), Quoted: x.Quoted}

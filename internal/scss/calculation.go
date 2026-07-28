@@ -551,6 +551,11 @@ func isSpecialNumberString(text string) bool {
 // --- operate ---
 
 func (e *evaluator) calcOperate(op string, left, right calcTerm, legacy bool) calcTerm {
+	// Inside a @supports declaration the operation is kept unsimplified: no
+	// numeric reduction, no operand simplification (dart-sass simplify:false).
+	if e.inSupportsDecl {
+		return &CalcOp{Op: op, Left: left, Right: right}
+	}
 	left = e.calcSimplify(left)
 	right = e.calcSimplify(right)
 

@@ -81,6 +81,12 @@ func (e *evaluator) evalCalculation(name string, x *FuncCall, maxArgs int) Value
 	for i, ex := range argExprs {
 		args[i] = e.visitCalcExpr(ex, legacy)
 	}
+	// Inside a @supports declaration, calculations are left unsimplified so that
+	// `(a: calc(1 + 2))` keeps its literal `calc(1 + 2)` text (dart-sass's
+	// SassCalculation.unsimplified).
+	if e.inSupportsDecl {
+		return &SassCalculation{Name: name, Args: args}
+	}
 	// name is guaranteed to be in calcDispatch: tryCalculation only reaches here
 	// for names present in calcArity, which has the same keys.
 	return calcDispatch[name](e, args)
