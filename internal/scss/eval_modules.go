@@ -212,6 +212,20 @@ func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *
 			e.fail("Module loop: %s", resolved)
 		}
 	}
+	// A file resolved with a .css extension is parsed as plain CSS and emitted
+	// at the top level; it exposes no Sass members.
+	if strings.HasSuffix(resolved, ".css") {
+		nodes, err := parsePlainCSS(src)
+		if err != nil {
+			panic(err)
+		}
+		e.loadedURLs = append(e.loadedURLs, resolved)
+		e.emitModuleCSS(nodes, fr)
+		mod := emptyModule()
+		e.loaded[url] = mod
+		e.sharedLoaded[resolved] = mod
+		return mod
+	}
 	stmts, err := parseStylesheet(src)
 	if err != nil {
 		panic(err)
@@ -255,6 +269,17 @@ func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *
 	return mod
 }
 
+// emptyModule builds a module with no members, used for plain-CSS files loaded
+// through @use/@forward: they contribute CSS but expose nothing to Sass.
+func emptyModule() *module {
+	return &module{
+		vars:   map[string]Value{},
+		mixins: map[string]*mixinEntry{},
+		funcs:  map[string]*funcEntry{},
+		env:    newEnvironment(),
+	}
+}
+
 func (e *evaluator) runModule(stmts []Stmt) {
 	fr := &frame{container: e.root, rootContainer: e.root, mediaParent: e.root, atContainer: true, group: &groupInfo{}}
 	e.evalBody(stmts, fr, true)
@@ -272,7 +297,7 @@ func (e *evaluator) evalImport(n *Import, fr *frame) {
 	for _, item := range n.Imports {
 		if item.Plain {
 			params := "\"" + item.URL + "\""
-			if strings.HasPrefix(item.URL, "url(") || strings.HasPrefix(item.RawText, "url") {
+			if len(item.URL) >= 4 && strings.EqualFold(item.URL[:4], "url(") || strings.HasPrefix(item.RawText, "url") {
 				params = item.URL
 			}
 			if item.RawText != "" {
@@ -283,12 +308,24 @@ func (e *evaluator) evalImport(n *Import, fr *frame) {
 			fr.container.appendNode(at)
 			continue
 		}
-		src, _, ok := e.resolve(item.URL)
+		src, resolved, ok := e.resolve(item.URL)
 		if !ok {
 			// treat as plain CSS import passthrough
 			at := &cssAtRule{name: "import", params: "\"" + item.URL + "\"", hasBody: false}
 			at.blankBefore = e.consumeGroup(fr)
 			fr.container.appendNode(at)
+			continue
+		}
+		// A .css file imported at the top level is parsed as plain CSS and
+		// injected verbatim (nesting preserved). A nested @import of a .css file
+		// resolves through the ordinary path so its first level combines with the
+		// enclosing selector, matching dart-sass.
+		if !fr.hasParent && strings.HasSuffix(resolved, ".css") {
+			nodes, err := parsePlainCSS(src)
+			if err != nil {
+				panic(err)
+			}
+			e.emitModuleCSS(nodes, fr)
 			continue
 		}
 		stmts, err := parseStylesheet(src)

@@ -285,10 +285,10 @@ func (p *parser) parseImport() Stmt {
 			} else {
 				imp.Imports = append(imp.Imports, ImportItem{URL: url})
 			}
-		} else if p.match("url(") || p.match("URL(") {
-			// url(...) form -> plain import
+		} else if pfx := p.pos; p.match("url(") || p.match("URL(") {
+			// url(...) form -> plain import; the url() wrapper is preserved
+			// verbatim so it round-trips as `@import url(...)`.
 			depth := 1
-			start := p.pos
 			for !p.eof() && depth > 0 {
 				c := p.next()
 				if c == '(' {
@@ -297,8 +297,7 @@ func (p *parser) parseImport() Stmt {
 					depth--
 				}
 			}
-			inner := p.src[start : p.pos-1]
-			imp.Imports = append(imp.Imports, ImportItem{URL: inner, Plain: true, RawText: ""})
+			imp.Imports = append(imp.Imports, ImportItem{URL: p.src[pfx:p.pos], Plain: true, RawText: ""})
 		} else {
 			p.fail("Expected string.")
 		}

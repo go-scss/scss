@@ -171,12 +171,12 @@ func (e *evaluator) evalIfFunction(x *FuncCall) Value {
 func (e *evaluator) plainCSSFunction(x *FuncCall) Value {
 	var parts []string
 	for _, a := range x.Args.Args {
+		// A spread argument (`$list...`) is expanded in place: dart-sass serialises
+		// the underlying value with its own separator (so a comma list becomes
+		// `a, b` and a space list `a b`) rather than keeping a literal `...`.
 		s := serializeValue(e.evalExpr(a.Value), false)
-		if a.Name != "" {
+		if !a.Spread && a.Name != "" {
 			s = "$" + a.Name + ": " + s
-		}
-		if a.Spread {
-			s += "..."
 		}
 		parts = append(parts, s)
 	}

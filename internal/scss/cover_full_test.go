@@ -126,36 +126,36 @@ func TestFeatureRecoveryPaths(t *testing.T) {
 // TestBuiltinBranches exercises builtin-function branches via public functions.
 func TestBuiltinBranches(t *testing.T) {
 	cases := map[string]string{
-		"@use \"sass:math\"; .a{v: math.cos(100grad)}":                        "",      // trig grad unit
-		".a{v: math.clamp(5, 1, 10)}":                                         "5",     // clamp value below min
-		".a{v: comparable(1, 2px)}":                                           "",      // comparable unitless
-		".a{v: nth((a:1,b:2), 1)}":                                            "a",     // asListVal on map
-		".a{v: join((), ())}":                                                 "",      // join undecided sep -> space
-		".a{v: join(1, 2, comma, true)}":                                      "",      // join bracketed arg
-		"@function kw($a...){@return inspect(keywords($a))} .a{v: kw($x: 1)}": "x: 1",  // keywords on an arglist
-		".a{v: length(map.get((), x))}":                                       "",      // asMapVal empty list
-		".a{v: map.get((a: (b: 1)), a, c)}":                                   "",      // nested map key not found
-		".a{v: map.get((a: 1), a, b)}":                                        "",      // nested cur not a map
-		".a{v: selector.unify(a b, c)}":                                       "",      // selector list space join
-		".a{v: selector.extend(\"a\", \"b\", \"c\")}":                         "a",     // selector.extend
-		".a{v: selector.replace(\"a b\", \"b\", \"c\")}":                      "a c",   // selector.replace
-		".a{v: selector.is-superselector(\"a\", \"a.b\")}":                    "true",  // is-superselector
-		".a{v: selector.simple-selectors(\"a.b.c\")}":                         "a",     // simple-selectors
-		".a{v: inspect(selector.parse(\"a, b\"))}":                            "a",     // selector.parse
-		".a{v: inspect((1, 2))}":                                              "1, 2",  // inspect comma list
-		".a{v: inspect(list.slash(1, 2))}":                                    "1 / 2", // inspect slash list
-		"@mixin m($a...){ x: inspect(keywords($a)) } .a{ @include m($x: 1) }": "",      // keywords
-		".a{v: unique-id()}":                                                  "uid",   // unique-id
-		".a{v: str-insert(\"abc\", \"X\", -100)}":                             "",      // str-insert pos<0
-		".a{v: str-insert(\"abc\", \"X\", 100)}":                              "",      // str-insert pos>len
-		".a{v: str-slice(\"abc\", -100)}":                                     "",      // str-slice start<1
-		".a{v: str-slice(\"abc\", 3, 1)}":                                     "",      // str-slice start>end
-		".a{v: string.split(\"abc\", \"\")}":                                  "",      // str-split empty separator
-		".a{v: saturation(red)}":                                              "",      // fnSaturation
-		".a{v: mix(rgba(255,0,0,0), blue, 100%)}":                             "",      // fnMix w*a==-1
-		".a{v: lighten(white, 50%)}":                                          "",      // clampPct v>100
-		".a{v: min(1, 2...)}":                                                 "",      // evalArgs spread scalar default
-		".a{v: foo(1 2 3...)}":                                                "...",   // plainCSSFunction spread
+		"@use \"sass:math\"; .a{v: math.cos(100grad)}":                        "",           // trig grad unit
+		".a{v: math.clamp(5, 1, 10)}":                                         "5",          // clamp value below min
+		".a{v: comparable(1, 2px)}":                                           "",           // comparable unitless
+		".a{v: nth((a:1,b:2), 1)}":                                            "a",          // asListVal on map
+		".a{v: join((), ())}":                                                 "",           // join undecided sep -> space
+		".a{v: join(1, 2, comma, true)}":                                      "",           // join bracketed arg
+		"@function kw($a...){@return inspect(keywords($a))} .a{v: kw($x: 1)}": "x: 1",       // keywords on an arglist
+		".a{v: length(map.get((), x))}":                                       "",           // asMapVal empty list
+		".a{v: map.get((a: (b: 1)), a, c)}":                                   "",           // nested map key not found
+		".a{v: map.get((a: 1), a, b)}":                                        "",           // nested cur not a map
+		".a{v: selector.unify(a b, c)}":                                       "",           // selector list space join
+		".a{v: selector.extend(\"a\", \"b\", \"c\")}":                         "a",          // selector.extend
+		".a{v: selector.replace(\"a b\", \"b\", \"c\")}":                      "a c",        // selector.replace
+		".a{v: selector.is-superselector(\"a\", \"a.b\")}":                    "true",       // is-superselector
+		".a{v: selector.simple-selectors(\"a.b.c\")}":                         "a",          // simple-selectors
+		".a{v: inspect(selector.parse(\"a, b\"))}":                            "a",          // selector.parse
+		".a{v: inspect((1, 2))}":                                              "1, 2",       // inspect comma list
+		".a{v: inspect(list.slash(1, 2))}":                                    "1 / 2",      // inspect slash list
+		"@mixin m($a...){ x: inspect(keywords($a)) } .a{ @include m($x: 1) }": "",           // keywords
+		".a{v: unique-id()}":                                                  "uid",        // unique-id
+		".a{v: str-insert(\"abc\", \"X\", -100)}":                             "",           // str-insert pos<0
+		".a{v: str-insert(\"abc\", \"X\", 100)}":                              "",           // str-insert pos>len
+		".a{v: str-slice(\"abc\", -100)}":                                     "",           // str-slice start<1
+		".a{v: str-slice(\"abc\", 3, 1)}":                                     "",           // str-slice start>end
+		".a{v: string.split(\"abc\", \"\")}":                                  "",           // str-split empty separator
+		".a{v: saturation(red)}":                                              "",           // fnSaturation
+		".a{v: mix(rgba(255,0,0,0), blue, 100%)}":                             "",           // fnMix w*a==-1
+		".a{v: lighten(white, 50%)}":                                          "",           // clampPct v>100
+		".a{v: min(1, 2...)}":                                                 "",           // evalArgs spread scalar default
+		".a{v: foo(1 2 3...)}":                                                "foo(1 2 3)", // plainCSSFunction spread (list serialised with its own separator)
 	}
 	for src, want := range cases {
 		src = "@use \"sass:math\"; @use \"sass:list\"; @use \"sass:map\"; @use \"sass:string\"; @use \"sass:selector\"; @use \"sass:meta\"; " + src

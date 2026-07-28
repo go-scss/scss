@@ -49,6 +49,8 @@ type cssStyleRule struct {
 	mediaContext []string     // enclosing media-query context for @extend
 	box          *box         // extension box; selector is set from it post-extend
 	blankBefore  bool
+	raw          bool   // plain-CSS rule: emit rawSel verbatim, never extend/resolve
+	rawSel       string // verbatim selector for a plain-CSS rule
 }
 
 func (r *cssStyleRule) cssNode()             {}
@@ -157,6 +159,9 @@ func (s *serializer) emitChildren(nodes []cssNode, depth int, top bool) {
 func isEmptyContainer(n cssNode) bool {
 	switch v := n.(type) {
 	case *cssStyleRule:
+		if v.raw {
+			return !hasVisible(v.nodes)
+		}
 		return v.selector.isEmpty() || v.selector.list.isInvisible() || !hasVisible(v.nodes)
 	case *cssAtRule:
 		return v.hasBody && !hasVisible(v.nodes)
@@ -206,7 +211,11 @@ func blankBeforeOf(n cssNode) bool {
 func (s *serializer) emitNode(n cssNode, depth int) {
 	switch v := n.(type) {
 	case *cssStyleRule:
-		s.emitRule(v.selector.serialize(s.compressed), v.nodes, depth)
+		if v.raw {
+			s.emitRule(v.rawSel, v.nodes, depth)
+		} else {
+			s.emitRule(v.selector.serialize(s.compressed), v.nodes, depth)
+		}
 	case *cssAtRule:
 		s.emitAtRule(v, depth)
 	case *cssDeclaration:
