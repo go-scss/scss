@@ -501,6 +501,11 @@ func isHexDigit(c byte) bool {
 
 func (p *parser) parseIdentValue() Expr {
 	name := p.scanIdentifier()
+	// IE progid:...() special function (uses ":" rather than "("); the name may
+	// be vendor-prefixed (e.g. -c-progid).
+	if p.peek() == ':' && unvendor(strings.ToLower(name)) == "progid" {
+		return p.tryProgid(name)
+	}
 	// namespaced access: ns.func(  or  ns.$var
 	if p.peek() == '.' {
 		p.next()
@@ -517,6 +522,10 @@ func (p *parser) parseIdentValue() Expr {
 	if p.peek() == '(' {
 		if isCalcLike(name) {
 			return p.parseCalc(name)
+		}
+		// CSS special functions preserve their arguments verbatim.
+		if e, ok := p.trySpecialFunction(name); ok {
+			return e
 		}
 		// if() is ambiguous between the legacy Sass control function and the
 		// modern CSS if() syntax. Try the legacy argument list first and fall
@@ -580,6 +589,10 @@ func (p *parser) parseCalc(name string) Expr {
 			}
 			p.next()
 			parts = append(parts, &InterpExpr{Expr: e})
+			continue
+		}
+		if c == '"' || c == '\'' {
+			sb.WriteString(p.scanQuotedRaw())
 			continue
 		}
 		if c == '(' {
