@@ -79,10 +79,21 @@ func (e *evaluator) evalVarRef(x *VarRef) Value {
 				return v
 			}
 		}
+		if real, ok := e.env.builtinAliases[x.Namespace]; ok {
+			if v, ok := builtinModuleVar(real, x.Name); ok {
+				return v
+			}
+		}
 		e.fail("Undefined variable.")
 	}
+	// A bare variable may resolve to a built-in module exposed via `as *`.
 	if v, ok := e.env.getVar(x.Name); ok {
 		return v
+	}
+	for _, m := range e.env.builtinGlobals {
+		if v, ok := builtinModuleVar(m, x.Name); ok {
+			return v
+		}
 	}
 	e.fail("Undefined variable.")
 	return nil

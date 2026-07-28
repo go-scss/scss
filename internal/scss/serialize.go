@@ -5,6 +5,7 @@ package scss
 
 import (
 	"math"
+	"strconv"
 	"strings"
 )
 
@@ -98,11 +99,34 @@ func serialize(root *cssRoot, compressed bool) string {
 		if out != "" {
 			out += "\n"
 		}
+		// A compressed stylesheet containing non-ASCII characters is prefixed
+		// with a UTF-8 byte-order mark, as dart-sass does.
+		if hasNonASCII(out) && !strings.HasPrefix(out, "\uFEFF") {
+			out = "\uFEFF" + out
+		}
 		return out
 	}
 	// Every emitted node ends in "\n" in expanded mode, so the result is already
 	// newline-terminated (or empty) after trimming leading blank lines.
-	return strings.TrimLeft(out, "\n")
+	out = strings.TrimLeft(out, "\n")
+	// An expanded stylesheet containing non-ASCII characters is prefixed with an
+	// @charset rule, as dart-sass does — unless the output already begins with one
+	// (an author-written @charset is kept rather than duplicated).
+	if hasNonASCII(out) && !strings.HasPrefix(out, "@charset ") {
+		out = "@charset \"UTF-8\";\n" + out
+	}
+	return out
+}
+
+// hasNonASCII reports whether s contains any byte outside the US-ASCII range,
+// which in a UTF-8 stream marks the presence of a non-ASCII code point.
+func hasNonASCII(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] >= 0x80 {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *serializer) indent(depth int) {
@@ -374,27 +398,53 @@ func serializeMap(m *Map, compressed bool) string {
 	return "(" + strings.Join(parts, sep) + ")"
 }
 
+// stringNeedsCharEscape reports whether a code point must be written as a hex
+// escape inside a quoted string: the control characters and the private-use
+// areas, as dart-sass does.
+func stringNeedsCharEscape(r rune) bool {
+	if r < 0x20 || r == 0x7F {
+		return true
+	}
+	return (r >= 0xE000 && r <= 0xF8FF) ||
+		(r >= 0xF0000 && r <= 0xFFFFD) ||
+		(r >= 0x100000 && r <= 0x10FFFD)
+}
+
+func isHexRune(r rune) bool {
+	return (r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')
+}
+
 func serializeQuoted(text string) string {
-	// Prefer double quotes; escape embedded double quotes and backslashes minimally.
-	hasDouble := strings.Contains(text, "\"")
-	hasSingle := strings.Contains(text, "'")
+	// Prefer double quotes; switch to single quotes only when the text contains a
+	// double quote but no single quote, matching dart-sass.
 	quote := byte('"')
-	if hasDouble && !hasSingle {
+	if strings.Contains(text, "\"") && !strings.Contains(text, "'") {
 		quote = '\''
 	}
 	var sb strings.Builder
 	sb.WriteByte(quote)
-	for i := 0; i < len(text); i++ {
-		c := text[i]
-		if c == quote || c == '\\' {
-			if c == '\\' && i+1 < len(text) {
-				// keep existing escape sequences intact
-				sb.WriteByte(c)
-				continue
-			}
+	runes := []rune(text)
+	for i := 0; i < len(runes); i++ {
+		r := runes[i]
+		switch {
+		case r == rune(quote):
 			sb.WriteByte('\\')
+			sb.WriteRune(r)
+		case r == '\\':
+			sb.WriteString(`\\`)
+		case stringNeedsCharEscape(r):
+			sb.WriteByte('\\')
+			sb.WriteString(strconv.FormatInt(int64(r), 16))
+			// A trailing space terminates the escape when the next character
+			// could otherwise be read as part of it.
+			if i+1 < len(runes) {
+				if n := runes[i+1]; isHexRune(n) || n == ' ' || n == '\t' {
+					sb.WriteByte(' ')
+				}
+			}
+		default:
+			sb.WriteRune(r)
 		}
-		sb.WriteByte(c)
 	}
 	sb.WriteByte(quote)
 	return sb.String()

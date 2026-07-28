@@ -484,6 +484,18 @@ div {
 }
 
 <===> case26/input.scss
+@use "sass:string";
+div {
+  content: string.to-upper-case("øáéíóúüñ¿éàŤǅǂɊɱʭʬѪ҈ݓ");
+}
+
+<===> case26/output.css
+@charset "UTF-8";
+div {
+  content: "øáéíóúüñ¿éàŤǅǂɊɱʭʬѪ҈ݓ";
+}
+
+<===> case27/input.scss
 @use "sass:color";
 foo {
   c0: color.opacity(rgba(0,0,0,0.0));
@@ -499,7 +511,7 @@ foo {
   c10: color.opacity(rgba(0,0,0,1));
 }
 
-<===> case26/output.css
+<===> case27/output.css
 foo {
   c0: 0;
   c1: 0.1;
@@ -514,7 +526,7 @@ foo {
   c10: 1;
 }
 
-<===> case27/input.scss
+<===> case28/input.scss
 @use "sass:color";
 foo {
   // c-1: change-color(black,$alpha:-1);
@@ -533,7 +545,7 @@ foo {
   // c12: change-color(black,$alpha:2);
 }
 
-<===> case27/output.css
+<===> case28/output.css
 foo {
   c0: rgba(0, 0, 0, 0);
   c1: rgba(0, 0, 0, 0.1);
@@ -548,7 +560,7 @@ foo {
   c10: black;
 }
 
-<===> case28/input.scss
+<===> case29/input.scss
 @use "sass:color";
 foo {
   // c-1: change-color(black,$blue:-1);
@@ -811,7 +823,7 @@ foo {
   // c256: change-color(black,$blue:256);
 }
 
-<===> case28/output.css
+<===> case29/output.css
 foo {
   c0: black;
   c1: #000001;
@@ -1071,7 +1083,7 @@ foo {
   c255: blue;
 }
 
-<===> case29/input.scss
+<===> case30/input.scss
 @use "sass:color";
 foo {
   // c-1: change-color(black,$green:-1);
@@ -1334,7 +1346,7 @@ foo {
   // c256: change-color(black,$green:256);
 }
 
-<===> case29/output.css
+<===> case30/output.css
 foo {
   c0: black;
   c1: #000100;
@@ -1594,7 +1606,7 @@ foo {
   c255: lime;
 }
 
-<===> case30/input.scss
+<===> case31/input.scss
 @use "sass:color";
 foo {
   c-1: color.change(red,$hue:-1);
@@ -1961,7 +1973,7 @@ foo {
   c360: color.change(red,$hue:360);
 }
 
-<===> case30/output.css
+<===> case31/output.css
 foo {
   c-1: rgb(100%, 0%, 1.6666666667%);
   c0: red;
@@ -2327,7 +2339,7 @@ foo {
   c360: red;
 }
 
-<===> case31/input.scss
+<===> case32/input.scss
 @use "sass:color";
 foo {
   // c-1: change-color(red,$lightness:-1%);
@@ -2434,7 +2446,7 @@ foo {
   // c100: change-color(red,$lightness:100%);
 }
 
-<===> case31/output.css
+<===> case32/output.css
 foo {
   c0: black;
   c1: rgb(2%, 0%, 0%);
@@ -2538,7 +2550,7 @@ foo {
   c99: rgb(100%, 98%, 98%);
 }
 
-<===> case32/input.scss
+<===> case33/input.scss
 @use "sass:color";
 foo {
   // c-1: change-color(black,$red:-1);
@@ -2801,7 +2813,7 @@ foo {
   // c256: change-color(black,$red:256);
 }
 
-<===> case32/output.css
+<===> case33/output.css
 foo {
   c0: black;
   c1: #010000;
@@ -3061,7 +3073,7 @@ foo {
   c255: red;
 }
 
-<===> case33/input.scss
+<===> case34/input.scss
 @use "sass:color";
 foo {
   // c-1: change-color(red,$saturation:-1%);
@@ -3169,7 +3181,7 @@ foo {
   // c101: change-color(red,$saturation:101%);
 }
 
-<===> case33/output.css
+<===> case34/output.css
 foo {
   c0: rgb(50%, 50%, 50%);
   c1: rgb(50.5%, 49.5%, 49.5%);
@@ -3274,7 +3286,7 @@ foo {
   c100: red;
 }
 
-<===> case34/input.scss
+<===> case35/input.scss
 foo {
   c-1: rgb(0,0,-1);
   c0: rgb(0,0,0);
@@ -3642,7 +3654,7 @@ foo {
   c101: rgb(0,0,101%);
 }
 
-<===> case34/output.css
+<===> case35/output.css
 foo {
   c-1: rgb(0, 0, 0);
   c0: rgb(0, 0, 0);
@@ -4010,7 +4022,7 @@ foo {
   c101: rgb(0, 0, 255);
 }
 
-<===> case35/input.scss
+<===> case36/input.scss
 foo {
   c-1: rgb(0,-1,0);
   c0: rgb(0,0,0);
@@ -4378,7 +4390,7 @@ foo {
   c101: rgb(0,101%,0);
 }
 
-<===> case35/output.css
+<===> case36/output.css
 foo {
   c-1: rgb(0, 0, 0);
   c0: rgb(0, 0, 0);
@@ -4746,7 +4758,7 @@ foo {
   c101: rgb(0, 255, 0);
 }
 
-<===> case36/input.scss
+<===> case37/input.scss
 foo {
   c-1: rgb(0,-1,0);
   c0: rgb(0,0,0);
@@ -5114,7 +5126,7 @@ foo {
   c101: rgb(101%,0,0);
 }
 
-<===> case36/output.css
+<===> case37/output.css
 foo {
   c-1: rgb(0, 0, 0);
   c0: rgb(0, 0, 0);
@@ -5482,7 +5494,7 @@ foo {
   c101: rgb(255, 0, 0);
 }
 
-<===> case37/input.scss
+<===> case38/input.scss
 foo {
   c-1: rgba(0,0,0,-1);
   c0: rgba(0,0,0,0.0);
@@ -5517,7 +5529,7 @@ foo {
   c12: rgba(black,2);
 }
 
-<===> case37/output.css
+<===> case38/output.css
 foo {
   c-1: rgba(0, 0, 0, 0);
   c0: rgba(0, 0, 0, 0);
@@ -5552,7 +5564,7 @@ foo {
   c12: black;
 }
 
-<===> case38/input.scss
+<===> case39/input.scss
 foo {
   c-1: rgba(0,0,-1,1);
   c0: rgba(0,0,0,1);
@@ -5920,7 +5932,7 @@ foo {
   c101: rgba(0,0,101%,1);
 }
 
-<===> case38/output.css
+<===> case39/output.css
 foo {
   c-1: rgb(0, 0, 0);
   c0: rgb(0, 0, 0);
@@ -6288,7 +6300,7 @@ foo {
   c101: rgb(0, 0, 255);
 }
 
-<===> case39/input.scss
+<===> case40/input.scss
 foo {
   c-1: rgba(0,-1,0,1);
   c0: rgba(0,0,0,1);
@@ -6656,7 +6668,7 @@ foo {
   c101: rgba(0,101%,0,1);
 }
 
-<===> case39/output.css
+<===> case40/output.css
 foo {
   c-1: rgb(0, 0, 0);
   c0: rgb(0, 0, 0);
@@ -7024,7 +7036,7 @@ foo {
   c101: rgb(0, 255, 0);
 }
 
-<===> case40/input.scss
+<===> case41/input.scss
 foo {
   c-1: rgba(0,-1,0,1);
   c0: rgba(0,0,0,1);
@@ -7392,7 +7404,7 @@ foo {
   c101: rgba(101%,0,0,1);
 }
 
-<===> case40/output.css
+<===> case41/output.css
 foo {
   c-1: rgb(0, 0, 0);
   c0: rgb(0, 0, 0);
@@ -7760,7 +7772,7 @@ foo {
   c101: rgb(255, 0, 0);
 }
 
-<===> case41/input.scss
+<===> case42/input.scss
 @use "sass:color";
 foo {
   c0: color.adjust(hsl(100, 0%, 50%), $saturation: 0%);
@@ -7866,7 +7878,7 @@ foo {
   c100: color.adjust(hsl(100, 0%, 50%), $saturation: 100%);
 }
 
-<===> case41/output.css
+<===> case42/output.css
 foo {
   c0: hsl(100, 0%, 50%);
   c1: hsl(100, 1%, 50%);
@@ -7969,21 +7981,21 @@ foo {
   c100: hsl(100, 100%, 50%);
 }
 
-<===> case42/input.scss
+<===> case43/input.scss
 div {
   width: 3cm * 2in * 2in / 1cm / 1cm;
   width: 3cm * 2in / 1cm;
   width: 4cm * (12in / 3in);
 }
 
-<===> case42/output.css
+<===> case43/output.css
 div {
   width: 30.48in;
   width: 6in;
   width: 16cm;
 }
 
-<===> case43/input.scss
+<===> case44/input.scss
 :nth-child(2n + 3) {
   outer-whitespace: false;
 }
@@ -7993,7 +8005,7 @@ div {
   outer-whitespace: true;
 }
 
-<===> case43/output.css
+<===> case44/output.css
 :nth-child(2n+3) {
   outer-whitespace: false;
 }
@@ -8002,18 +8014,18 @@ div {
   outer-whitespace: true;
 }
 
-<===> case44/input.scss
+<===> case45/input.scss
 @charset "UTF-8";
 foo {
   bar: föö bâr; }
 
-<===> case44/output.css
+<===> case45/output.css
 @charset "UTF-8";
 foo {
   bar: föö bâr;
 }
 
-<===> case45/input.scss
+<===> case46/input.scss
 @function c() {
   @warn test;
   @return d;
@@ -8025,12 +8037,12 @@ a {
   }
 }
 
-<===> case45/output.css
+<===> case46/output.css
 a {
   b-c: d;
 }
 
-<===> case46/input.scss
+<===> case47/input.scss
 a {
   b: {
     @debug test;
@@ -8038,44 +8050,61 @@ a {
   }
 }
 
-<===> case46/output.css
+<===> case47/output.css
 a {
   b-c: d;
 }
 
-<===> case47/input.scss
+<===> case48/input.scss
+@mixin c() {
+  @warn test;
+  c: d;
+}
+
+a {
+  b: {
+    @include c();
+  }
+}
+
+<===> case48/output.css
+a {
+  b-c: d;
+}
+
+<===> case49/input.scss
 div {
   foo: center == "center";
   foo: (a b c) == (a b c);
   foo: a b c == a b c;
 }
 
-<===> case47/output.css
+<===> case49/output.css
 div {
   foo: true;
   foo: true;
   foo: a b false b c;
 }
 
-<===> case48/input.scss
-@import "http://fonts.googleapis.com/css?family=Droid+Sans";
-
-<===> case48/output.css
-@import "http://fonts.googleapis.com/css?family=Droid+Sans";
-
-<===> case49/input.scss
-div {
-  blah: image-url("hello.png", false);
-  blah: image-url("hello.png", true);
-}
-
-<===> case49/output.css
-div {
-  blah: image-url("hello.png", false);
-  blah: image-url("hello.png", true);
-}
-
 <===> case50/input.scss
+@import "http://fonts.googleapis.com/css?family=Droid+Sans";
+
+<===> case50/output.css
+@import "http://fonts.googleapis.com/css?family=Droid+Sans";
+
+<===> case51/input.scss
+div {
+  blah: image-url("hello.png", false);
+  blah: image-url("hello.png", true);
+}
+
+<===> case51/output.css
+div {
+  blah: image-url("hello.png", false);
+  blah: image-url("hello.png", true);
+}
+
+<===> case52/input.scss
 foo.a {
   width: 10px;
 }
@@ -8085,7 +8114,7 @@ bar {
   @extend foo;
 }
 
-<===> case50/output.css
+<===> case52/output.css
 foo.a, bar.a {
   width: 10px;
 }
@@ -8094,7 +8123,7 @@ bar {
   color: red;
 }
 
-<===> case51/input.scss
+<===> case53/input.scss
 @media screen {
   a {
     color: black;
@@ -8123,7 +8152,7 @@ a {
   }
 }
 
-<===> case51/output.css
+<===> case53/output.css
 @media screen {
   a {
     color: black;
@@ -8155,7 +8184,7 @@ a b {
   }
 }
 
-<===> case52/input.scss
+<===> case54/input.scss
 @use "sass:map";
 $tablet-portrait:                 768px;
 $tablet-landscape:                980px;
@@ -8192,7 +8221,7 @@ $grid-breakpoints-immobile: (
   }
 }
 
-<===> case52/output.css
+<===> case54/output.css
 @media only screen and (min-width: 768px) and (max-width: 980px) {
   body.immobile & {
     margin-bottom: 0;
@@ -8214,7 +8243,7 @@ $grid-breakpoints-immobile: (
   }
 }
 
-<===> case53/input.scss
+<===> case55/input.scss
 %foo {
 	@media screen and (min-width: 300px) {
 		max-width: 80%;
@@ -8225,14 +8254,14 @@ bar {
 	@extend %foo;
 }
 
-<===> case53/output.css
+<===> case55/output.css
 @media screen and (min-width: 300px) {
   bar {
     max-width: 80%;
   }
 }
 
-<===> case54/input.scss
+<===> case56/input.scss
 %x {
   width: 100px;
 
@@ -8247,44 +8276,12 @@ bar {
   .bar { @extend %y }
 }
 
-<===> case54/output.css
+<===> case56/output.css
 .foo {
   width: 100px;
 }
 .foo .bar {
   height: 100px;
-}
-
-<===> case55/input.scss
-@use "sass:math";
-test {
-  foo: 0.4999 math.round(0.4999);
-  bar: 0.49999 math.round(0.49999);
-  baz: 0.499999 math.round(0.499999);
-  baz: 0.49999999999 math.round(0.49999999999);
-}
-
-<===> case55/output.css
-test {
-  foo: 0.4999 0;
-  bar: 0.49999 0;
-  baz: 0.499999 0;
-  baz: 0.5 0;
-}
-
-<===> case56/input.scss
-@use "sass:math";
-test {
-  foo: 0.4999 math.round(0.4999);
-  bar: 0.49999 math.round(0.49999);
-  baz: 0.499999 math.round(0.499999);
-}
-
-<===> case56/output.css
-test {
-  foo: 0.4999 0;
-  bar: 0.49999 0;
-  baz: 0.499999 0;
 }
 
 <===> case57/input.scss
@@ -8293,6 +8290,7 @@ test {
   foo: 0.4999 math.round(0.4999);
   bar: 0.49999 math.round(0.49999);
   baz: 0.499999 math.round(0.499999);
+  baz: 0.49999999999 math.round(0.49999999999);
 }
 
 <===> case57/output.css
@@ -8300,64 +8298,36 @@ test {
   foo: 0.4999 0;
   bar: 0.49999 0;
   baz: 0.499999 0;
+  baz: 0.5 0;
 }
 
 <===> case58/input.scss
-div {
-  less: 3px < 3pt;
-  less: (1px / 1pt);
-  less: 23fu < 120;
-  eq: hello == hello;
-  eq: "hello" == hello;
-  eq: (1 2 3) == (1 2 3);
-  eq: (1 2 3) == (1, 2, 3);
-  eq: 23px == 23fu;
-  eq: 3.1in == 2.54cm;
-  eq: 2.54cm == 3.1in;
-  eq: (1in) == (1cm*1in/1cm);
-  x: 1in, (1cm*1in/1cm);
-  y: 1cm*1in/1in;
-  eq: (2cm*1in/2cm) == (1in*2cm/2cm);
-  blah: (1cm/1in);
-  in: (1in*2.54cm/1in);
-  lt: 1in < 2.54cm;
-  lt: 2.54cm < 1in;
-  lt: 5 < 4;
+@use "sass:math";
+test {
+  foo: 0.4999 math.round(0.4999);
+  bar: 0.49999 math.round(0.49999);
+  baz: 0.499999 math.round(0.499999);
 }
 
 <===> case58/output.css
-div {
-  less: true;
-  less: 0.75;
-  less: true;
-  eq: true;
-  eq: true;
-  eq: true;
-  eq: false;
-  eq: false;
-  eq: false;
-  eq: false;
-  eq: true;
-  x: 1in, 1in;
-  y: 0.3937007874in;
-  eq: true;
-  blah: 0.3937007874;
-  in: 2.54cm;
-  lt: false;
-  lt: false;
-  lt: false;
+test {
+  foo: 0.4999 0;
+  bar: 0.49999 0;
+  baz: 0.499999 0;
 }
 
 <===> case59/input.scss
-@use "sass:selector";
-foo {
-  test-01: selector.simple-selectors(".foo.bar");
-  test-02: selector.simple-selectors(".foo.bar.baz");
+@use "sass:math";
+test {
+  foo: 0.4999 math.round(0.4999);
+  bar: 0.49999 math.round(0.49999);
+  baz: 0.499999 math.round(0.499999);
 }
 
 <===> case59/output.css
-foo {
-  test-01: .foo, .bar;
-  test-02: .foo, .bar, .baz;
+test {
+  foo: 0.4999 0;
+  bar: 0.49999 0;
+  baz: 0.499999 0;
 }
 

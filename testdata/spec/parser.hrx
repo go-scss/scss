@@ -16,33 +16,97 @@ a e {
   f: g;
 }
 
-<===> case1/input.scss
+<===> case1/input.sass
+a[
+    b]
+  c: d;
+
+<===> case1/output.css
+a[b] {
+  c: d;
+}
+
+<===> case2/input.sass
+a[
+b]
+  c: d;
+
+<===> case2/output.css
+a[b] {
+  c: d;
+}
+
+<===> case3/input.sass
+a[
+  b]
+  c: d
+
+<===> case3/output.css
+a[b] {
+  c: d;
+}
+
+<===> case4/input.sass
+a
+  b: #{
+    c}
+
+  
+
+<===> case4/output.css
+a {
+  b: c;
+}
+
+<===> case5/input.sass
+a
+  b: #{c
+    }
+
+  
+
+<===> case5/output.css
+a {
+  b: c;
+}
+
+<===> case6/input.sass
+a
+  b: #{c
+    d}
+
+<===> case6/output.css
+a {
+  b: c d;
+}
+
+<===> case7/input.scss
 // Regression test for scssphp/scssphp#435
 a {
   b: true or 1 < 0 and false;
 }
 
-<===> case1/output.css
+<===> case7/output.css
 a {
   b: true;
 }
 
-<===> case2/input.scss
+<===> case8/input.scss
 // Regression test for sass/dart-sass#1855.
 \\{
   b: c;
 }
 
-<===> case2/output.css
+<===> case8/output.css
 \\ {
   b: c;
 }
 
-<===> case3/input.sass
+<===> case9/input.sass
 a, b
     c: d
 
-<===> case3/output.css
+<===> case9/output.css
 a, b {
   c: d;
 }
