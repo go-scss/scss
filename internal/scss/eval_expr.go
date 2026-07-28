@@ -263,9 +263,6 @@ func (e *evaluator) numberArith(op string, a, b *Number) Value {
 		val, num, den = simplifyUnits(val, num, den)
 		return &Number{Val: val, Numer: num, Denom: den}
 	case "/":
-		if b.Val == 0 {
-			return &Number{Val: math.Inf(sign(a.Val)), Numer: a.Numer, Denom: a.Denom}
-		}
 		val := a.Val / b.Val
 		num := append(append([]string(nil), a.Numer...), b.Denom...)
 		den := append(append([]string(nil), a.Denom...), b.Numer...)
@@ -280,13 +277,6 @@ func (e *evaluator) numberArith(op string, a, b *Number) Value {
 		return &Number{Val: val, Numer: num}
 	}
 	return nil
-}
-
-func sign(v float64) int {
-	if v < 0 {
-		return -1
-	}
-	return 1
 }
 
 // alignForAdd converts b into a's units for addition/subtraction, returning the

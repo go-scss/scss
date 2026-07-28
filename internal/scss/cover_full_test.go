@@ -380,11 +380,6 @@ func TestDefensiveDirectCalls(t *testing.T) {
 		t.Error("selectorList.String empty")
 	}
 
-	// sign() both directions.
-	if sign(-2) != -1 || sign(2) != 1 {
-		t.Error("sign")
-	}
-
 	// canStartValue rejects a leading "/" (grammar never feeds it one, but the
 	// enumeration branch is exercised directly).
 	if newParser("/x").canStartValue() {

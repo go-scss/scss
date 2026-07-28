@@ -92,6 +92,11 @@ var mathFns = map[string]builtinFunc{
 	"sin":         trig(math.Sin),
 	"cos":         trig(math.Cos),
 	"tan":         trig(math.Tan),
+	"asin":        invTrig(math.Asin),
+	"acos":        invTrig(math.Acos),
+	"atan":        invTrig(math.Atan),
+	"atan2":       fnAtan2,
+	"exp":         fnExp,
 	"pow":         fnPow,
 	"hypot":       fnHypot,
 	"log":         fnLog,
@@ -173,6 +178,28 @@ func fnPow(ci *callInfo) Value {
 	b := ci.num(0, "base")
 	x := ci.num(1, "exponent")
 	return numOut(math.Pow(b.Val, x.Val))
+}
+
+// invTrig implements the inverse trig functions (asin/acos/atan) that take a
+// unitless number and return degrees.
+func invTrig(f func(float64) float64) builtinFunc {
+	return func(ci *callInfo) Value {
+		n := ci.num(0, "number")
+		ci.e.assertNoUnits(n, "number")
+		return radiansToDegrees(f(n.Val))
+	}
+}
+
+func fnAtan2(ci *callInfo) Value {
+	y := ci.num(0, "y")
+	x := ci.num(1, "x")
+	return radiansToDegrees(math.Atan2(y.Val, x.convertValueToMatch(y)))
+}
+
+func fnExp(ci *callInfo) Value {
+	n := ci.num(0, "number")
+	ci.e.assertNoUnits(n, "number")
+	return numOut(math.Pow(math.E, n.Val))
 }
 
 func fnHypot(ci *callInfo) Value {
@@ -744,6 +771,31 @@ var metaFns = map[string]builtinFunc{
 	"content-exists": func(ci *callInfo) Value {
 		return boolean(ci.e.env.content != nil)
 	},
+	"calc-args": fnCalcArgs,
+}
+
+// fnCalcArgs implements meta.calc-args: the arguments of a calculation as a
+// comma-separated list. Operation nodes are returned as unquoted strings.
+func fnCalcArgs(ci *callInfo) Value {
+	v := ci.require(0, "calc")
+	c, ok := v.(*SassCalculation)
+	if !ok {
+		ci.e.fail("$calc: %s is not a calculation.", serializeValue(v, false))
+	}
+	elems := make([]Value, len(c.Args))
+	for i, a := range c.Args {
+		switch t := a.(type) {
+		case *Number:
+			elems[i] = t
+		case *SassString:
+			elems[i] = t
+		case *SassCalculation:
+			elems[i] = t
+		default:
+			elems[i] = &SassString{Text: serializeCalcTerm(a, false)}
+		}
+	}
+	return &List{Elements: elems, Sep: SepComma}
 }
 
 func fnTypeOf(ci *callInfo) Value {
@@ -767,6 +819,8 @@ func typeName(v Value) string {
 	case *List:
 		_ = x
 		return "list"
+	case *SassCalculation:
+		return "calculation"
 	}
 	return "unknown"
 }

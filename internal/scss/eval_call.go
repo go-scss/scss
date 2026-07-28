@@ -85,6 +85,13 @@ func (e *evaluator) evalCall(x *FuncCall) Value {
 	if fn := e.lookupFunc(x.Namespace, x.Name); fn != nil {
 		return e.callUserFunc(fn, x.Args)
 	}
+	// CSS math functions (calc, min, max, clamp, and the math functions) are
+	// evaluated as first-class calculations, not ordinary function calls.
+	if x.Namespace == "" {
+		if v, ok := e.tryCalculation(x); ok {
+			return v
+		}
+	}
 	// built-in?
 	if bf, ok := e.lookupBuiltin(x.Namespace, x.Name); ok {
 		pos, named := e.evalArgs(x.Args)
