@@ -281,6 +281,19 @@ func isLiteralNumberish(e Expr) bool {
 		return true
 	case *Unary:
 		return (v.Op == "-" || v.Op == "+") && isLiteralNumberish(v.Expr)
+	case *FuncCall:
+		// A bare CSS calculation (calc(), clamp(), sqrt(), sin(), …) counts as a
+		// numberish operand for the slash-list rule, exactly as dart-sass treats a
+		// CalculationExpression. The legacy-gated names (min/max/round/abs) parse
+		// as global Sass functions, not calculations, so they do NOT preserve the
+		// slash — matching dart, where "min(2, 4) / 3" divides but "sqrt(4) / 3"
+		// stays a slash-separated list.
+		if v.Namespace != "" {
+			return false
+		}
+		name := strings.ToLower(normIdent(v.Name))
+		_, isCalc := calcArity[name]
+		return isCalc && !calcLegacyGated[name]
 	}
 	return false
 }
@@ -814,6 +827,17 @@ func (p *parser) parseArgListOpt(allowEmptySecondArg bool) *ArgList {
 			arg.Value = p.parseArgValue()
 		}
 		p.ws()
+		// Microsoft-filter "single equals" operator: `alpha(c=d)`, `foo(a=b)`.
+		// dart-sass parses a lone "=" inside an argument as a singleEquals binary
+		// operation whose value serialises as "<left>=<right>", enabling legacy
+		// IE filter syntax to round-trip through a function call.
+		if p.peek() == '=' && p.peekAt(1) != '=' {
+			p.next()
+			p.ws()
+			rhs := p.parseArgValue()
+			arg.Value = &Binary{Op: "=", Left: arg.Value, Right: rhs}
+			p.ws()
+		}
 		if p.match("...") {
 			arg.Spread = true
 			p.ws()

@@ -33,7 +33,7 @@ func registerGlobals() {
 		"whiteness":      fnWhiteness,
 		"blackness":      fnBlackness,
 		"alpha":          fnAlpha,
-		"opacity":        fnAlpha,
+		"opacity":        fnOpacity,
 		"mix":            fnMix,
 		"grayscale":      fnGrayscale,
 		"invert":         fnInvert,
