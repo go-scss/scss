@@ -535,7 +535,7 @@ func (p *parser) parseIdentValue() Expr {
 // must be preserved rather than evaluated as Sass arithmetic.
 func isCalcLike(name string) bool {
 	switch strings.ToLower(name) {
-	case "calc", "clamp", "env":
+	case "env":
 		return true
 	}
 	return false

@@ -58,440 +58,452 @@ a {
 }
 
 <===> case7/input.scss
-a {b: abs($number: -3)}
+a {b: abs(-7px / 4em) * 1em}
 
 <===> case7/output.css
+a {
+  b: 1.75px;
+}
+
+<===> case8/input.scss
+a {b: abs($number: -3)}
+
+<===> case8/output.css
 a {
   b: 3;
 }
 
-<===> case8/input.scss
+<===> case9/input.scss
+a {
+  b: abs(1px + 2px - var(--c))
+}
+
+<===> case9/output.css
+a {
+  b: abs(3px - var(--c));
+}
+
+<===> case10/input.scss
 a {b: abs(0)}
 
-<===> case8/output.css
+<===> case10/output.css
 a {
   b: 0;
 }
 
-<===> case9/input.scss
-@function acos($arg) {@return $arg}
-a {b: acos(1)}
-
-<===> case9/output.css
-a {
-  b: 1;
-}
-
-<===> case10/input.scss
-@function asin($arg) {@return $arg}
-a {b: asin(1)}
-
-<===> case10/output.css
-a {
-  b: 1;
-}
-
 <===> case11/input.scss
-@function atan($arg) {@return $arg}
-a {b: atan(1)}
+a {b: AcOs(1)}
 
 <===> case11/output.css
 a {
-  b: 1;
+  b: 0deg;
 }
 
 <===> case12/input.scss
-@function atan2($arg) {@return $arg}
-a {b: atan2(1)}
+a {b: acos(2)}
 
 <===> case12/output.css
+a {
+  b: calc(NaN * 1deg);
+}
+
+<===> case13/input.scss
+a {b: acos(-2)}
+
+<===> case13/output.css
+a {
+  b: calc(NaN * 1deg);
+}
+
+<===> case14/input.scss
+a {b: acos(-1)}
+
+<===> case14/output.css
+a {
+  b: 180deg;
+}
+
+<===> case15/input.scss
+a {b: acos(1)}
+
+<===> case15/output.css
+a {
+  b: 0deg;
+}
+
+<===> case16/input.scss
+@function acos($arg) {@return $arg}
+a {b: acos(1)}
+
+<===> case16/output.css
 a {
   b: 1;
 }
 
-<===> case13/input.scss
+<===> case17/input.scss
+a {
+  b: acos(3px - 1px + var(--c));
+}
+
+<===> case17/output.css
+a {
+  b: acos(2px + var(--c));
+}
+
+<===> case18/input.scss
+a {b: acos(0)}
+
+<===> case18/output.css
+a {
+  b: 90deg;
+}
+
+<===> case19/input.scss
+a {b: aSiN(1)}
+
+<===> case19/output.css
+a {
+  b: 90deg;
+}
+
+<===> case20/input.scss
+a {b: asin(2)}
+
+<===> case20/output.css
+a {
+  b: calc(NaN * 1deg);
+}
+
+<===> case21/input.scss
+a {b: asin(-2)}
+
+<===> case21/output.css
+a {
+  b: calc(NaN * 1deg);
+}
+
+<===> case22/input.scss
+a {b: asin(-1)}
+
+<===> case22/output.css
+a {
+  b: -90deg;
+}
+
+<===> case23/input.scss
+a {b: asin(1)}
+
+<===> case23/output.css
+a {
+  b: 90deg;
+}
+
+<===> case24/input.scss
+@function asin($arg) {@return $arg}
+a {b: asin(1)}
+
+<===> case24/output.css
+a {
+  b: 1;
+}
+
+<===> case25/input.scss
+a {
+  b: asin(3px - 1px + var(--c));
+}
+
+<===> case25/output.css
+a {
+  b: asin(2px + var(--c));
+}
+
+<===> case26/input.scss
+a {b: asin(0)}
+
+<===> case26/output.css
+a {
+  b: 0deg;
+}
+
+<===> case27/input.scss
+a {b: AtAn(1)}
+
+<===> case27/output.css
+a {
+  b: 45deg;
+}
+
+<===> case28/input.scss
+a {b: atan(infinity)}
+
+<===> case28/output.css
+a {
+  b: 90deg;
+}
+
+<===> case29/input.scss
+a {b: atan(-infinity)}
+
+<===> case29/output.css
+a {
+  b: -90deg;
+}
+
+<===> case30/input.scss
+a {b: atan(1)}
+
+<===> case30/output.css
+a {
+  b: 45deg;
+}
+
+<===> case31/input.scss
+@function atan($arg) {@return $arg}
+a {b: atan(1)}
+
+<===> case31/output.css
+a {
+  b: 1;
+}
+
+<===> case32/input.scss
+a {
+  b: atan(3px - 1px + var(--c));
+}
+
+<===> case32/output.css
+a {
+  b: atan(2px + var(--c));
+}
+
+<===> case33/input.scss
+a {b: atan(0)}
+
+<===> case33/output.css
+a {
+  b: 0deg;
+}
+
+<===> case34/input.scss
+a {b: aTaN2(1, -10)}
+
+<===> case34/output.css
+a {
+  b: 174.2894068625deg;
+}
+
+<===> case35/input.scss
+@function atan2($arg) {@return $arg}
+a {b: atan2(1)}
+
+<===> case35/output.css
+a {
+  b: 1;
+}
+
+<===> case36/input.scss
+a {
+  b: atan2(3px - 1px + var(--c), -7px / 4em * 1em);
+}
+
+<===> case36/output.css
+a {
+  b: atan2(2px + var(--c), -1.75px);
+}
+
+<===> case37/input.scss
+a {b: atan2(1cm, -10mm)}
+
+<===> case37/output.css
+a {
+  b: 135deg;
+}
+
+<===> case38/input.scss
 a {
   b: atan2(1foo, 2bar);
 }
 
-<===> case13/output.css
+<===> case38/output.css
 a {
   b: atan2(1foo, 2bar);
 }
 
-<===> case14/input.scss
+<===> case39/input.scss
+a {b: atan2(1, -10)}
+
+<===> case39/output.css
+a {
+  b: 174.2894068625deg;
+}
+
+<===> case40/input.scss
 a {
   b: atan2(1px, 2bar);
 }
 
-<===> case14/output.css
+<===> case40/output.css
 a {
   b: atan2(1px, 2bar);
 }
 
-<===> case15/input.scss
+<===> case41/input.scss
 a {b: atan2(1px, 10%)}
 
-<===> case15/output.css
+<===> case41/output.css
 a {
   b: atan2(1px, 10%);
 }
 
-<===> case16/input.scss
+<===> case42/input.scss
+a {
+  b: atan2(1foo, 2foo);
+}
+
+<===> case42/output.css
+a {
+  b: 26.5650511771deg;
+}
+
+<===> case43/input.scss
 a {
   b: atan2(1%, 2%);
 }
 
-<===> case16/output.css
+<===> case43/output.css
 a {
   b: atan2(1%, 2%);
 }
 
-<===> case17/input.scss
+<===> case44/input.scss
+a {b: calc(e)}
+
+<===> case44/output.css
+a {
+  b: 2.7182818285;
+}
+
+<===> case45/input.scss
+a {b: calc(E)}
+
+<===> case45/output.css
+a {
+  b: 2.7182818285;
+}
+
+<===> case46/input.scss
+// Verify that e is equal to the maximum precision representable in a double.
+a {b: calc(e) == 2.718281828459045}
+
+<===> case46/output.css
+a {
+  b: true;
+}
+
+<===> case47/input.scss
+a {b: calc(e * 2)}
+
+<===> case47/output.css
+a {
+  b: 5.4365636569;
+}
+
+<===> case48/input.scss
+a {b: calc(e * (1% + 1px))}
+
+<===> case48/output.css
+a {
+  b: calc(2.7182818285 * (1% + 1px));
+}
+
+<===> case49/input.scss
 a {b: calc(infinity)}
 
-<===> case17/output.css
+<===> case49/output.css
 a {
   b: calc(infinity);
 }
 
-<===> case18/input.scss
-a {b: calc(infinity * (1% + 1px))}
+<===> case50/input.scss
+a {b: calc(InFiNiTy)}
 
-<===> case18/output.css
+<===> case50/output.css
+a {
+  b: calc(infinity);
+}
+
+<===> case51/input.scss
+a {b: calc(infinity * 2)}
+
+<===> case51/output.css
+a {
+  b: calc(infinity);
+}
+
+<===> case52/input.scss
+a {b: calc((1/0) * (1% + 1px))}
+
+<===> case52/output.css
 a {
   b: calc(infinity * (1% + 1px));
 }
 
-<===> case19/input.scss
+<===> case53/input.scss
+@use 'sass:math';
+$var: math.div(1, 0);
+a {b: calc($var * (1% + 1px))}
+
+<===> case53/output.css
+a {
+  b: calc(infinity * (1% + 1px));
+}
+
+<===> case54/input.scss
+a {b: calc(infinity * (1% + 1px))}
+
+<===> case54/output.css
+a {
+  b: calc(infinity * (1% + 1px));
+}
+
+<===> case55/input.scss
+@use 'sass:meta';
+a {b: meta.type-of(calc(infinity))}
+
+<===> case55/output.css
+a {
+  b: number;
+}
+
+<===> case56/input.scss
 a {b: calc(-infinity)}
 
-<===> case19/output.css
+<===> case56/output.css
 a {
   b: calc(-infinity);
 }
 
-<===> case20/input.scss
-a {b: calc(-infinity * (1% + 1px))}
-
-<===> case20/output.css
-a {
-  b: calc(-infinity * (1% + 1px));
-}
-
-<===> case21/input.scss
-a {b: calc(NaN)}
-
-<===> case21/output.css
-a {
-  b: calc(NaN);
-}
-
-<===> case22/input.scss
-a {b: calc(NaN * (1% + 1px))}
-
-<===> case22/output.css
-a {
-  b: calc(NaN * (1% + 1px));
-}
-
-<===> case23/input.scss
-a {b: calc(var(--c) / infinity)}
-
-<===> case23/output.css
-a {
-  b: calc(var(--c) / infinity);
-}
-
-<===> case24/input.scss
-a {b: calc(var(--c) / (infinity * 1px))}
-
-<===> case24/output.css
-a {
-  b: calc(var(--c) / (infinity * 1px));
-}
-
-<===> case25/input.scss
-a {b: calc(c)}
-
-<===> case25/output.css
-a {
-  b: calc(c);
-}
-
-<===> case26/input.scss
-a {b: calc(c * 2)}
-
-<===> case26/output.css
-a {
-  b: calc(c * 2);
-}
-
-<===> case27/input.scss
-a {b: calc(c())}
-
-<===> case27/output.css
-a {
-  b: calc(c());
-}
-
-<===> case28/input.scss
-// Although interpolation may return a value that looks like a valid `calc()`,
-// it's always treated as an unquoted string.
-a {b: calc(#{1px + 2px})}
-
-<===> case28/output.css
-a {
-  b: calc(3px);
-}
-
-<===> case29/input.scss
-// Interpolation is isolated to a single parenthesized context, so the
-// parentheses themselves are stripped off.
-a {b: calc((#{1px + 2px}))}
-
-<===> case29/output.css
-a {
-  b: calc((3px));
-}
-
-<===> case30/input.scss
-a {b: calc(var(--c))}
-
-<===> case30/output.css
-a {
-  b: calc(var(--c));
-}
-
-<===> case31/input.scss
-a {b: calc(1px / var(--c))}
-
-<===> case31/output.css
-a {
-  b: calc(1px / var(--c));
-}
-
-<===> case32/input.scss
-a {b: calc(1px - (2% - var(--c)))}
-
-<===> case32/output.css
-a {
-  b: calc(1px - (2% - var(--c)));
-}
-
-<===> case33/input.scss
-a {b: calc(1px - 2%)}
-
-<===> case33/output.css
-a {
-  b: calc(1px - 2%);
-}
-
-<===> case34/input.scss
-a {b: calc(1px - (2% + var(--c)))}
-
-<===> case34/output.css
-a {
-  b: calc(1px - (2% + var(--c)));
-}
-
-<===> case35/input.scss
-a {b: calc(1px + 2% - var(--c))}
-
-<===> case35/output.css
-a {
-  b: calc(1px + 2% - var(--c));
-}
-
-<===> case36/input.scss
-a {b: calc(1px + 2%)}
-
-<===> case36/output.css
-a {
-  b: calc(1px + 2%);
-}
-
-<===> case37/input.scss
-a {b: calc((#{c}))}
-
-<===> case37/output.css
-a {
-  b: calc((c));
-}
-
-<===> case38/input.scss
-a {b: calc(1px / (2 * var(--c)))}
-
-<===> case38/output.css
-a {
-  b: calc(1px / (2 * var(--c)));
-}
-
-<===> case39/input.scss
-a {b: calc(1px * (2 + var(--c)))}
-
-<===> case39/output.css
-a {
-  b: calc(1px * (2 + var(--c)));
-}
-
-<===> case40/input.scss
-a {b: "" + calc(1px + 1%)}
-
-<===> case40/output.css
-a {
-  b: "calc(1px + 1%)";
-}
-
-<===> case41/input.scss
-a {b: calc(1px * var(--c))}
-
-<===> case41/output.css
-a {
-  b: calc(1px * var(--c));
-}
-
-<===> case42/input.scss
-a {b: calc(1% + 1px)}
-
-<===> case42/output.css
-a {
-  b: calc(1% + 1px);
-}
-
-<===> case43/input.scss
-a {b: calc(1% + 1unknown)}
-
-<===> case43/output.css
-a {
-  b: calc(1% + 1unknown);
-}
-
-<===> case44/input.scss
-a {b: calc(1unknown + 1px)}
-
-<===> case44/output.css
-a {
-  b: calc(1unknown + 1px);
-}
-
-<===> case45/input.scss
-a {b: calc(1unknown + 1other)}
-
-<===> case45/output.css
-a {
-  b: calc(1unknown + 1other);
-}
-
-<===> case46/input.scss
-a {b: calc(1 + (var(--c)))}
-
-<===> case46/output.css
-a {
-  b: calc(1 + (var(--c)));
-}
-
-<===> case47/input.scss
-a {b: calc(((var(--c))))}
-
-<===> case47/output.css
-a {
-  b: calc(((var(--c))));
-}
-
-<===> case48/input.scss
-a {b: calc((d))}
-
-<===> case48/output.css
-a {
-  b: calc((d));
-}
-
-<===> case49/input.scss
-a {b: calc((#{"1 + 2"}))}
-
-<===> case49/output.css
-a {
-  b: calc((1 + 2));
-}
-
-<===> case50/input.scss
-a {b: calc((var(--c)))}
-
-<===> case50/output.css
-a {
-  b: calc((var(--c)));
-}
-
-<===> case51/input.scss
-a {b: calc(1% + 3px - 2px)}
-
-<===> case51/output.css
-a {
-  b: calc(1% + 3px - 2px);
-}
-
-<===> case52/input.scss
-a {b: calc(1% + 1px + 2px)}
-
-<===> case52/output.css
-a {
-  b: calc(1% + 1px + 2px);
-}
-
-<===> case53/input.scss
-a {b: calc(1 #{"+ 2"})}
-
-<===> case53/output.css
-a {
-  b: calc(1 + 2);
-}
-
-<===> case54/input.scss
-a {b: calc(#{"1 +"} 2)}
-
-<===> case54/output.css
-a {
-  b: calc(1 + 2);
-}
-
-<===> case55/input.scss
-a {b: calc(1 #{"+ 2 +"} 3)}
-
-<===> case55/output.css
-a {
-  b: calc(1 + 2 + 3);
-}
-
-<===> case56/input.scss
-a {b: calc(1 var(--c))}
-
-<===> case56/output.css
-a {
-  b: calc(1 var(--c));
-}
-
 <===> case57/input.scss
-a {b: calc(var(--c) 1)}
+a {b: calc(-iNfInItY)}
 
 <===> case57/output.css
 a {
-  b: calc(var(--c) 1);
+  b: calc(-infinity);
 }
 
 <===> case58/input.scss
-a {b: calc(1 var(--c) 2)}
+a {b: calc(-infinity * 2)}
 
 <===> case58/output.css
 a {
-  b: calc(1 var(--c) 2);
+  b: calc(-infinity);
 }
 
 <===> case59/input.scss
-a {b: calc-size(var(--foo))}
+a {b: calc((-1/0) * (1% + 1px))}
 
 <===> case59/output.css
 a {
-  b: calc-size(var(--foo));
+  b: calc(-infinity * (1% + 1px));
 }
 

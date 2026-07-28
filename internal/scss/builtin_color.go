@@ -209,15 +209,28 @@ func isNone(v Value) bool {
 // (calc(), var(), env(), min(), max(), clamp(), attr()) that a color function
 // must preserve verbatim rather than evaluate.
 func isSpecialValue(v Value) bool {
+	if _, ok := v.(*SassCalculation); ok {
+		return true
+	}
 	s, ok := v.(*SassString)
 	if !ok || s.Quoted {
 		return false
 	}
 	t := strings.ToLower(strings.TrimLeft(s.Text, " \t"))
-	for _, p := range []string{"calc(", "var(", "env(", "min(", "max(", "clamp(", "attr("} {
+	for _, p := range []string{"calc(", "var(", "env(", "min(", "max(", "clamp(", "attr(", "if("} {
 		if strings.HasPrefix(t, p) {
 			return true
 		}
+	}
+	return false
+}
+
+// legacyColorFunction reports whether name is a legacy comma-separated color
+// function whose special-value passthrough uses comma syntax.
+func legacyColorFunction(name string) bool {
+	switch strings.ToLower(name) {
+	case "rgb", "rgba", "hsl", "hsla":
+		return true
 	}
 	return false
 }
@@ -345,6 +358,16 @@ func (e *evaluator) parseChannels(functionName string, input Value, space *Color
 	}
 
 	if anySpecialValue(channels...) || (alphaValue != nil && isSpecialValue(alphaValue)) {
+		// Legacy comma-separated functions (rgb/hsl) reconstruct the comma form
+		// only when the channel count is exactly 3; a var() that might expand to a
+		// different number of channels is preserved verbatim in space form.
+		if legacyColorFunction(functionName) && len(channels) == 3 {
+			args := append([]Value(nil), channels...)
+			if alphaValue != nil {
+				args = append(args, alphaValue)
+			}
+			return &SassString{Text: functionString(functionName, args), Quoted: false}
+		}
 		return &SassString{Text: functionString(functionName, []Value{input}), Quoted: false}
 	}
 

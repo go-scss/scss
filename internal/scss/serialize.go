@@ -309,6 +309,8 @@ func serializeValue(v Value, compressed bool) string {
 		return serializeList(x, compressed)
 	case *Map:
 		return serializeMap(x, compressed)
+	case *SassCalculation:
+		return serializeCalculation(x, compressed)
 	}
 	return ""
 }
