@@ -169,6 +169,22 @@ func isEmptyContainer(n cssNode) bool {
 	return false
 }
 
+// lastVisibleIsStyleRule reports whether the last emitted (non-empty) child of a
+// container is a style rule. A node that bubbles into a container computes its
+// leading blank line from this — dart separates a rule from a preceding style
+// rule, and only a style rule, regardless of source nesting.
+func lastVisibleIsStyleRule(c cssContainer) bool {
+	ch := c.children()
+	for i := len(ch) - 1; i >= 0; i-- {
+		if isEmptyContainer(ch[i]) {
+			continue
+		}
+		_, ok := ch[i].(*cssStyleRule)
+		return ok
+	}
+	return false
+}
+
 func hasVisible(nodes []cssNode) bool {
 	for _, n := range nodes {
 		if !isEmptyContainer(n) {
