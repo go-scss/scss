@@ -43,16 +43,28 @@ $sel: selector.nest('.theme1, .theme2', '.something');
 }
 
 <===> case2/input.scss
+@use "sass:color";
+$endColor: red;
+test {
+  background-color: color.adjust($endColor, $lightness: -10%) \9;
+}
+
+<===> case2/output.css
+test {
+  background-color: #cc0000 \9 ;
+}
+
+<===> case3/input.scss
 div {
     top: 10px - 2 * 5px /* arrow size */;
 }
 
-<===> case2/output.css
+<===> case3/output.css
 div {
   top: 0px;
 }
 
-<===> case3/input.scss
+<===> case4/input.scss
 @mixin m() {
   .a & {
     @content;
@@ -66,7 +78,7 @@ div {
   }
 }
 
-<===> case3/output.css
+<===> case4/output.css
 :not(:last-of-type) {
   top: 10px;
 }
@@ -74,7 +86,7 @@ div {
   top: 10px;
 }
 
-<===> case4/input.scss
+<===> case5/input.scss
 @mixin will-change() {
   @supports (will-change: transform) {
     will-change: transform;
@@ -87,7 +99,7 @@ div {
   }
 }
 
-<===> case4/output.css
+<===> case5/output.css
 div a {
   top: 10px;
 }
@@ -97,7 +109,7 @@ div a {
   }
 }
 
-<===> case5/input.scss
+<===> case6/input.scss
 @mixin all-vip() {
   test: vip;
 }
@@ -131,7 +143,7 @@ div {
   @include icons-sprite(gold);
 }
 
-<===> case5/output.css
+<===> case6/output.css
 div {
   test: platinum;
   test: vip;
@@ -143,7 +155,7 @@ div {
   test: vip;
 }
 
-<===> case6/input.scss
+<===> case7/input.scss
 foo {
   @if true {
     foo: true;
@@ -162,13 +174,13 @@ foo {
   }
 }
 
-<===> case6/output.css
+<===> case7/output.css
 foo {
   foo: true;
   bar: true;
 }
 
-<===> case7/input.scss
+<===> case8/input.scss
 a {
   &.div,
   &.span {
@@ -176,12 +188,12 @@ a {
   }
 }
 
-<===> case7/output.css
+<===> case8/output.css
 a.div, a.span {
   display: block;
 }
 
-<===> case8/input.scss
+<===> case9/input.scss
 %foo {
   & > x { display: block; }
 }
@@ -191,19 +203,19 @@ a {
   > b > c { @extend %foo; }
 }
 
-<===> case8/output.css
+<===> case9/output.css
 a > b > c > x, a > b > x {
   display: block;
 }
 
-<===> case9/input.scss
+<===> case10/input.scss
 $i: 1;
 .foo#{-$i} { a:b }
 .foo-#{$i} { a:b }
 .foo#{-1} { a:b }
 .foo-#{1} { a:b }
 
-<===> case9/output.css
+<===> case10/output.css
 .foo-1 {
   a: b;
 }
@@ -220,7 +232,7 @@ $i: 1;
   a: b;
 }
 
-<===> case10/input.scss
+<===> case11/input.scss
 @use "sass:meta";
 $name: "lighten";
 $args: ("color": #ff0000, "amount": 10%);
@@ -228,12 +240,12 @@ foo {
   bar: meta.call($name, $args...);
 }
 
-<===> case10/output.css
+<===> case11/output.css
 foo {
   bar: #ff3333;
 }
 
-<===> case11/input.scss
+<===> case12/input.scss
 $a: red;
 
 @mixin f($a: $a) {
@@ -248,7 +260,7 @@ h2 {
   @include f(blue);
 }
 
-<===> case11/output.css
+<===> case12/output.css
 h1 {
   color: red;
 }
@@ -257,7 +269,25 @@ h2 {
   color: blue;
 }
 
-<===> case12/input.scss
+<===> case13/input.scss
+/** comment 1 */
+@import url("import-1");
+/** comment 2 */
+@import url("import-2");
+/** comment 3 */
+foo { bar: baz; }
+
+<===> case13/output.css
+/** comment 1 */
+@import url("import-1");
+/** comment 2 */
+@import url("import-2");
+/** comment 3 */
+foo {
+  bar: baz;
+}
+
+<===> case14/input.scss
 @font-face {
   font-family: 'My Font';
   font-style: normal;
@@ -273,7 +303,7 @@ h2 {
     url('my-font.svg#MyFont') format('svg');
 }
 
-<===> case12/output.css
+<===> case14/output.css
 @font-face {
   font-family: "My Font";
   font-style: normal;
@@ -281,26 +311,26 @@ h2 {
   src: local("My Font"), local("My-Font"), url("my-font.eot?#iefix") format("embedded-opentype"), url("my-font.woff") format("woff"), url("my-font.ttf") format("truetype"), url("my-font.svg#MyFont") format("svg");
 }
 
-<===> case13/input.scss
+<===> case15/input.scss
 $map: (-1px: 12);
 
-<===> case13/output.css
+<===> case15/output.css
 
 
-<===> case14/input.scss
+<===> case16/input.scss
 $foo: bar;
 a {
   foo: url($foo);
   foo: url(#{$foo});
 }
 
-<===> case14/output.css
+<===> case16/output.css
 a {
   foo: url(bar);
   foo: url(bar);
 }
 
-<===> case15/input.scss
+<===> case17/input.scss
 .a {
   top: 0;
 }
@@ -314,24 +344,52 @@ a {
   @extend .c;
 }
 
-<===> case15/output.css
+<===> case17/output.css
 .a, .d > .e, .b .c {
   top: 0;
 }
 
-<===> case16/input.scss
+<===> case18/input.scss
+div {
+ opacity: 1\9;
+ width: 500px\9;
+ color: #f00000\9\0;
+ color: #f00000\9\0\;
+}
+
+<===> case18/output.css
+div {
+  opacity: 1\9 ;
+  width: 500px\9 ;
+  color: #f00000\9 \0 ;
+  color: #f00000\9 \0 \;;
+}
+
+<===> case19/input.scss
 @use "sass:color";
 $foo: white;
 foo {
   bar: color.adjust($foo, $hue: -6deg, $lightness: -16%, $saturation: -7%);
 }
 
-<===> case16/output.css
+<===> case19/output.css
 foo {
   bar: rgb(84%, 84%, 84%);
 }
 
-<===> case17/input.scss
+<===> case20/input.scss
+foo {
+  display:expression("inline",
+    (this.innerHTML += (this.innerHTML.indexOf(",") == -1 ? ", " : "")),
+    this.runtimeStyle.display = "inline");
+}
+
+<===> case20/output.css
+foo {
+  display: expression("inline", (this.innerHTML += (this.innerHTML.indexOf(",") == -1 ? ", " : "")), this.runtimeStyle.display = "inline");
+}
+
+<===> case21/input.scss
 foo {
     bar: "x\79";
     baz: "#{x}\79";
@@ -339,7 +397,7 @@ foo {
     baz: "#{x}\a";
 }
 
-<===> case17/output.css
+<===> case21/output.css
 foo {
   bar: "xy";
   baz: "xy";
@@ -347,7 +405,7 @@ foo {
   baz: "x\a";
 }
 
-<===> case18/input.scss
+<===> case22/input.scss
 $foo: "foo";
 $bar: "bar";
 $baz: "baz";
@@ -355,12 +413,12 @@ $baz: "baz";
  * <div class="foo #{$foo}" bar="#{$bar}" baz="#{$baz}">
  */
 
-<===> case18/output.css
+<===> case22/output.css
 /*
  * <div class="foo foo" bar="bar" baz="baz">
  */
 
-<===> case19/input.scss
+<===> case23/input.scss
 @use "sass:string";
 $a: string.to-upper-case('abcd');
 $b: string.to-upper-case("abcd");
@@ -408,7 +466,7 @@ foo {
     content: "#{$c + string.unquote("")}";
 }
 
-<===> case19/output.css
+<===> case23/output.css
 foo {
   content: ABCD;
   content: ABCD;
@@ -448,19 +506,19 @@ foo {
   content: "ABCD";
 }
 
-<===> case20/input.scss
+<===> case24/input.scss
 // Input
 section {
     $w: null, 10px;
     width: $w;
 }
 
-<===> case20/output.css
+<===> case24/output.css
 section {
   width: 10px;
 }
 
-<===> case21/input.scss
+<===> case25/input.scss
 @function foo($args...) {
   @return bar($args...);
 }
@@ -473,12 +531,12 @@ section {
   result: foo();
 }
 
-<===> case21/output.css
+<===> case25/output.css
 .foo {
   result: "hi";
 }
 
-<===> case22/input.scss
+<===> case26/input.scss
 @use "sass:color";
 foo {
   @for $i from 0 through 360 {
@@ -486,7 +544,7 @@ foo {
   }
 }
 
-<===> case22/output.css
+<===> case26/output.css
 foo {
   i0: 0deg;
   i1: 1deg;
@@ -851,7 +909,7 @@ foo {
   i360: 0deg;
 }
 
-<===> case23/input.scss
+<===> case27/input.scss
 @use "sass:meta";
 @function foo($map) {
     @return $map;
@@ -871,7 +929,7 @@ b {
     }
 }
 
-<===> case23/output.css
+<===> case27/output.css
 a {
   this: is;
   my: map;
@@ -882,7 +940,7 @@ b {
   my: map;
 }
 
-<===> case24/input.scss
+<===> case28/input.scss
 @use "sass:meta";
 @function foo($this, $my) {
   @return (this: $this, my: $my);
@@ -902,7 +960,7 @@ b {
   }
 }
 
-<===> case24/output.css
+<===> case28/output.css
 a {
   this: is;
   my: map;
@@ -913,50 +971,50 @@ b {
   my: map;
 }
 
-<===> case25/input.scss
+<===> case29/input.scss
 /* precision: 0 */
 $foo: 123px;
 foo {
   bar: $foo;
 }
 
-<===> case25/output.css
+<===> case29/output.css
 /* precision: 0 */
 foo {
   bar: 123px;
 }
 
-<===> case26/input.scss
+<===> case30/input.scss
 div {
   content: #{0/0} a;
 }
 
-<===> case26/output.css
+<===> case30/output.css
 div {
   content: 0/0 a;
 }
 
-<===> case27/input.scss
+<===> case31/input.scss
 div {
   content: (((92px * 12) / 13px) * 1em) + 22em;
 }
 
-<===> case27/output.css
+<===> case31/output.css
 div {
   content: 106.9230769231em;
 }
 
-<===> case28/input.scss
+<===> case32/input.scss
 a {
   b: 3s + 101ms;
 }
 
-<===> case28/output.css
+<===> case32/output.css
 a {
   b: 3.101s;
 }
 
-<===> case29/input.scss
+<===> case33/input.scss
 $namespace: 'test-';
 $column: 1;
 
@@ -964,12 +1022,12 @@ $column: 1;
   width: 100% !important;
 }
 
-<===> case29/output.css
+<===> case33/output.css
 .test-1\/1 {
   width: 100% !important;
 }
 
-<===> case30/input.scss
+<===> case34/input.scss
 @use "sass:meta";
 
 $map: (
@@ -981,12 +1039,12 @@ $map: (
   content: meta.inspect($map);
 }
 
-<===> case30/output.css
+<===> case34/output.css
 .foo {
   content: (red: "bar", red: "baz");
 }
 
-<===> case31/input.scss
+<===> case35/input.scss
 @use "sass:meta";
 
 $count: 0;
@@ -1005,12 +1063,49 @@ $map: (
   content: meta.inspect($map);
 }
 
-<===> case31/output.css
+<===> case35/output.css
 .foo {
   content: (1: "bar", 2: "foo");
 }
 
-<===> case32/input.scss
+<===> case36/input.scss
+@use "sass:map";
+@use "sass:meta";
+
+$map1: ( red: 'literal', transparent: 'literal' );
+$map2: ( 'red': 'quoted', transparent: 'quoted' );
+$map3: ( #{re}#{d}: 'interpolated', #{trans}#{parent}: 'quoted' );
+
+foo {
+  content: meta.inspect($map1);
+  content: meta.inspect($map2);
+  content: meta.inspect($map3);
+}
+
+$merge1: map.merge($map1, $map2);
+$merge2: map.merge($map1, $map3);
+$merge3: map.merge($map2, $map3);
+
+bar {
+  content: meta.inspect($merge1);
+  content: meta.inspect($merge2);
+  content: meta.inspect($merge3);
+}
+
+<===> case36/output.css
+foo {
+  content: (red: "literal", transparent: "literal");
+  content: ("red": "quoted", transparent: "quoted");
+  content: (red: "interpolated", transparent: "quoted");
+}
+
+bar {
+  content: (red: "literal", transparent: "quoted", "red": "quoted");
+  content: (red: "literal", transparent: "literal", red: "interpolated", transparent: "quoted");
+  content: ("red": "interpolated", transparent: "quoted", transparent: "quoted");
+}
+
+<===> case37/input.scss
 @use "sass:meta";
 
 $map1: (
@@ -1028,37 +1123,37 @@ $map2: (
   content: meta.inspect($map2);
 }
 
-<===> case32/output.css
+<===> case37/output.css
 .foo {
   content: (red: "bar", "red": "foo");
   content: (red: "bar", "red": red);
 }
 
-<===> case33/input.scss
+<===> case38/input.scss
 el {
   @if ((& + '') == 'el') {
     content: "It works!";
   }
 }
 
-<===> case33/output.css
+<===> case38/output.css
 el {
   content: "It works!";
 }
 
-<===> case34/input.scss
+<===> case39/input.scss
 el {
   @if (& + '' == 'el') {
     content: "It works!";
   }
 }
 
-<===> case34/output.css
+<===> case39/output.css
 el {
   content: "It works!";
 }
 
-<===> case35/input.scss
+<===> case40/input.scss
 @use "sass:list";
 @function foo($initial, $args...) {
   $args: list.append($args, 3);
@@ -1081,13 +1176,33 @@ el {
   baz: baz(1, 2);
 }
 
-<===> case35/output.css
+<===> case40/output.css
 .test {
   foo: 3;
   baz: 2;
 }
 
-<===> case36/input.scss
+<===> case41/input.scss
+@use "sass:meta";
+
+$foo: ((4, 5), 6, (7 8) 9);
+
+bar {
+  a: $foo;
+  f: 1 2 3 + $foo;
+  b: 1, 2, 3 + (2 ($foo));
+  x: meta.inspect($foo);
+}
+
+<===> case41/output.css
+bar {
+  a: 4, 5, 6, 7 8 9;
+  f: 1 2 34, 5, 6, 7 8 9;
+  b: 1, 2, 32 4, 5, 6, 7 8 9;
+  x: (4, 5), 6, (7 8) 9;
+}
+
+<===> case42/input.scss
 @use "sass:meta";
 
 $keyword: foobar;
@@ -1114,7 +1229,7 @@ $keyword: foobar;
 // Ruby Sass:  "Mixin test1 doesn't have an argument named $keyword."
 // LibSass  :  /*foo, bar, baz, $keyword: keyword*/
 
-<===> case36/output.css
+<===> case42/output.css
 /*()*/
 /*foo, bar, baz*/
 /*()*/
@@ -1122,21 +1237,38 @@ $keyword: foobar;
 /*(keyword: keyword)*/
 /*foo, bar, baz*/
 
-<===> case37/input.scss
+<===> case43/input.scss
 foo {
   bar: #{0/0};
   bar: #{0/1};
   bar: #{1/2};
 }
 
-<===> case37/output.css
+<===> case43/output.css
 foo {
   bar: 0/0;
   bar: 0/1;
   bar: 1/2;
 }
 
-<===> case38/input.scss
+<===> case44/input.scss
+@use "sass:string";
+@function test($pos) {
+  @return test-#{$pos};
+}
+
+.foo {
+  content: test(string.slice('scale-0', 7));   // Nope
+  content: test-#{string.slice('scale-0', 7)}; // Yep
+}
+
+<===> case44/output.css
+.foo {
+  content: test-0;
+  content: test-0;
+}
+
+<===> case45/input.scss
 foo {
   &.bar, /* */
   &.baz {
@@ -1144,12 +1276,12 @@ foo {
   }
 }
 
-<===> case38/output.css
+<===> case45/output.css
 foo.bar, foo.baz {
   color: red;
 }
 
-<===> case39/input.scss
+<===> case46/input.scss
 foo {
   color: blue;
 
@@ -1190,7 +1322,7 @@ foo {
   }
 }
 
-<===> case39/output.css
+<===> case46/output.css
 foo {
   color: blue;
 }
@@ -1219,7 +1351,7 @@ bar baz {
   color: red;
 }
 
-<===> case40/input.scss
+<===> case47/input.scss
 foo {
   color: red;
 
@@ -1240,7 +1372,7 @@ foo {
   }
 }
 
-<===> case40/output.css
+<===> case47/output.css
 foo {
   color: red;
 }
@@ -1258,7 +1390,7 @@ foo bar {
   }
 }
 
-<===> case41/input.scss
+<===> case48/input.scss
 foo {
   @at-root {
     @media print {
@@ -1275,7 +1407,7 @@ foo {
   }
 }
 
-<===> case41/output.css
+<===> case48/output.css
 @media print {
   bar {
     color: red;
@@ -1287,7 +1419,7 @@ foo {
   }
 }
 
-<===> case42/input.scss
+<===> case49/input.scss
 foo {
   color: blue;
 
@@ -1314,7 +1446,7 @@ foo {
   }
 }
 
-<===> case42/output.css
+<===> case49/output.css
 foo {
   color: blue;
 }
@@ -1335,7 +1467,7 @@ bar {
   color: red;
 }
 
-<===> case43/input.scss
+<===> case50/input.scss
 foo {
   -quotes: 'this-string' == 'this-string';
   -quotes: this-string == 'this-string';
@@ -1349,7 +1481,7 @@ foo {
   foo: "'this-string'";
 }
 
-<===> case43/output.css
+<===> case50/output.css
 foo {
   -quotes: true;
   -quotes: true;
@@ -1363,35 +1495,35 @@ foo {
   foo: "'this-string'";
 }
 
-<===> case44/input.scss
+<===> case51/input.scss
 a {
   width: 4.0px;
   height: 3.00px;
   opacity: 1.0;
 }
 
-<===> case44/output.css
+<===> case51/output.css
 a {
   width: 4px;
   height: 3px;
   opacity: 1;
 }
 
-<===> case45/input.scss
+<===> case52/input.scss
 @media all and (max-width: 768px) {
   @media only screen {
     a { b: c; }
   }
 }
 
-<===> case45/output.css
+<===> case52/output.css
 @media only screen and (max-width: 768px) {
   a {
     b: c;
   }
 }
 
-<===> case46/input.scss
+<===> case53/input.scss
 div {
   transition-property:
     border-color,
@@ -1399,22 +1531,22 @@ div {
     color;
 }
 
-<===> case46/output.css
+<===> case53/output.css
 div {
   transition-property: border-color, box-shadow, color;
 }
 
-<===> case47/input.scss
+<===> case54/input.scss
 div::before {
   content: #{"\""+\e600+"\""};
 }
 
-<===> case47/output.css
+<===> case54/output.css
 div::before {
   content: "\e600";
 }
 
-<===> case48/input.scss
+<===> case55/input.scss
 @use "sass:list";
 $var: 1;
 $list: 2, 3;
@@ -1431,7 +1563,7 @@ div {
  a: $nested-list;
 }
 
-<===> case48/output.css
+<===> case55/output.css
 div {
   a: 1;
   a: 2, 3;
@@ -1439,126 +1571,27 @@ div {
   a: 1 2, 3;
 }
 
-<===> case49/input.scss
+<===> case56/input.scss
 @foo bar
 
-<===> case49/output.css
+<===> case56/output.css
 @foo bar;
 
-<===> case50/input.scss
+<===> case57/input.scss
 $a: 1, 2
 
-<===> case50/output.css
-
-
-<===> case51/input.scss
-@debug("foo")
-
-<===> case51/output.css
-
-
-<===> case52/input.scss
-@import "http://foo"
-
-<===> case52/output.css
-@import "http://foo";
-
-<===> case53/input.scss
-@mixin foo() {
-  a { b: c; }
-}
-@include foo
-
-<===> case53/output.css
-a {
-  b: c;
-}
-
-<===> case54/input.scss
-$a: 1 2
-
-<===> case54/output.css
-
-
-<===> case55/input.scss
-@warning "foo"
-
-<===> case55/output.css
-@warning "foo";
-
-<===> case56/input.scss
-.a.b .c {
-  top: 0;
-}
-.a {
-  @extend .b;
-}
-.a .d {
-  @extend .c;
-}
-
-<===> case56/output.css
-.a.b .c, .a .c, .a .d {
-  top: 0;
-}
-
-<===> case57/input.scss
-.foo {
-  yellow: yellow;
-  red: red;
-  blue: blue;
-  white: white;
-  black: black;
-  eval: if(red, yellow, null);
-}
-
 <===> case57/output.css
-.foo {
-  yellow: yellow;
-  red: red;
-  blue: blue;
-  white: white;
-  black: black;
-  eval: yellow;
-}
+
 
 <===> case58/input.scss
-@use "sass:list";
-@function double($value) {
-  @return $value * 2;
-}
-
-@mixin dummy-bug($args...) {
-  @for $i from 1 through list.length($args) {
-    $args: list.set-nth($args, $i, double(list.nth($args, $i)));
-  }
-
-  content: $args;
-}
-
-.foo {
-  @include dummy-bug(1, 2, 3, 4);
-}
+@debug("foo")
 
 <===> case58/output.css
-.foo {
-  content: 2, 4, 6, 8;
-}
+
 
 <===> case59/input.scss
-@use "sass:list";
-$EQ-Selectors: ();
-
-.el {
-    $EQ-Selectors: list.append($EQ-Selectors, &, 'comma') !global;
-}
-
-html:before {
-  content: "#{$EQ-Selectors}";
-}
+@import "http://foo"
 
 <===> case59/output.css
-html:before {
-  content: ".el";
-}
+@import "http://foo";
 

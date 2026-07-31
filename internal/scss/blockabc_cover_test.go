@@ -93,15 +93,18 @@ func TestIndentedBracketContinuation(t *testing.T) {
 	if !strings.Contains(res.CSS, "if(css(): c)") {
 		t.Errorf("got %q", res.CSS)
 	}
-	// bracketDelta must ignore brackets inside strings and comments.
-	if d := bracketDelta(`a: "([{" // )]}`); d != 0 {
-		t.Errorf("bracketDelta strings/comments: %d", d)
+	// scanState must ignore brackets inside strings and comments.
+	if d, s := scanState(`a: "([{" // )]}`); d != 0 || s {
+		t.Errorf("scanState strings/comments: %d %v", d, s)
 	}
-	if d := bracketDelta("a: b(/* ) */ c)"); d != 0 {
-		t.Errorf("bracketDelta block comment: %d", d)
+	if d, s := scanState("a: b(/* ) */ c)"); d != 0 || s {
+		t.Errorf("scanState block comment: %d %v", d, s)
 	}
-	if d := bracketDelta("a) b("); d != 0 {
-		t.Errorf("bracketDelta balanced: %d", d)
+	if d, s := scanState("a) b("); d != 1 || s {
+		t.Errorf("scanState clamp+open: %d %v", d, s)
+	}
+	if d, s := scanState(`a: "unterminated`); d != 0 || !s {
+		t.Errorf("scanState open string: %d %v", d, s)
 	}
 }
 
@@ -421,19 +424,14 @@ func TestSpecialFnBranchCoverage(t *testing.T) {
 }
 
 func TestCompileHelpersCoverage(t *testing.T) {
-	if bracketDelta("a: b) c(") != 0 {
-		t.Error("bracketDelta unbalanced net zero")
+	if d, _ := scanState("a: b) c("); d != 1 {
+		t.Error("scanState unbalanced clamp")
 	}
-	if bracketDelta("a / b") != 0 {
-		t.Error("bracketDelta lone slash")
+	if d, _ := scanState("a / b"); d != 0 {
+		t.Error("scanState lone slash")
 	}
-	if bracketDelta("x // ( comment") != 0 {
-		t.Error("bracketDelta line comment")
-	}
-	// A continuation line beginning with a closing bracket clamps depth to zero.
-	got := joinBracketContinuations([]string{")a", "b"})
-	if len(got) != 2 {
-		t.Errorf("joinBracketContinuations clamp: %v", got)
+	if d, _ := scanState("x // ( comment"); d != 0 {
+		t.Error("scanState line comment")
 	}
 }
 
@@ -503,8 +501,8 @@ func TestNamespacedIdentValue(t *testing.T) {
 func TestBracketDeltaEscape(t *testing.T) {
 	// A backslash-escaped quote inside a string does not close it; the "(" is
 	// inside the string and ignored, so "(" ... ")" nets to zero.
-	if d := bracketDelta(`("a\"b")`); d != 0 {
-		t.Errorf("bracketDelta escape: %d", d)
+	if d, s := scanState(`("a\"b")`); d != 0 || s {
+		t.Errorf("scanState escape: %d %v", d, s)
 	}
 }
 

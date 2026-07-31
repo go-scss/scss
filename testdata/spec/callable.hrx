@@ -203,188 +203,169 @@ d {
   c: 1;
 }
 
-<===> case18/input.scss
+<===> case18/input.sass
 @function a($b
-  , $c){}
+  , $c)
 
 <===> case18/output.css
 
 
 <===> case19/input.scss
-@function a($b, $c:
-    d){}
+@function a($b
+  , $c){}
 
 <===> case19/output.css
 
 
-<===> case20/input.scss
-@function a($b,
-  $c){}
+<===> case20/input.sass
+@function a($b, $c:
+    d)
 
 <===> case20/output.css
 
 
 <===> case21/input.scss
-@function a($b...
-  ){}
+@function a($b, $c:
+    d){}
 
 <===> case21/output.css
 
 
-<===> case22/input.scss
-@function a(
-  $b, $c){}
+<===> case22/input.sass
+@function a($b,
+  $c)
 
 <===> case22/output.css
 
 
 <===> case23/input.scss
-@function a($b, $c
-    :d){}
+@function a($b,
+  $c){}
 
 <===> case23/output.css
 
 
-<===> case24/input.scss
-@function a($b
-  ...){}
+<===> case24/input.sass
+@function a($b...
+  )
 
 <===> case24/output.css
 
 
 <===> case25/input.scss
-@function a(
-  $b...){}
+@function a($b...
+  ){}
 
 <===> case25/output.css
 
 
-<===> case26/input.scss
-@function a($b, $c
-  ){}
+<===> case26/input.sass
+@function a(
+  $b, $c)
 
 <===> case26/output.css
 
 
-<===> case27/input.sass
-@function a($b, $c)
-  @return null
-$d: a(e
-  , f)
+<===> case27/input.scss
+@function a(
+  $b, $c){}
 
 <===> case27/output.css
 
 
-<===> case28/input.scss
-@function a($b, $c){@return null}
-$d: a(e
-  , f)
+<===> case28/input.sass
+@function a($b, $c
+    :d)
 
 <===> case28/output.css
 
 
-<===> case29/input.sass
-@function a($b, $c:d)
-  @return null
-$e: a(f, $c:
-  g)
+<===> case29/input.scss
+@function a($b, $c
+    :d){}
 
 <===> case29/output.css
 
 
-<===> case30/input.scss
-@function a($b, $c:d){@return null}
-$e: a(f, $c:
-  g)
+<===> case30/input.sass
+@function a($b
+  ...)
 
 <===> case30/output.css
 
 
-<===> case31/input.sass
-@function a($b, $c)
-  @return null
-$d: a(e,
-  f)
+<===> case31/input.scss
+@function a($b
+  ...){}
 
 <===> case31/output.css
 
 
-<===> case32/input.scss
-@function a($b, $c){@return null}
-$d: a(e,
-  f)
+<===> case32/input.sass
+@function a(
+  $b...)
 
 <===> case32/output.css
 
 
-<===> case33/input.sass
-@function a($b, $c)
-  @return null
-$d: e, f
-$g: a($d...
-  )
+<===> case33/input.scss
+@function a(
+  $b...){}
 
 <===> case33/output.css
 
 
-<===> case34/input.scss
-@function a($b, $c){@return null}
-$d: e f;
-$g: a($d...
+<===> case34/input.sass
+@function a($b, $c
   )
 
 <===> case34/output.css
 
 
-<===> case35/input.sass
-@function a($b, $c)
-  @return null
-$d: a(
-  e, f)
+<===> case35/input.scss
+@function a($b, $c
+  ){}
 
 <===> case35/output.css
 
 
-<===> case36/input.scss
-@function a($b, $c){@return null}
-$d: a(
-  e, f)
+<===> case36/input.sass
+@function a($b, $c: d
+    e)
 
 <===> case36/output.css
 
 
 <===> case37/input.sass
-@function a($b, $c:d)
+@function a($b, $c)
   @return null
-$e: a(f, $c
-  :g)
+$d: a(e
+  , f)
 
 <===> case37/output.css
 
 
 <===> case38/input.scss
-@function a($b, $c:d){@return null}
-$e: a(f, $c
-  :g)
+@function a($b, $c){@return null}
+$d: a(e
+  , f)
 
 <===> case38/output.css
 
 
 <===> case39/input.sass
-@function a($b, $c)
+@function a($b, $c:d)
   @return null
-$d: e, f
-$g: a($d
-  ...)
+$e: a(f, $c:
+  g)
 
 <===> case39/output.css
 
 
 <===> case40/input.scss
-@function a($b, $c){@return null}
-$d: e f;
-$g: a($d
-  ...)
+@function a($b, $c:d){@return null}
+$e: a(f, $c:
+  g)
 
 <===> case40/output.css
 
@@ -392,108 +373,162 @@ $g: a($d
 <===> case41/input.sass
 @function a($b, $c)
   @return null
-$d: e, f
-$g: a(
-  $d...)
+$d: a(e,
+  f)
 
 <===> case41/output.css
 
 
 <===> case42/input.scss
 @function a($b, $c){@return null}
-$d: e f;
-$g: a(
-  $d...)
+$d: a(e,
+  f)
 
 <===> case42/output.css
 
 
 <===> case43/input.sass
-@function a($b, $c:d)
+@function a($b, $c)
   @return null
-$e: a(f, $c: g
+$d: e, f
+$g: a($d...
   )
 
 <===> case43/output.css
 
 
 <===> case44/input.scss
-@function a($b, $c:d){@return null}
-$e: a(f, $c: g
+@function a($b, $c){@return null}
+$d: e f;
+$g: a($d...
   )
 
 <===> case44/output.css
 
 
 <===> case45/input.sass
-@function a($b, $c:d)
+@function a($b, $c)
   @return null
-$e: a(f, $c: g
-  h)
+$d: a(
+  e, f)
 
 <===> case45/output.css
 
 
 <===> case46/input.scss
-@mixin a($b
-  , $c){}
+@function a($b, $c){@return null}
+$d: a(
+  e, f)
 
 <===> case46/output.css
 
 
-<===> case47/input.scss
-@mixin a($b, $c:
-    d){}
+<===> case47/input.sass
+@function a($b, $c:d)
+  @return null
+$e: a(f, $c
+  :g)
 
 <===> case47/output.css
 
 
 <===> case48/input.scss
-@mixin a($b,
-  $c){}
+@function a($b, $c:d){@return null}
+$e: a(f, $c
+  :g)
 
 <===> case48/output.css
 
 
-<===> case49/input.scss
-@mixin a($b...
-  ){}
+<===> case49/input.sass
+@function a($b, $c)
+  @return null
+$d: e, f
+$g: a($d
+  ...)
 
 <===> case49/output.css
 
 
 <===> case50/input.scss
-@mixin a(
-  $b, $c){}
+@function a($b, $c){@return null}
+$d: e f;
+$g: a($d
+  ...)
 
 <===> case50/output.css
 
 
-<===> case51/input.scss
-@mixin a($b, $c
-    :d){}
+<===> case51/input.sass
+@function a($b, $c)
+  @return null
+$d: e, f
+$g: a(
+  $d...)
 
 <===> case51/output.css
 
 
 <===> case52/input.scss
-@mixin a($b
-  ...){}
+@function a($b, $c){@return null}
+$d: e f;
+$g: a(
+  $d...)
 
 <===> case52/output.css
 
 
-<===> case53/input.scss
-@mixin a(
-  $b...){}
+<===> case53/input.sass
+@function a($b, $c:d)
+  @return null
+$e: a(f, $c: g
+  )
 
 <===> case53/output.css
 
 
 <===> case54/input.scss
-@mixin a($b, $c
-  ){}
+@function a($b, $c:d){@return null}
+$e: a(f, $c: g
+  )
 
 <===> case54/output.css
+
+
+<===> case55/input.sass
+@function a($b, $c:d)
+  @return null
+$e: a(f, $c: g
+  h)
+
+<===> case55/output.css
+
+
+<===> case56/input.sass
+@mixin a($b
+  , $c)
+
+<===> case56/output.css
+
+
+<===> case57/input.scss
+@mixin a($b
+  , $c){}
+
+<===> case57/output.css
+
+
+<===> case58/input.sass
+@mixin a($b, $c:
+    d)
+
+<===> case58/output.css
+
+
+<===> case59/input.scss
+@mixin a($b, $c:
+    d){}
+
+<===> case59/output.css
 
 

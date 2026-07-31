@@ -14,27 +14,23 @@ a {
 /* a */
 
 <===> case2/input.sass
-// a
+// 
+  a 
 
 <===> case2/output.css
 
 
 <===> case3/input.sass
-@use "sass:list"
-a 
-  b: list.append(c d,
-     e)
+// a
 
 <===> case3/output.css
-a {
-  b: c d e;
-}
+
 
 <===> case4/input.sass
 @use "sass:list"
 a 
-  b: list.append(
-    c d, e)
+  b: list.append(c d,
+     e)
 
 <===> case4/output.css
 a {
@@ -44,8 +40,8 @@ a {
 <===> case5/input.sass
 @use "sass:list"
 a 
-  b: list.append(c
-     d, e)
+  b: list.append(
+    c d, e)
 
 <===> case5/output.css
 a {
@@ -55,8 +51,8 @@ a {
 <===> case6/input.sass
 @use "sass:list"
 a 
-  b: list.append(c d
-     , e)
+  b: list.append(c
+     d, e)
 
 <===> case6/output.css
 a {
@@ -66,192 +62,195 @@ a {
 <===> case7/input.sass
 @use "sass:list"
 a 
-  b: list.append(c d, e
-     )
+  b: list.append(c d
+     , e)
 
 <===> case7/output.css
 a {
   b: c d e;
 }
 
-<===> case8/input.scss
-a {b: if(css(!@#$%^&*(){}[]_-+=|:;''""<>,./?): c)}
+<===> case8/input.sass
+@use "sass:list"
+a 
+  b: list.append(c d, e
+     )
 
 <===> case8/output.css
+a {
+  b: c d e;
+}
+
+<===> case9/input.scss
+a {b: if(css(!@#$%^&*(){}[]_-+=|:;''""<>,./?): c)}
+
+<===> case9/output.css
 a {
   b: if(css(!@#$%^&*(){}[]_-+=|:;''""<>,./?): c);
 }
 
-<===> case9/input.scss
+<===> case10/input.scss
 a {b: if(css(): c; else: d)}
 
-<===> case9/output.css
+<===> case10/output.css
 a {
   b: if(css(): c; else: d);
 }
 
-<===> case10/input.scss
+<===> case11/input.scss
 a {b: if(css(): c d e)}
 
-<===> case10/output.css
+<===> case11/output.css
 a {
   b: if(css(): c d e);
 }
 
-<===> case11/input.scss
+<===> case12/input.scss
 a {b: if(css(): "c")}
 
-<===> case11/output.css
+<===> case12/output.css
 a {
   b: if(css(): "c");
 }
 
-<===> case12/input.scss
+<===> case13/input.scss
 a {b: if(css(): c)}
 
-<===> case12/output.css
+<===> case13/output.css
 a {
   b: if(css(): c);
 }
 
-<===> case13/input.scss
+<===> case14/input.scss
 a {b: if(css(1) and (css(2)): c)}
 
-<===> case13/output.css
+<===> case14/output.css
 a {
   b: if(css(1) and (css(2)): c);
 }
 
-<===> case14/input.scss
+<===> case15/input.scss
 a {b: if(css(1) and css(2): c)}
 
-<===> case14/output.css
+<===> case15/output.css
 a {
   b: if(css(1) and css(2): c);
 }
 
-<===> case15/input.scss
+<===> case16/input.scss
 a {b: if((css(1)) and css(2): c)}
 
-<===> case15/output.css
+<===> case16/output.css
 a {
   b: if((css(1)) and css(2): c);
 }
 
-<===> case16/input.scss
+<===> case17/input.scss
 a {b: if(css(1) and css(2) and css(3): c)}
 
-<===> case16/output.css
+<===> case17/output.css
 a {
   b: if(css(1) and css(2) and css(3): c);
 }
 
-<===> case17/input.scss
+<===> case18/input.scss
 a {b: if(css(#{argument}): c)}
 
-<===> case17/output.css
+<===> case18/output.css
 a {
   b: if(css(argument): c);
 }
 
-<===> case18/input.scss
+<===> case19/input.scss
 a {b: if(#{css}(): c)}
 
-<===> case18/output.css
+<===> case19/output.css
 a {
   b: if(css(): c);
 }
 
-<===> case19/input.scss
+<===> case20/input.scss
 a {b: if(not css(): c)}
 
-<===> case19/output.css
+<===> case20/output.css
 a {
   b: if(not css(): c);
 }
 
-<===> case20/input.scss
+<===> case21/input.scss
 a {b: if(not (css()): c)}
 
-<===> case20/output.css
+<===> case21/output.css
 a {
   b: if(not (css()): c);
 }
 
-<===> case21/input.scss
+<===> case22/input.scss
 a {b: if(css(1) or css(2): c)}
 
-<===> case21/output.css
+<===> case22/output.css
 a {
   b: if(css(1) or css(2): c);
 }
 
-<===> case22/input.scss
+<===> case23/input.scss
 a {b: if(css(1) or (css(2)): c)}
 
-<===> case22/output.css
+<===> case23/output.css
 a {
   b: if(css(1) or (css(2)): c);
 }
 
-<===> case23/input.scss
+<===> case24/input.scss
 a {b: if((css(1)) or css(2): c)}
 
-<===> case23/output.css
+<===> case24/output.css
 a {
   b: if((css(1)) or css(2): c);
 }
 
-<===> case24/input.scss
+<===> case25/input.scss
 a {b: if(css(1) or css(2) or css(3): c)}
 
-<===> case24/output.css
+<===> case25/output.css
 a {
   b: if(css(1) or css(2) or css(3): c);
 }
 
-<===> case25/input.scss
+<===> case26/input.scss
 a {b: if((css(1) and css(2)): c)}
 
-<===> case25/output.css
+<===> case26/output.css
 a {
   b: if((css(1) and css(2)): c);
 }
 
-<===> case26/input.scss
+<===> case27/input.scss
 a {b: if((css()): c)}
 
-<===> case26/output.css
+<===> case27/output.css
 a {
   b: if((css()): c);
 }
 
-<===> case27/input.scss
+<===> case28/input.scss
 a {b: if((not css()): c)}
 
-<===> case27/output.css
+<===> case28/output.css
 a {
   b: if((not css()): c);
 }
 
-<===> case28/input.scss
+<===> case29/input.scss
 a {b: if((css(1) or css(2)): c)}
 
-<===> case28/output.css
+<===> case29/output.css
 a {
   b: if((css(1) or css(2)): c);
 }
 
-<===> case29/input.scss
-a {b: if(else: c)}
-
-<===> case29/output.css
-a {
-  b: c;
-}
-
 <===> case30/input.scss
-a {b: if(else: c; else: d)}
+a {b: if(else: c)}
 
 <===> case30/output.css
 a {
@@ -259,95 +258,95 @@ a {
 }
 
 <===> case31/input.scss
-a {b: if(css() attr(--and-clause): c)}
+a {b: if(else: c; else: d)}
 
 <===> case31/output.css
+a {
+  b: c;
+}
+
+<===> case32/input.scss
+a {b: if(css() attr(--and-clause): c)}
+
+<===> case32/output.css
 a {
   b: if(css() attr(--and-clause): c);
 }
 
-<===> case32/input.scss
+<===> case33/input.scss
 a {b: if(attr(--not) css(): c)}
 
-<===> case32/output.css
+<===> case33/output.css
 a {
   b: if(attr(--not) css(): c);
 }
 
-<===> case33/input.scss
+<===> case34/input.scss
 a {b: if(css(1) attr(--and) css(2): c)}
 
-<===> case33/output.css
+<===> case34/output.css
 a {
   b: if(css(1) attr(--and) css(2): c);
 }
 
-<===> case34/input.scss
+<===> case35/input.scss
 a {b: if(css(1) attr(--and) css(2) attr(--and) css(3): c)}
 
-<===> case34/output.css
+<===> case35/output.css
 a {
   b: if(css(1) attr(--and) css(2) attr(--and) css(3): c);
 }
 
-<===> case35/input.scss
+<===> case36/input.scss
 a {b: if(css(1) and css(2) attr(--and) css(3): c)}
 
-<===> case35/output.css
+<===> case36/output.css
 a {
   b: if(css(1) and css(2) attr(--and) css(3): c);
 }
 
-<===> case36/input.scss
+<===> case37/input.scss
 a {b: if(css(1) and css(2) attr(--and-clause): c)}
 
-<===> case36/output.css
+<===> case37/output.css
 a {
   b: if(css(1) and css(2) attr(--and-clause): c);
 }
 
-<===> case37/input.scss
+<===> case38/input.scss
 a {b: if(css(1) and attr(--clause-and) css(2): c)}
 
-<===> case37/output.css
+<===> case38/output.css
 a {
   b: if(css(1) and attr(--clause-and) css(2): c);
 }
 
-<===> case38/input.scss
+<===> case39/input.scss
 a {b: if(css(1) or attr(--clause-or) css(2): c)}
 
-<===> case38/output.css
+<===> case39/output.css
 a {
   b: if(css(1) or attr(--clause-or) css(2): c);
 }
 
-<===> case39/input.scss
+<===> case40/input.scss
 a {b: if(css(1) or css(2) attr(--or) css(3): c)}
 
-<===> case39/output.css
+<===> case40/output.css
 a {
   b: if(css(1) or css(2) attr(--or) css(3): c);
 }
 
-<===> case40/input.scss
+<===> case41/input.scss
 a {b: if(css(1) or css(2) attr(--or-clause): c)}
 
-<===> case40/output.css
+<===> case41/output.css
 a {
   b: if(css(1) or css(2) attr(--or-clause): c);
 }
 
-<===> case41/input.scss
-a {b: if((attr(--not) css()) and sass(true): c)}
-
-<===> case41/output.css
-a {
-  b: if(attr(--not) css(): c);
-}
-
 <===> case42/input.scss
-a {b: if(sass(true) and (attr(--not) css()): c)}
+a {b: if((attr(--not) css()) and sass(true): c)}
 
 <===> case42/output.css
 a {
@@ -355,95 +354,95 @@ a {
 }
 
 <===> case43/input.scss
-a {b: if(css() if(else: var(--and-clause)): c)}
+a {b: if(sass(true) and (attr(--not) css()): c)}
 
 <===> case43/output.css
+a {
+  b: if(attr(--not) css(): c);
+}
+
+<===> case44/input.scss
+a {b: if(css() if(else: var(--and-clause)): c)}
+
+<===> case44/output.css
 a {
   b: if(css() if(else: var(--and-clause)): c);
 }
 
-<===> case44/input.scss
+<===> case45/input.scss
 a {b: if(if(else: var(--not)) css(): c)}
 
-<===> case44/output.css
+<===> case45/output.css
 a {
   b: if(if(else: var(--not)) css(): c);
 }
 
-<===> case45/input.scss
+<===> case46/input.scss
 a {b: if(css(1) if(else: var(--and)) css(2): c)}
 
-<===> case45/output.css
+<===> case46/output.css
 a {
   b: if(css(1) if(else: var(--and)) css(2): c);
 }
 
-<===> case46/input.scss
+<===> case47/input.scss
 a {b: if(css(1) if(else: var(--and)) css(2) if(else: var(--and)) css(3): c)}
 
-<===> case46/output.css
+<===> case47/output.css
 a {
   b: if(css(1) if(else: var(--and)) css(2) if(else: var(--and)) css(3): c);
 }
 
-<===> case47/input.scss
+<===> case48/input.scss
 a {b: if(css(1) and css(2) if(else: var(--and)) css(3): c)}
 
-<===> case47/output.css
+<===> case48/output.css
 a {
   b: if(css(1) and css(2) if(else: var(--and)) css(3): c);
 }
 
-<===> case48/input.scss
+<===> case49/input.scss
 a {b: if(css(1) and css(2) if(else: var(--and-clause)): c)}
 
-<===> case48/output.css
+<===> case49/output.css
 a {
   b: if(css(1) and css(2) if(else: var(--and-clause)): c);
 }
 
-<===> case49/input.scss
+<===> case50/input.scss
 a {b: if(css(1) and if(else: var(--clause-and)) css(2): c)}
 
-<===> case49/output.css
+<===> case50/output.css
 a {
   b: if(css(1) and if(else: var(--clause-and)) css(2): c);
 }
 
-<===> case50/input.scss
+<===> case51/input.scss
 a {b: if(css(1) or if(else: var(--clause-or)) css(2): c)}
 
-<===> case50/output.css
+<===> case51/output.css
 a {
   b: if(css(1) or if(else: var(--clause-or)) css(2): c);
 }
 
-<===> case51/input.scss
+<===> case52/input.scss
 a {b: if(css(1) or css(2) if(else: var(--or)) css(3): c)}
 
-<===> case51/output.css
+<===> case52/output.css
 a {
   b: if(css(1) or css(2) if(else: var(--or)) css(3): c);
 }
 
-<===> case52/input.scss
+<===> case53/input.scss
 a {b: if(css(1) or css(2) if(else: var(--or-clause)): c)}
 
-<===> case52/output.css
+<===> case53/output.css
 a {
   b: if(css(1) or css(2) if(else: var(--or-clause)): c);
 }
 
-<===> case53/input.scss
-a {b: if((if(else: var(--not)) css()) and sass(true): c)}
-
-<===> case53/output.css
-a {
-  b: if(if(else: var(--not)) css(): c);
-}
-
 <===> case54/input.scss
-a {b: if(sass(true) and (if(else: var(--not)) css()): c)}
+a {b: if((if(else: var(--not)) css()) and sass(true): c)}
 
 <===> case54/output.css
 a {
@@ -451,39 +450,39 @@ a {
 }
 
 <===> case55/input.scss
-a {b: if(css(1) #{"and css(2)"}: c)}
+a {b: if(sass(true) and (if(else: var(--not)) css()): c)}
 
 <===> case55/output.css
+a {
+  b: if(if(else: var(--not)) css(): c);
+}
+
+<===> case56/input.scss
+a {b: if(css(1) #{"and css(2)"}: c)}
+
+<===> case56/output.css
 a {
   b: if(css(1) and css(2): c);
 }
 
-<===> case56/input.scss
+<===> case57/input.scss
 a {b: if(#{"not"} css(): c)}
 
-<===> case56/output.css
+<===> case57/output.css
 a {
   b: if(not css(): c);
 }
 
-<===> case57/input.scss
+<===> case58/input.scss
 a {b: if(css(1) #{"and"} css(2): c)}
 
-<===> case57/output.css
+<===> case58/output.css
 a {
   b: if(css(1) and css(2): c);
 }
 
-<===> case58/input.scss
-a {b: if(css(1) #{"and"} css(2) #{"and"} css(3): c)}
-
-<===> case58/output.css
-a {
-  b: if(css(1) and css(2) and css(3): c);
-}
-
 <===> case59/input.scss
-a {b: if(css(1) and css(2) and css(3): c)}
+a {b: if(css(1) #{"and"} css(2) #{"and"} css(3): c)}
 
 <===> case59/output.css
 a {

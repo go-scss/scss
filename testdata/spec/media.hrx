@@ -414,3 +414,73 @@
 <===> case41/output.css
 
 
+<===> case42/input.sass
+@media (a:
+   b)
+
+<===> case42/output.css
+
+
+<===> case43/input.sass
+@media (a
+  : b)
+
+<===> case43/output.css
+
+
+<===> case44/input.sass
+@media (not
+  (a: b))
+
+<===> case44/output.css
+
+
+<===> case45/input.sass
+@media (a >
+  b)
+
+<===> case45/output.css
+
+
+<===> case46/input.sass
+@media (
+  a: b)
+
+<===> case46/output.css
+
+
+<===> case47/input.sass
+@media (a > b >
+  c)
+
+<===> case47/output.css
+
+
+<===> case48/input.sass
+@media (a: b
+  )
+
+<===> case48/output.css
+
+
+<===> case49/input.sass
+@media ((a: b) and
+  (c: d))
+
+<===> case49/output.css
+
+
+<===> case50/input.sass
+@media ((a: b)
+  )
+
+<===> case50/output.css
+
+
+<===> case51/input.sass
+@media ((a: b) or
+  (c: d))
+
+<===> case51/output.css
+
+
