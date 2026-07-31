@@ -173,7 +173,15 @@ func isEmptyContainer(n cssNode) bool {
 		}
 		return v.selector.isEmpty() || v.selector.list.isInvisible() || !hasVisible(v.nodes)
 	case *cssAtRule:
-		return v.hasBody && !hasVisible(v.nodes)
+		// dart drops an empty @media/@supports (they carry no meaning without
+		// content) but KEEPS every other empty at-rule that had a block — an
+		// empty @keyframes, @font-face or unknown at-rule still serialises as
+		// `@name {}`. A childless at-rule declared without a block (hasBody
+		// false, e.g. `@import`) is never an empty container.
+		if v.name == "media" || v.name == "supports" {
+			return v.hasBody && !hasVisible(v.nodes)
+		}
+		return false
 	}
 	return false
 }
@@ -282,6 +290,17 @@ func (s *serializer) emitAtRule(a *cssAtRule, depth int) {
 			s.sb.WriteString(";")
 		} else {
 			s.sb.WriteString(";\n")
+		}
+		return
+	}
+	// A kept but childless at-rule (an empty @keyframes/@font-face/unknown rule
+	// that dart preserves) collapses to `{}` on the same line rather than an
+	// open block spanning two lines.
+	if !hasVisible(a.nodes) {
+		if s.compressed {
+			s.sb.WriteString("{}")
+		} else {
+			s.sb.WriteString(" {}\n")
 		}
 		return
 	}

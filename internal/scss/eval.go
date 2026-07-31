@@ -777,39 +777,134 @@ func (e *evaluator) evalSupports(n *Supports, fr *frame) {
 }
 
 func (e *evaluator) evalAtRoot(n *AtRoot, fr *frame) {
-	// The default @at-root query is `(without: rule)`: it climbs out of the
-	// enclosing style rules but STAYS within any @media/@supports frame. Only an
-	// explicit query (handled below by escaping fully to the document root)
-	// removes the at-rule frames as well. Preserving the media context here is
-	// what keeps `@media screen { .foo { @at-root .bar { … } } }` wrapped.
-	if n.Query == nil {
+	// An @at-root query controls which enclosing frames the body escapes. The
+	// default (no query) is `(without: rule)`: climb out of the style rules but
+	// STAY within any @media/@supports frame, so `@media screen { .foo { @at-root
+	// .bar { … } } }` keeps its media wrapper. `(with: …)` names the frames to
+	// KEEP (all others excluded); `(without: …)` names the frames to EXCLUDE (all
+	// others kept); `all` matches every frame; `rule` matches style rules.
+	include, names := false, map[string]bool{"rule": true}
+	if n.Query != nil {
+		var ok bool
+		if include, names, ok = parseAtRootQuery(e.resolveInterp(n.Query)); !ok {
+			e.fail(`Expected "with" or "without".`)
+		}
+	}
+	all := names["all"]
+	excludes := func(name string) bool { return (all || names[name]) != include }
+	excludesRule := (all || names["rule"]) != include
+
+	// fr.container is the innermost enclosing at-rule node the body sits in — a
+	// @media/@supports, a @keyframes, @font-face or any unknown at-rule (style
+	// rules never open a container, they open a block). If the query excludes
+	// that frame, the body escapes it and lands at the document root; otherwise
+	// the frame is kept. This single-frame reconstruction keeps no partial
+	// ancestry above an escaped at-rule, which covers every query form the suite
+	// exercises.
+	frameName := ""
+	if ar, ok := fr.container.(*cssAtRule); ok {
+		frameName = ar.name
+	}
+	if frameName != "" && excludes(frameName) {
 		child := &frame{
-			container:     fr.container,
-			rootContainer: fr.container,
-			mediaParent:   fr.mediaParent,
-			mediaQueries:  fr.mediaQueries,
-			mediaSources:  fr.mediaSources,
-			mediaRuleNode: fr.mediaRuleNode,
-			// The parent selector stays available so an explicit `&` inside the
-			// @at-root body resolves against it (dart), but atRoot suppresses the
-			// implicit parent prefix so bare selectors escape to the root.
-			parentSel:   fr.parentSel,
-			hasParent:   fr.hasParent,
-			atRoot:      true,
-			atContainer: true,
-			group:       &groupInfo{},
+			container:     e.root,
+			rootContainer: e.root,
+			mediaParent:   e.root,
+			atContainer:   true,
+			group:         &groupInfo{},
+		}
+		if !excludesRule {
+			// The enclosing style rule is kept, so its selector is re-materialised
+			// at the root and the body nests inside it normally.
+			child.parentSel = fr.parentSel
+			child.hasParent = fr.hasParent
 		}
 		e.evalBody(n.Body, child, true)
 		return
 	}
+
+	// The media/supports frame is kept. Style rules are escaped iff the query
+	// excludes them (the default); otherwise the body continues in the current
+	// rule context.
 	child := &frame{
-		container:     e.root,
-		rootContainer: e.root,
-		mediaParent:   e.root,
-		atContainer:   true,
-		group:         &groupInfo{},
+		container:     fr.container,
+		rootContainer: fr.container,
+		mediaParent:   fr.mediaParent,
+		mediaQueries:  fr.mediaQueries,
+		mediaSources:  fr.mediaSources,
+		mediaRuleNode: fr.mediaRuleNode,
+		// The parent selector stays available so an explicit `&` inside the
+		// @at-root body resolves against it (dart), but atRoot suppresses the
+		// implicit parent prefix so bare selectors escape to the root.
+		parentSel:   fr.parentSel,
+		hasParent:   fr.hasParent,
+		atRoot:      excludesRule,
+		atContainer: true,
+		group:       &groupInfo{},
 	}
 	e.evalBody(n.Body, child, true)
+}
+
+// stripCSSComments removes `/* … */` and `// …` comments, replacing each with a
+// single space so tokens on either side stay separated. It is used to normalise
+// an @at-root query, whose grammar admits comments as whitespace, before the
+// keyword/name split.
+func stripCSSComments(s string) string {
+	var b strings.Builder
+	for i := 0; i < len(s); {
+		if i+1 < len(s) && s[i] == '/' && s[i+1] == '*' {
+			j := strings.Index(s[i+2:], "*/")
+			if j < 0 {
+				b.WriteByte(' ')
+				break
+			}
+			b.WriteByte(' ')
+			i += 2 + j + 2
+			continue
+		}
+		if i+1 < len(s) && s[i] == '/' && s[i+1] == '/' {
+			nl := strings.IndexByte(s[i:], '\n')
+			b.WriteByte(' ')
+			if nl < 0 {
+				break
+			}
+			i += nl // keep the newline itself
+			continue
+		}
+		b.WriteByte(s[i])
+		i++
+	}
+	return b.String()
+}
+
+// parseAtRootQuery interprets an @at-root query such as `(without: media)` or
+// `(with: rule keyframes)`, returning whether the listed names form an include
+// (`with:`) list, the set of lower-cased names, and whether the query is
+// well-formed. dart requires a `with:`/`without:` keyword followed by at least
+// one name; anything else is a compile error, so ok is false for a missing
+// keyword or an empty name list.
+func parseAtRootQuery(q string) (include bool, names map[string]bool, ok bool) {
+	names = map[string]bool{}
+	q = stripCSSComments(q)
+	q = strings.TrimSpace(q)
+	q = strings.TrimPrefix(q, "(")
+	q = strings.TrimSuffix(q, ")")
+	colon := strings.IndexByte(q, ':')
+	if colon < 0 {
+		return false, names, false
+	}
+	key := strings.ToLower(strings.TrimSpace(q[:colon]))
+	if key != "with" && key != "without" {
+		return false, names, false
+	}
+	include = key == "with"
+	for _, f := range strings.Fields(q[colon+1:]) {
+		names[strings.ToLower(f)] = true
+	}
+	if len(names) == 0 {
+		return false, names, false
+	}
+	return include, names, true
 }
 
 // --- generic at-rules ---
@@ -887,7 +982,16 @@ func (e *evaluator) evalLoudComment(n *LoudComment, fr *frame) {
 
 func (e *evaluator) evalExtend(n *Extend, fr *frame) {
 	if fr.block == nil {
-		e.fail("@extend may only be used within style rules.")
+		// An @extend nested in a bubbling frame (a @media/@supports directly
+		// inside a style rule) still runs within that enclosing rule: it applies
+		// to the rule re-materialised in the current media context. Only a truly
+		// rule-less position — the top level, or inside a media at the top level —
+		// is an error. dart raises "@extend may only be used within style rules."
+		if fr.hasParent && !fr.parentSel.isEmpty() {
+			e.ensureBlock(fr)
+		} else {
+			e.fail("@extend may only be used within style rules.")
+		}
 	}
 	target := strings.TrimSpace(e.resolveInterp(n.Selector))
 	list, err := parseSelectorListStrErr(target, false, false)
