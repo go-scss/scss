@@ -29,6 +29,34 @@ func (s selectorList) serialize(compressed bool) string {
 
 func (s selectorList) String() string { return s.serialize(false) }
 
+// asSassList renders the selector as a SassScript value, mirroring dart-sass's
+// SelectorList.asSassList: a comma-separated list whose elements are the complex
+// selectors, each a space-separated list of unquoted strings for its leading
+// combinators, compound selectors and trailing combinators. This is what `&`
+// evaluates to in an expression context (e.g. list.length(&), @each … in &).
+func (s selectorList) asSassList() Value {
+	if s.list == nil {
+		return sassNull
+	}
+	complexes := make([]Value, 0, len(s.list.components))
+	for _, cx := range s.list.components {
+		var parts []Value
+		for _, c := range cx.leadingCombinators {
+			parts = append(parts, &SassString{Text: c.String()})
+		}
+		for _, comp := range cx.components {
+			var sb strings.Builder
+			comp.selector.write(&sb, false)
+			parts = append(parts, &SassString{Text: sb.String()})
+			for _, c := range comp.combinators {
+				parts = append(parts, &SassString{Text: c.String()})
+			}
+		}
+		complexes = append(complexes, &List{Elements: parts, Sep: SepSpace})
+	}
+	return &List{Elements: complexes, Sep: SepComma}
+}
+
 // parseSelectorList parses a resolved selector string (interpolation already
 // substituted) into structured form, keeping parent selectors for later
 // nesting resolution.
