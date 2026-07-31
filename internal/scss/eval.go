@@ -374,11 +374,12 @@ func (e *evaluator) liveContainer(fr *frame) cssContainer {
 	return fresh
 }
 
-func (e *evaluator) addDecl(fr *frame, d *cssDeclaration) {
-	if fr.directDecls {
-		fr.container.appendNode(d)
-		return
-	}
+// ensureBlock returns the open style-rule block for this frame, lazily creating
+// it (as a copy of the enclosing parent selector) the first time content needs a
+// home — e.g. a declaration or a loud comment inside a @media that has bubbled
+// out of a style rule. This is dart's on-demand CssStyleRule under the bubbled
+// at-rule.
+func (e *evaluator) ensureBlock(fr *frame) *cssStyleRule {
 	if fr.block == nil {
 		fr.block = &cssStyleRule{selector: fr.parentSel, original: fr.parentSel, mediaContext: mediaContextOf(fr)}
 		fr.block.blankBefore = e.consumeGroup(fr)
@@ -387,7 +388,15 @@ func (e *evaluator) addDecl(fr *frame, d *cssDeclaration) {
 			e.extendEvents = append(e.extendEvents, extendEvent{rule: fr.block})
 		}
 	}
-	fr.block.appendNode(d)
+	return fr.block
+}
+
+func (e *evaluator) addDecl(fr *frame, d *cssDeclaration) {
+	if fr.directDecls {
+		fr.container.appendNode(d)
+		return
+	}
+	e.ensureBlock(fr).appendNode(d)
 }
 
 // --- style rules ---
@@ -784,6 +793,14 @@ func isDeclarationAtRule(name string) bool {
 func (e *evaluator) evalLoudComment(n *LoudComment, fr *frame) {
 	text := e.resolveInterp(n.Text)
 	c := &cssComment{text: text}
+	// In a selector context with no open block yet (a loud comment that is the
+	// sole content of a @media bubbled out of a style rule), the comment is
+	// wrapped in the enclosing parent rule, exactly as a declaration would be, so
+	// it lands under `div { … }` inside the bubbled at-rule rather than loose.
+	if fr.block == nil && fr.hasParent && !fr.directDecls && !fr.parentSel.isEmpty() {
+		e.ensureBlock(fr).appendNode(c)
+		return
+	}
 	c.blankBefore = e.consumeGroup(fr)
 	if fr.block != nil {
 		fr.block.appendNode(c)
