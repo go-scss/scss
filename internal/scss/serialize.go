@@ -247,6 +247,11 @@ func (s *serializer) emitNode(n cssNode, depth int) {
 
 func (s *serializer) emitRule(selector string, nodes []cssNode, depth int) {
 	s.indent(depth)
+	// A multi-line selector (comma list split across lines) indents each of its
+	// continuation lines to the rule's depth, matching dart-sass.
+	if !s.compressed && depth > 0 && strings.Contains(selector, "\n") {
+		selector = strings.ReplaceAll(selector, "\n", "\n"+strings.Repeat("  ", depth))
+	}
 	s.sb.WriteString(selector)
 	if s.compressed {
 		s.sb.WriteString("{")
