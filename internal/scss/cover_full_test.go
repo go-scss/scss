@@ -109,7 +109,7 @@ func TestFeatureRecoveryPaths(t *testing.T) {
 		".a { foo: 1 { bar: 2 } }",                                       // selectorLike default (number value)
 		".a { foo: & bar { x: 1 } }",                                     // selectorLike Parent + list-true
 		".a { :hover { color: red } }",                                   // empty interpolated name -> [""]
-		".a[data-x=\"#{ x{y} }\"] { color: red }",                        // scanQuotedRaw balanced braces in interp
+		".a[data-x=\"#{ 1 + 1 }\"] { color: red }",                       // interpolation inside a quoted attribute value
 		"@import \"a.css\" url(b);",                                      // plain @import with url() trailer
 		"--top-level: 1",                                                 // top-level custom property
 		"@-webkit-keyframes spin { from { top: 0 } }",                    // scanIdentifier leading "-" (at-rule)

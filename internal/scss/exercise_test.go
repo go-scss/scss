@@ -346,7 +346,7 @@ func TestForwardAndStringParsing(t *testing.T) {
 	for _, s := range forwardErrs {
 		mustErr(t, s)
 	}
-	// scanQuotedRaw: interpolation and escapes inside quoted strings.
+	// quotedStringToInterp: interpolation and escapes inside quoted strings.
 	oks := []string{
 		`.a { v: "pre#{1 + 1}post" }`,
 		`.a { v: "esc\\ape"; w: "quote\"inside" }`,
