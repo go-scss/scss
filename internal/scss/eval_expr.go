@@ -194,6 +194,12 @@ func (e *evaluator) evalBinary(x *Binary) Value {
 		return e.evalExpr(x.Right)
 	}
 	if x.Op == "/" {
+		if x.Left == nil {
+			// A leading "/" (`/bar`, `1/ / /bar`): a slash separator with an
+			// empty left-hand side, serialised as "/" + right.
+			r := e.evalExpr(x.Right)
+			return &List{Elements: []Value{&SassString{Text: "", Quoted: false}, r}, Sep: SepSlash, SlashLit: true}
+		}
 		l := e.evalExpr(x.Left)
 		r := e.evalExpr(x.Right)
 		_, lnum := l.(*Number)
@@ -269,7 +275,10 @@ func (e *evaluator) arith(op string, l, r Value) Value {
 	case "+":
 		return e.stringOp(l, r, "")
 	case "-":
-		return e.stringOp(l, r, "-")
+		// dart-sass's Value.minus joins the CSS (quote-preserving) serialization
+		// of both operands with "-" into an always-unquoted string, e.g.
+		// `"a" - b` -> `"a"-b`, `literal - "q"` -> `literal-"q"`.
+		return &SassString{Text: serializeValue(l, false) + "-" + serializeValue(r, false), Quoted: false}
 	case "*":
 		e.fail("Undefined operation \"%s * %s\".", serializeValue(l, false), serializeValue(r, false))
 	case "%":
