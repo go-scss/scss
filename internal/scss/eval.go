@@ -830,11 +830,17 @@ func (e *evaluator) evalGenericAtRule(n *AtRule, fr *frame) {
 	// directly in it (dart tolerates this) is emitted verbatim rather than being
 	// wrapped in an empty style rule, so treat the body as declaration-direct.
 	direct := isDeclarationAtRule(n.Name) || keyframes
+	// Inside a style rule, an unknown at-rule with a block re-materialises the
+	// enclosing selector around its declarations (dart: `div { @foo { a: b } }`
+	// -> `@foo { div { a: b } }`), so it carries the parent selector. At the top
+	// level (no enclosing selector) its declarations stay direct.
 	child := &frame{
 		container:     at,
 		rootContainer: at,
 		mediaParent:   at,
-		directDecls:   direct,
+		parentSel:     fr.parentSel,
+		hasParent:     fr.hasParent,
+		directDecls:   direct || !fr.hasParent,
 		atContainer:   true,
 		inKeyframes:   keyframes,
 		group:         &groupInfo{},
