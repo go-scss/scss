@@ -271,23 +271,13 @@ func (p *parser) parseImport() Stmt {
 	imp := &Import{}
 	for {
 		p.ws()
+		var item ImportItem
+		urlForm := false
 		if p.peek() == '"' || p.peek() == '\'' {
-			url := p.scanQuotedString()
-			p.ws()
-			// plain CSS import? url ending .css or with media query
-			if isPlainImport(url, p) {
-				rest := p.parseInterpolatedText(func(pp *parser) bool {
-					c := pp.peek()
-					return c == ',' || c == ';' || c == '}' || c == 0
-				})
-				txt, _ := rest.isPlain()
-				imp.Imports = append(imp.Imports, ImportItem{URL: url, Plain: true, RawText: strings.TrimSpace(txt)})
-			} else {
-				imp.Imports = append(imp.Imports, ImportItem{URL: url})
-			}
+			item.URL = p.scanQuotedString()
 		} else if pfx := p.pos; p.match("url(") || p.match("URL(") {
-			// url(...) form -> plain import; the url() wrapper is preserved
-			// verbatim so it round-trips as `@import url(...)`.
+			// url(...) form -> always a plain passthrough import; the url() wrapper
+			// is preserved verbatim so it round-trips as `@import url(...)`.
 			depth := 1
 			for !p.eof() && depth > 0 {
 				c := p.next()
@@ -297,10 +287,19 @@ func (p *parser) parseImport() Stmt {
 					depth--
 				}
 			}
-			imp.Imports = append(imp.Imports, ImportItem{URL: p.src[pfx:p.pos], Plain: true, RawText: ""})
+			item.URL = p.src[pfx:p.pos]
+			item.Plain = true
+			urlForm = true
 		} else {
 			p.fail("Expected string.")
 		}
+		p.ws()
+		mods := p.tryImportModifiers()
+		item.Mods = mods
+		if !urlForm && (isPlainImportURL(item.URL) || mods != nil) {
+			item.Plain = true
+		}
+		imp.Imports = append(imp.Imports, item)
 		p.ws()
 		if p.peek() == ',' {
 			p.next()
@@ -312,22 +311,134 @@ func (p *parser) parseImport() Stmt {
 	return imp
 }
 
-func isPlainImport(url string, p *parser) bool {
+// isPlainImportURL mirrors dart-sass isPlainImportUrl: a URL that resolves to a
+// plain-CSS import (rather than a Sass module) when it ends in `.css`, is
+// protocol-relative (`//`), or is an absolute `http(s)://` URL.
+func isPlainImportURL(url string) bool {
 	if strings.HasSuffix(url, ".css") {
 		return true
 	}
-	if strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") || strings.HasPrefix(url, "//") {
-		return true
+	return strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://") || strings.HasPrefix(url, "//")
+}
+
+// tryImportModifiers mirrors dart-sass StylesheetParser.tryImportModifiers: it
+// parses the media/supports modifiers after an @import URL into an Interp whose
+// parts serialize canonically at evaluation time. It returns nil when no
+// modifier is present.
+func (p *parser) tryImportModifiers() *Interp {
+	if !p.lookingAtInterpolatedIdentifier() && p.peek() != '(' {
+		return nil
 	}
-	// media query following the url (not ',' ';' '}')
-	save := p.pos
+	var parts []any
+	space := func() {
+		if len(parts) > 0 {
+			parts = append(parts, " ")
+		}
+	}
+	for {
+		switch {
+		case p.lookingAtInterpolatedIdentifier():
+			space()
+			ident := p.interpolatedIdentifier()
+			parts = append(parts, ident.Parts...)
+			name, isPlain := ident.isPlain()
+			lname := strings.ToLower(name)
+			if !(isPlain && lname == "and") && p.peek() == '(' {
+				p.next() // (
+				if isPlain && lname == "supports" {
+					query := p.parseImportSupportsQuery()
+					if _, isDecl := query.(*SupportsDecl); !isDecl {
+						parts = append(parts, "(")
+						parts = append(parts, &supportsPart{Cond: query}, ")")
+					} else {
+						parts = append(parts, &supportsPart{Cond: query})
+					}
+				} else {
+					// An unknown modifier function's arguments are captured as a raw
+					// declaration value that preserves newlines verbatim (dart-sass
+					// emits them literally), unlike a supports function whose value is
+					// re-serialized with collapsed whitespace.
+					parts = append(parts, "(")
+					val := p.interpolatedDeclarationValue(true, true, true, false)
+					parts = append(parts, val.Parts...)
+					parts = append(parts, ")")
+				}
+				if p.peek() != ')' {
+					p.fail("Expected \")\".")
+				}
+				p.next()
+				p.ws()
+			} else {
+				p.ws()
+				if p.peek() == ',' {
+					p.next()
+					parts = append(parts, ", ", &mediaPart{Query: p.captureMediaQueryList()})
+					return &Interp{Parts: parts}
+				}
+			}
+		case p.peek() == '(':
+			space()
+			parts = append(parts, &mediaPart{Query: p.captureMediaQueryList()})
+			return &Interp{Parts: parts}
+		default:
+			return &Interp{Parts: parts}
+		}
+	}
+}
+
+// captureMediaQueryList captures the remainder of an @import modifier list as a
+// media-query list, up to the statement terminator. Its text is normalized
+// through the media-query serializer at evaluation time.
+func (p *parser) captureMediaQueryList() *Interp {
+	return p.parseInterpolatedText(func(pp *parser) bool {
+		c := pp.peek()
+		return c == ';' || c == '}' || c == 0
+	})
+}
+
+// parseImportSupportsQuery mirrors dart-sass StylesheetParser._importSupportsQuery:
+// the supports condition following `supports(` in an @import modifier list.
+func (p *parser) parseImportSupportsQuery() SupportsCond {
 	p.ws()
-	c := p.peek()
-	p.pos = save
-	if c != ',' && c != ';' && c != '}' && c != 0 {
-		return true
+	if p.scanSupportsKeyword("not") {
+		p.ws()
+		return &SupportsNegation{Cond: p.parseSupportsConditionInParens()}
 	}
-	return false
+	if p.peek() == '(' {
+		return p.parseSupportsCondition(false)
+	}
+	if p.lookingAtInterpolatedIdentifier() {
+		start := p.pos
+		name := p.interpolatedIdentifier()
+		if p.peek() == '(' {
+			p.next()
+			val := p.interpolatedDeclarationValue(true, true, true, true)
+			if p.peek() != ')' {
+				p.fail("Expected \")\".")
+			}
+			p.next()
+			return &SupportsFunc{Name: name, Args: val}
+		}
+		p.pos = start
+	}
+	var name Expr
+	custom := false
+	if p.looksLikeCustomProperty() {
+		name = &Ident{Name: p.scanIdentifier()}
+		custom = true
+	} else {
+		name = p.parseExpression()
+	}
+	p.ws()
+	if p.peek() != ':' {
+		p.fail("Expected \":\".")
+	}
+	p.next()
+	if custom {
+		return &SupportsDecl{Name: name, RawValue: p.interpolatedDeclarationValue(true, false, true, true), Custom: true}
+	}
+	p.ws()
+	return &SupportsDecl{Name: name, Value: p.parseExpression()}
 }
 
 func (p *parser) parseUse() Stmt {

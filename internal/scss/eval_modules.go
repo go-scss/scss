@@ -303,11 +303,13 @@ func (e *evaluator) evalImport(n *Import, fr *frame) {
 	for _, item := range n.Imports {
 		if item.Plain {
 			params := "\"" + item.URL + "\""
-			if len(item.URL) >= 4 && strings.EqualFold(item.URL[:4], "url(") || strings.HasPrefix(item.RawText, "url") {
+			if len(item.URL) >= 4 && strings.EqualFold(item.URL[:4], "url(") {
 				params = item.URL
 			}
-			if item.RawText != "" {
-				params += " " + item.RawText
+			if item.Mods != nil {
+				if m := e.resolveImportMods(item.Mods); m != "" {
+					params += " " + m
+				}
 			}
 			at := &cssAtRule{name: "import", params: params, hasBody: false}
 			at.blankBefore = e.consumeGroup(fr)
