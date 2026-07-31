@@ -96,6 +96,12 @@ type frame struct {
 	block         *cssStyleRule
 	group         *groupInfo
 	atContainer   bool
+	// sealed marks that a child (typically a nested @media) has bubbled ABOVE
+	// this frame's container node, so the container must be split: the next
+	// node that stays in this frame gets a fresh copy of the container appended
+	// after the bubbled node, preserving source order (dart's copy-on-bubble in
+	// _addChild). See liveContainer.
+	sealed bool
 	// declPrefix is the nested-property namespace ("name-") in effect; every
 	// declaration emitted in this frame — including those produced by an
 	// @include or @content inside a nested property block — is prefixed with it.
@@ -341,6 +347,28 @@ func isBlankValue(v Value) bool {
 	return false
 }
 
+// liveContainer returns the container that new nodes staying in this frame must
+// be appended to. When the frame is sealed — a nested rule bubbled above the
+// container — a fresh copy of the container (an @media/@supports wrapper) is
+// spun up after the bubbled node so the residual content keeps its source-order
+// position, mirroring dart's parent split in _addChild.
+func (e *evaluator) liveContainer(fr *frame) cssContainer {
+	if !fr.sealed {
+		return fr.container
+	}
+	fr.sealed = false
+	// A frame is only ever sealed from evalMedia's bubble branch, which requires
+	// an enclosing @media/@supports — so the container is always an at-rule node
+	// that also serves as this frame's mediaRuleNode.
+	at := fr.container.(*cssAtRule)
+	fresh := &cssAtRule{name: at.name, params: at.params, hasBody: true}
+	fresh.blankBefore = lastVisibleIsStyleRule(fr.mediaParent)
+	fr.mediaParent.appendNode(fresh)
+	fr.container = fresh
+	fr.mediaRuleNode = fresh
+	return fresh
+}
+
 func (e *evaluator) addDecl(fr *frame, d *cssDeclaration) {
 	if fr.directDecls {
 		fr.container.appendNode(d)
@@ -349,7 +377,7 @@ func (e *evaluator) addDecl(fr *frame, d *cssDeclaration) {
 	if fr.block == nil {
 		fr.block = &cssStyleRule{selector: fr.parentSel, original: fr.parentSel, mediaContext: mediaContextOf(fr)}
 		fr.block.blankBefore = e.consumeGroup(fr)
-		fr.container.appendNode(fr.block)
+		e.liveContainer(fr).appendNode(fr.block)
 		if !fr.parentSel.isEmpty() {
 			e.extendEvents = append(e.extendEvents, extendEvent{rule: fr.block})
 		}
@@ -370,7 +398,8 @@ func (e *evaluator) evalStyleRule(n *StyleRule, fr *frame) {
 	}
 	rule := &cssStyleRule{selector: resolved, original: resolved, mediaContext: mediaContextOf(fr)}
 	rule.blankBefore = e.consumeGroup(fr)
-	fr.container.appendNode(rule)
+	container := e.liveContainer(fr)
+	container.appendNode(rule)
 	e.extendEvents = append(e.extendEvents, extendEvent{rule: rule})
 	child2 := &frame{
 		container:     fr.container,
@@ -611,7 +640,18 @@ func (e *evaluator) evalMedia(n *Media, fr *frame) {
 	}
 
 	at := &cssAtRule{name: "media", params: mediaQueriesString(effective), hasBody: true}
-	at.blankBefore = e.consumeGroup(fr)
+	blank := e.consumeGroup(fr)
+	// If this @media bubbled to a container strictly above the enclosing frame's
+	// own container, that container must be split so any following siblings land
+	// after this node in source order rather than folding back into the block
+	// that was opened before the bubble (dart#777). The leading blank line is
+	// then governed by the landing site's previous sibling, not the source group
+	// the node was written in.
+	if parent != fr.container {
+		blank = lastVisibleIsStyleRule(parent)
+		fr.sealed = true
+	}
+	at.blankBefore = blank
 	parent.appendNode(at)
 	child := &frame{
 		container:     at,
@@ -632,11 +672,21 @@ func (e *evaluator) evalSupports(n *Supports, fr *frame) {
 	cond := e.serializeSupportsCond(n.Cond)
 	at := &cssAtRule{name: "supports", params: cond, hasBody: true}
 	at.blankBefore = e.consumeGroup(fr)
-	fr.mediaParent.appendNode(at)
+	// @supports bubbles above style rules only (dart's `through` set is
+	// CssStyleRule), so it lands in the nearest non-style-rule container —
+	// staying INSIDE any enclosing @media rather than escaping above it.
+	e.liveContainer(fr).appendNode(at)
 	child := &frame{
 		container:     at,
 		rootContainer: at,
 		mediaParent:   at,
+		// The enclosing media context is preserved for query MERGING (a nested
+		// @media still intersects with the outer queries) even though physical
+		// bubbling stops at this @supports boundary, mirroring dart keeping
+		// _mediaQueries live across a supports rule.
+		mediaQueries:  fr.mediaQueries,
+		mediaSources:  fr.mediaSources,
+		mediaRuleNode: at,
 		parentSel:     fr.parentSel,
 		hasParent:     fr.hasParent,
 		atContainer:   !fr.hasParent,
@@ -646,6 +696,25 @@ func (e *evaluator) evalSupports(n *Supports, fr *frame) {
 }
 
 func (e *evaluator) evalAtRoot(n *AtRoot, fr *frame) {
+	// The default @at-root query is `(without: rule)`: it climbs out of the
+	// enclosing style rules but STAYS within any @media/@supports frame. Only an
+	// explicit query (handled below by escaping fully to the document root)
+	// removes the at-rule frames as well. Preserving the media context here is
+	// what keeps `@media screen { .foo { @at-root .bar { … } } }` wrapped.
+	if n.Query == nil {
+		child := &frame{
+			container:     fr.container,
+			rootContainer: fr.container,
+			mediaParent:   fr.mediaParent,
+			mediaQueries:  fr.mediaQueries,
+			mediaSources:  fr.mediaSources,
+			mediaRuleNode: fr.mediaRuleNode,
+			atContainer:   true,
+			group:         &groupInfo{},
+		}
+		e.evalBody(n.Body, child, true)
+		return
+	}
 	child := &frame{
 		container:     e.root,
 		rootContainer: e.root,
@@ -665,7 +734,7 @@ func (e *evaluator) evalGenericAtRule(n *AtRule, fr *frame) {
 	}
 	at := &cssAtRule{name: n.Name, params: params, hasBody: !n.NoBody}
 	at.blankBefore = e.consumeGroup(fr)
-	fr.container.appendNode(at)
+	e.liveContainer(fr).appendNode(at)
 	if n.NoBody {
 		return
 	}
@@ -697,7 +766,7 @@ func (e *evaluator) evalLoudComment(n *LoudComment, fr *frame) {
 		fr.block.appendNode(c)
 		return
 	}
-	fr.container.appendNode(c)
+	e.liveContainer(fr).appendNode(c)
 }
 
 // --- @extend ---
