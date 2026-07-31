@@ -86,7 +86,7 @@ c {
   d: b;
 }
 
-<===> case10/input.scss
+<===> case10/input.sass
 $a:
   b
 
@@ -94,30 +94,44 @@ $a:
 
 
 <===> case11/input.scss
-$a
-  : b
+$a:
+  b
 
 <===> case11/output.css
 
 
-<===> case12/input.scss
-$a: b
-  !default;
+<===> case12/input.sass
+$a
+  : b
 
 <===> case12/output.css
 
 
 <===> case13/input.scss
-$a: b
-  !global;
+$a
+  : b
 
 <===> case13/output.css
 
 
 <===> case14/input.scss
-$a: b !default
+$a: b
   !default;
 
 <===> case14/output.css
+
+
+<===> case15/input.scss
+$a: b
+  !global;
+
+<===> case15/output.css
+
+
+<===> case16/input.scss
+$a: b !default
+  !default;
+
+<===> case16/output.css
 
 

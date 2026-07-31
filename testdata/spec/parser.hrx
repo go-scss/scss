@@ -111,3 +111,13 @@ a, b {
   c: d;
 }
 
+<===> case10/input.sass
+a
+b
+  c: d
+
+<===> case10/output.css
+b {
+  c: d;
+}
+

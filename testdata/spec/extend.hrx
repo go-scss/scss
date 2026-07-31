@@ -143,35 +143,89 @@ upstream, :is(midstream), :is(midstream, downstream) {
   a: b;
 }
 
-<===> case14/input.scss
-a {b: c}
-d {@extend
-  a}
+<===> case14/input.sass
+a
+  b: c
+d
+  @extend
+    a
+b
+  e: f
 
 <===> case14/output.css
 a, d {
   b: c;
 }
 
-<===> case15/input.scss
+b {
+  e: f;
+}
+
+<===> case15/input.sass
+a
+  b: c
+d
+  @extend
+    a
+  e: f
+
+<===> case15/output.css
+a, d {
+  b: c;
+}
+
+d {
+  e: f;
+}
+
+<===> case16/input.scss
+a {b: c}
+d {@extend
+  a}
+
+<===> case16/output.css
+a, d {
+  b: c;
+}
+
+<===> case17/input.scss
 a {@extend b 
   !optional}
 
-<===> case15/output.css
+<===> case17/output.css
 
 
-<===> case16/input.scss
+<===> case18/input.sass
+a
+  b: c
+d
+  e: f
+
+g
+  @extend a
+  d
+
+<===> case18/output.css
+a, g {
+  b: c;
+}
+
+d {
+  e: f;
+}
+
+<===> case19/input.scss
 .baz {
   @extend %foo !optional;
   color: green;
 }
 
-<===> case16/output.css
+<===> case19/output.css
 .baz {
   color: green;
 }
 
-<===> case17/input.scss
+<===> case20/input.scss
 %foo {color: blue}
 %bar {color: red}
 .baz {
@@ -179,7 +233,7 @@ a {@extend b
   color: green;
 }
 
-<===> case17/output.css
+<===> case20/output.css
 .baz {
   color: blue;
 }
@@ -188,18 +242,18 @@ a {@extend b
   color: green;
 }
 
-<===> case18/input.scss
+<===> case21/input.scss
 .baz {
   @extend .foo !optional;
   color: green;
 }
 
-<===> case18/output.css
+<===> case21/output.css
 .baz {
   color: green;
 }
 
-<===> case19/input.scss
+<===> case22/input.scss
 .foo {color: blue}
 .bar {color: red}
 .baz {
@@ -207,7 +261,7 @@ a {@extend b
   color: green;
 }
 
-<===> case19/output.css
+<===> case22/output.css
 .foo, .baz {
   color: blue;
 }

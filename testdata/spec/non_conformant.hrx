@@ -313,17 +313,38 @@ div {
 }
 
 <===> case14/input.scss
+@use "sass:meta";
+div {
+  a: hello#{world};
+  a: hello #{world};
+  b: 12#{3};
+  b: meta.type-of(12#{3});
+  b: #{12 + 111};
+  b: meta.type-of(#{12 + 111});
+}
+
+<===> case14/output.css
+div {
+  a: helloworld;
+  a: hello world;
+  b: 12 3;
+  b: list;
+  b: 123;
+  b: string;
+}
+
+<===> case15/input.scss
 @use "sass:math";
 div {
   blah: "hello #{2+2} world #{math.unit(23px)} #{'bloo\n'} blah";
 }
 
-<===> case14/output.css
+<===> case15/output.css
 div {
   blah: "hello 4 world px bloon blah";
 }
 
-<===> case15/input.scss
+<===> case16/input.scss
 @use "sass:list";
 $x: oo, ba;
 $y: az, hu;
@@ -338,7 +359,7 @@ f#{$x}r {
   }
 }
 
-<===> case15/output.css
+<===> case16/output.css
 foo, bar {
   p: 1;
 }
@@ -349,7 +370,7 @@ foo baz mumble4, foo hux mumble4, bar baz mumble4, bar hux mumble4 {
   r: 3;
 }
 
-<===> case16/input.scss
+<===> case17/input.scss
 a b c {
   blee: blee;
   d e f {
@@ -367,7 +388,7 @@ a b c {
   blah: blah;
 }
 
-<===> case16/output.css
+<===> case17/output.css
 a b c {
   blee: blee;
 }
@@ -387,7 +408,7 @@ a b c {
   blah: blah;
 }
 
-<===> case17/input.scss
+<===> case18/input.scss
 $x: pop;
 $y: 123;
 
@@ -408,7 +429,7 @@ div {
   floo: url(hadoop-#{$y+321}.css);
 }
 
-<===> case17/output.css
+<===> case18/output.css
 div {
   foo: url(bloo/blah.css);
   bar: url(http://foo/bar/hux.css);
@@ -434,7 +455,7 @@ div {
   floo: url(hadoop-444.css);
 }
 
-<===> case18/input.scss
+<===> case19/input.scss
 @use "sass:list";
 @use "sass:meta";
 $x: a, b, 1+2;
@@ -472,7 +493,7 @@ $x: a, b, 1+2;
   }
 }
 
-<===> case18/output.css
+<===> case19/output.css
 div {
   background: gray;
 }
@@ -485,7 +506,7 @@ div {
   background: red;
 }
 
-<===> case19/input.scss
+<===> case20/input.scss
 $x: true;
 
 @function foobar() {
@@ -508,7 +529,7 @@ div {
   content: foobar();
 }
 
-<===> case19/output.css
+<===> case20/output.css
 div {
   content: foo;
   content: bar;
@@ -517,7 +538,7 @@ div {
   content: bar;
 }
 
-<===> case20/input.scss
+<===> case21/input.scss
 $x: true;
 
 @mixin foobar() {
@@ -539,7 +560,7 @@ div {
   @include foobar();
 }
 
-<===> case20/output.css
+<===> case21/output.css
 div {
   content: foo;
   content: bar;
@@ -547,7 +568,7 @@ div {
   content: foo;
 }
 
-<===> case21/input.scss
+<===> case22/input.scss
 div {
   width: 10% + 20%;
   height: 10% - 20%;
@@ -562,7 +583,7 @@ div {
   nyah: (35% / 7);
 }
 
-<===> case21/output.css
+<===> case22/output.css
 div {
   width: 30%;
   height: -10%;
@@ -576,7 +597,7 @@ div {
   nyah: 5%;
 }
 
-<===> case22/input.scss
+<===> case23/input.scss
 @mixin foo($args...) {
   @each $arg in $args {
     @if $arg {
@@ -589,23 +610,23 @@ div {
   @include foo(a, b, false);
 }
 
-<===> case22/output.css
+<===> case23/output.css
 div {
   thing: a;
   thing: b;
 }
 
-<===> case23/input.scss
+<===> case24/input.scss
 div,, , span, ,, {
   color: red;
 }
 
-<===> case23/output.css
+<===> case24/output.css
 div, span {
   color: red;
 }
 
-<===> case24/input.scss
+<===> case25/input.scss
 $x: true;
 $file-1x: "budge.png";
 
@@ -621,7 +642,7 @@ div {
   blah: url(if($x, fudge("#{$file-1x}"), "#{$file-1x}"));
 }
 
-<===> case24/output.css
+<===> case25/output.css
 div {
   blah: url(foobar);
   blah: url(fn("s"));
@@ -630,7 +651,7 @@ div {
   blah: url("assets/fudge/budge.png");
 }
 
-<===> case25/input.scss
+<===> case26/input.scss
 $x: 1;
 $y: 2;
 
@@ -640,36 +661,36 @@ $y: 2;
   }
 }
 
-<===> case25/output.css
+<===> case26/output.css
 @foo $x $y, hux {
   bar {
     whatever: whatever;
   }
 }
 
-<===> case26/input.scss
+<===> case27/input.scss
 div[class|="blah"] {
   color: blue;
 }
 
-<===> case26/output.css
+<===> case27/output.css
 div[class|=blah] {
   color: blue;
 }
 
-<===> case27/input.scss
-div {
-  blah: url(//some/absolute/path);
-  blee: url(/*looks-like-a*/comment);
-}
-
-<===> case27/output.css
-div {
-  blah: url(//some/absolute/path);
-  blee: url(/*looks-like-a*/comment);
-}
-
 <===> case28/input.scss
+div {
+  blah: url(//some/absolute/path);
+  blee: url(/*looks-like-a*/comment);
+}
+
+<===> case28/output.css
+div {
+  blah: url(//some/absolute/path);
+  blee: url(/*looks-like-a*/comment);
+}
+
+<===> case29/input.scss
 div {
 
   &_foo {
@@ -687,7 +708,7 @@ div {
 
 }
 
-<===> case28/output.css
+<===> case29/output.css
 div_foo {
   blah: blah;
 }
@@ -701,7 +722,7 @@ divdiv.foo#bar[hux] {
   blah: blah;
 }
 
-<===> case29/input.scss
+<===> case30/input.scss
 div {
   :-moz-any(ol p.blah, ul, menu, dir) :-moz-any(ol span + h1, ul, menu, dir) ul {
     list-style-type: square;
@@ -717,7 +738,7 @@ div {
   }
 }
 
-<===> case29/output.css
+<===> case30/output.css
 div :-moz-any(ol p.blah, ul, menu, dir) :-moz-any(ol span + h1, ul, menu, dir) ul {
   list-style-type: square;
 }
@@ -731,7 +752,7 @@ div :foo(ol) {
   hi: hi;
 }
 
-<===> case30/input.scss
+<===> case31/input.scss
 @use "sass:list";
 @use "sass:meta";
 $mylist: (alpha, beta, gamma, );
@@ -742,14 +763,90 @@ $my-single-item-list: (alpha,);
   out: list.length($my-single-item-list); 
 }
 
-<===> case30/output.css
+<===> case31/output.css
 .test {
   out1: 3;
   blah: string;
   out: 1;
 }
 
-<===> case31/input.scss
+<===> case32/input.scss
+[data-icon='test-1']:before {
+    content:'\\';
+}
+
+[data-icon='test-2']:before {
+    content:'\'';
+}
+
+[data-icon='test-3']:before {
+    content:"\"";
+}
+
+[data-icon='test-4']:before {
+    content:'\\';
+}
+
+[data-icon='test-5']:before {
+    content:'\'';
+}
+
+[data-icon='test-6']:before {
+    content:"\"";
+}
+
+$open-quote:    «;
+$close-quote:   »;
+
+$open-quote: \201C;
+$close-quote: \201D;
+
+.\E9motion { 
+blah: hi; }
+.\E9 dition { 
+blah: hi; }
+.\0000E9dition { 
+blah: hi; }
+
+<===> case32/output.css
+@charset "UTF-8";
+[data-icon=test-1]:before {
+  content: "\\";
+}
+
+[data-icon=test-2]:before {
+  content: "'";
+}
+
+[data-icon=test-3]:before {
+  content: '"';
+}
+
+[data-icon=test-4]:before {
+  content: "\\";
+}
+
+[data-icon=test-5]:before {
+  content: "'";
+}
+
+[data-icon=test-6]:before {
+  content: '"';
+}
+
+.émotion {
+  blah: hi;
+}
+
+.édition {
+  blah: hi;
+}
+
+.édition {
+  blah: hi;
+}
+
+<===> case33/input.scss
 input {
     outline: 5px auto -webkit-focus-ring-color;
     foo: random -hello-this-is-dog;
@@ -757,7 +854,7 @@ input {
     baz: foo - bar;
 }
 
-<===> case31/output.css
+<===> case33/output.css
 input {
   outline: 5px auto -webkit-focus-ring-color;
   foo: random -hello-this-is-dog;
@@ -765,7 +862,7 @@ input {
   baz: foo-bar;
 }
 
-<===> case32/input.scss
+<===> case34/input.scss
 @use "sass:meta";
 @function exists($name) {
   @return meta.global-variable-exists($name);
@@ -816,7 +913,7 @@ div {
 
 }
 
-<===> case32/output.css
+<===> case34/output.css
 div {
   foo: false;
   foo: false;
@@ -843,7 +940,7 @@ div span p {
   foo: false;
 }
 
-<===> case33/input.scss
+<===> case35/input.scss
 @use "sass:meta";
 @function exists($name) {
   @return meta.function-exists($name);
@@ -911,7 +1008,7 @@ div {
 
 }
 
-<===> case33/output.css
+<===> case35/output.css
 div {
   foo: true;
   foo: true;
@@ -958,7 +1055,7 @@ div span p {
   foo: true;
 }
 
-<===> case34/input.scss
+<===> case36/input.scss
 @use "sass:meta";
 @function exists($name) {
   @return meta.mixin-exists($name);
@@ -1024,7 +1121,7 @@ div {
 
 }
 
-<===> case34/output.css
+<===> case36/output.css
 div {
   foo: true;
   foo: true;
@@ -1065,7 +1162,7 @@ div span p {
   foo: false;
 }
 
-<===> case35/input.scss
+<===> case37/input.scss
 @use "sass:string";
 $x: 0;
 $if-false: whatever;
@@ -1077,7 +1174,7 @@ div {
   foo: if(false, 1/0, $if-false: $if-false);
 }
 
-<===> case35/output.css
+<===> case37/output.css
 div {
   foo: hey;
   foo: ho;
@@ -1085,7 +1182,7 @@ div {
   foo: whatever;
 }
 
-<===> case36/input.scss
+<===> case38/input.scss
 @use "sass:string";
 p {
   color: rgb(255, 128, 0);
@@ -1096,7 +1193,7 @@ p {
   foo: rgb(200, 150%, 170%);
 }
 
-<===> case36/output.css
+<===> case38/output.css
 p {
   color: rgb(255, 128, 0);
   color: red green blue;
@@ -1106,7 +1203,7 @@ p {
   foo: rgb(200, 255, 255);
 }
 
-<===> case37/input.scss
+<===> case39/input.scss
 @use "sass:color";
 p {
   color: color.change(#102030, $blue: 5);
@@ -1115,7 +1212,7 @@ p {
   color: color.change(hsl(25, 100%, 80%), $lightness: 40%, $alpha: 0.8);
 }
 
-<===> case37/output.css
+<===> case39/output.css
 p {
   color: #102005;
   color: rgba(16, 32, 48, 0.325);
@@ -1123,7 +1220,7 @@ p {
   color: hsla(25, 100%, 40%, 0.8);
 }
 
-<===> case38/input.scss
+<===> case40/input.scss
 a {
   b: {
     @debug "debug";
@@ -1131,57 +1228,126 @@ a {
   }
 }
 
-<===> case38/output.css
+<===> case40/output.css
 a {
   b-foo: bar;
 }
 
-<===> case39/input.scss
+<===> case41/input.scss
 a {
   @debug "debug";
   foo: bar;
 }
 
-<===> case39/output.css
+<===> case41/output.css
 a {
   foo: bar;
 }
 
-<===> case40/input.scss
+<===> case42/input.scss
 @debug "debug";
 
-<===> case40/output.css
-
-
-<===> case41/input.scss
-@function test($param:"default",$rest...) {}
-
-<===> case41/output.css
-
-
-<===> case42/input.scss
-.foo {a: b}
-.bar {@extend .foo}
-
 <===> case42/output.css
-.foo, .bar {
-  a: b;
-}
+
 
 <===> case43/input.scss
-.bar {@extend .foo}
-.foo {a: b}
+@function test($param:"default",$rest...) {}
 
 <===> case43/output.css
+
+
+<===> case44/input.scss
+@if (false) {
+} @else {
+  @import url("http://www.libsass.org");
+}
+
+<===> case44/output.css
+@import url("http://www.libsass.org");
+
+<===> case45/input.scss
+@if (true) {
+  @import url("http://www.libsass.org");
+}
+
+<===> case45/output.css
+@import url("http://www.libsass.org");
+
+<===> case46/input.scss
+@each $i in (1) {
+  @import url("http://www.libsass.org");
+}
+
+<===> case46/output.css
+@import url("http://www.libsass.org");
+
+<===> case47/input.scss
+@for $i from 1 through 2 {
+  @import url("http://www.libsass.org");
+}
+
+<===> case47/output.css
+@import url("http://www.libsass.org");
+@import url("http://www.libsass.org");
+
+<===> case48/input.scss
+$count: 0;
+@while ($count < 1) {
+  @import url("http://www.libsass.org");
+  $count: $count + 1;
+}
+
+<===> case48/output.css
+@import url("http://www.libsass.org");
+
+<===> case49/input.scss
+@mixin do_import() {
+  @import url("http://www.libsass.org");
+}
+
+@if (false) {
+} @else {
+  @include do_import();
+}
+
+<===> case49/output.css
+@import url("http://www.libsass.org");
+
+<===> case50/input.scss
+@mixin do_import() {
+  @import url("http://www.libsass.org");
+}
+
+@if (true) {
+  @include do_import();
+}
+
+<===> case50/output.css
+@import url("http://www.libsass.org");
+
+<===> case51/input.scss
+.foo {a: b}
+.bar {@extend .foo}
+
+<===> case51/output.css
 .foo, .bar {
   a: b;
 }
 
-<===> case44/input.scss
+<===> case52/input.scss
+.bar {@extend .foo}
+.foo {a: b}
+
+<===> case52/output.css
+.foo, .bar {
+  a: b;
+}
+
+<===> case53/input.scss
 .foo {a: b}
 .bar {c: d; @extend .foo}
 
-<===> case44/output.css
+<===> case53/output.css
 .foo, .bar {
   a: b;
 }
@@ -1190,11 +1356,11 @@ a {
   c: d;
 }
 
-<===> case45/input.scss
+<===> case54/input.scss
 .foo {a: b}
 .bar {@extend .foo; c: d}
 
-<===> case45/output.css
+<===> case54/output.css
 .foo, .bar {
   a: b;
 }
@@ -1203,12 +1369,12 @@ a {
   c: d;
 }
 
-<===> case46/input.scss
+<===> case55/input.scss
 .foo {a: b}
 .bar {@extend .foo}
 .blip .foo {c: d}
 
-<===> case46/output.css
+<===> case55/output.css
 .foo, .bar {
   a: b;
 }
@@ -1217,12 +1383,12 @@ a {
   c: d;
 }
 
-<===> case47/input.scss
+<===> case56/input.scss
 .foo {a: b}
 .bar {c: d}
 .baz {@extend .foo; @extend .bar}
 
-<===> case47/output.css
+<===> case56/output.css
 .foo, .baz {
   a: b;
 }
@@ -1231,115 +1397,31 @@ a {
   c: d;
 }
 
-<===> case48/input.scss
+<===> case57/input.scss
 .foo .bar {a: b}
 .baz {@extend .foo; @extend .bar}
 
-<===> case48/output.css
+<===> case57/output.css
 .foo .bar, .foo .baz, .baz .bar, .baz .baz {
   a: b;
 }
 
-<===> case49/input.scss
+<===> case58/input.scss
 .foo.bar {a: b}
 .baz {@extend .foo; @extend .bar}
 
-<===> case49/output.css
+<===> case58/output.css
 .foo.bar, .baz {
   a: b;
 }
 
-<===> case50/input.scss
-.foo .bar {a: b}
-.baz {@extend .foo}
-.bang {@extend .bar}
-
-<===> case50/output.css
-.foo .bar, .foo .bang, .baz .bar, .baz .bang {
-  a: b;
-}
-
-<===> case51/input.scss
-.foo.bar {a: b}
-.baz {@extend .foo}
-.bang {@extend .bar}
-
-<===> case51/output.css
-.foo.bar, .foo.bang, .bar.baz, .baz.bang {
-  a: b;
-}
-
-<===> case52/input.scss
-.foo {a: b}
-.bar {@extend .foo}
-.baz {@extend .bar}
-.bip {@extend .bar}
-
-<===> case52/output.css
-.foo, .bar, .bip, .baz {
-  a: b;
-}
-
-<===> case53/input.scss
-.foo {a: b}
-.bar {@extend #{".foo"}}
-
-<===> case53/output.css
-.foo, .bar {
-  a: b;
-}
-
-<===> case54/input.scss
-.foo .bar {a: b}
-.baz {@extend .bar}
-
-<===> case54/output.css
-.foo .bar, .foo .baz {
-  a: b;
-}
-
-<===> case55/input.scss
-.foo .bar {a: b}
-.baz {@extend .foo}
-
-<===> case55/output.css
-.foo .bar, .baz .bar {
-  a: b;
-}
-
-<===> case56/input.scss
-%-a .foo.bar {a: b}
-.baz {@extend .foo} -a {@extend %-a}
-
-<===> case56/output.css
--a .foo.bar, -a .bar.baz {
-  a: b;
-}
-
-<===> case57/input.scss
-%-a .foo.baz {a: b}
-.baz {@extend .foo} -a {@extend %-a}
-
-<===> case57/output.css
--a .baz {
-  a: b;
-}
-
-<===> case58/input.scss
-%-a .foo.bar {a: b}
-#baz {@extend .foo} -a {@extend %-a}
-
-<===> case58/output.css
--a .foo.bar, -a .bar#baz {
-  a: b;
-}
-
 <===> case59/input.scss
-%-a .foo#baz {a: b}
-#baz {@extend .foo} -a {@extend %-a}
+.foo .bar {a: b}
+.baz {@extend .foo}
+.bang {@extend .bar}
 
 <===> case59/output.css
--a #baz {
+.foo .bar, .foo .bang, .baz .bar, .baz .bang {
   a: b;
 }
 
