@@ -174,10 +174,23 @@ type Import struct{ Imports []ImportItem }
 
 // ImportItem is one entry in @import; Plain means a CSS passthrough import.
 type ImportItem struct {
-	URL     string
-	Plain   bool
-	RawText string // for plain imports, the full media/text after url
+	URL   string
+	Plain bool
+	// Mods holds the parsed import modifiers (media/supports queries) following a
+	// plain-CSS import URL, or nil when there are none. Its Parts may contain the
+	// usual literal strings and *InterpExpr interpolations plus *supportsPart and
+	// *mediaPart nodes, which serialize canonically at evaluation time.
+	Mods *Interp
 }
+
+// supportsPart is an @supports condition embedded in a plain-CSS @import's
+// modifier list (as in `@import "a" supports(b: c)`).
+type supportsPart struct{ Cond SupportsCond }
+
+// mediaPart is a media-query list embedded in a plain-CSS @import's modifier
+// list (as in `@import "a" screen and (min-width: 100px)`). Its text is
+// re-serialized through the media-query normalizer at evaluation time.
+type mediaPart struct{ Query *Interp }
 
 // Use is @use.
 type Use struct {
