@@ -613,7 +613,8 @@ func (p *parser) parseInterpolatedText(stop func(*parser) bool) *Interp {
 			p.next()
 			parts = append(parts, &InterpExpr{Expr: e})
 		case c == '"' || c == '\'':
-			sb.WriteString(p.scanQuotedRaw())
+			flush()
+			parts = append(parts, p.quotedStringToInterp()...)
 		case c == '(' || c == '[':
 			depth++
 			sb.WriteByte(p.next())
@@ -648,8 +649,13 @@ func (p *parser) parseInterpolatedText(stop func(*parser) bool) *Interp {
 	return &Interp{Parts: parts}
 }
 
-// scanQuotedRaw copies a quoted string verbatim (including quotes).
-func (p *parser) scanQuotedRaw() string {
+// quotedStringToInterp scans a single quoted string and returns its
+// interpolation parts (surrounding quotes and escapes preserved verbatim, each
+// #{…} yielded as an InterpExpr). Sass processes interpolation inside quoted
+// strings in every prelude/value context, so all interpolated-text scanners
+// share this rather than copying the string raw.
+func (p *parser) quotedStringToInterp() []any {
+	var out []any
 	var sb strings.Builder
 	q := p.next()
 	sb.WriteByte(q)
@@ -663,19 +669,19 @@ func (p *parser) scanQuotedRaw() string {
 			continue
 		}
 		if c == '#' && p.peekAt(1) == '{' {
-			// keep interpolation raw
-			sb.WriteByte(p.next())
-			sb.WriteByte(p.next())
-			d := 1
-			for !p.eof() && d > 0 {
-				cc := p.next()
-				if cc == '{' {
-					d++
-				} else if cc == '}' {
-					d--
-				}
-				sb.WriteByte(cc)
+			if sb.Len() > 0 {
+				out = append(out, sb.String())
+				sb.Reset()
 			}
+			p.pos += 2
+			p.ws()
+			e := p.parseExpression()
+			p.ws()
+			if p.peek() != '}' {
+				p.fail("Expected \"}\".")
+			}
+			p.next()
+			out = append(out, &InterpExpr{Expr: e})
 			continue
 		}
 		sb.WriteByte(p.next())
@@ -683,5 +689,8 @@ func (p *parser) scanQuotedRaw() string {
 			break
 		}
 	}
-	return sb.String()
+	if sb.Len() > 0 {
+		out = append(out, sb.String())
+	}
+	return out
 }

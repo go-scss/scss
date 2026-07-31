@@ -392,7 +392,8 @@ func (p *parser) captureIfArgs() []any {
 			continue
 		}
 		if c == '"' || c == '\'' {
-			sb.WriteString(p.scanQuotedRaw())
+			flush()
+			parts = append(parts, p.quotedStringToInterp()...)
 			continue
 		}
 		if c == '(' || c == '[' || c == '{' {

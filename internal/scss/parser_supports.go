@@ -312,7 +312,8 @@ func (p *parser) interpolatedDeclarationValue(allowEmpty, allowSemicolon, allowC
 			sb.WriteString(p.scanEscape(false))
 			wroteNewline = false
 		case c == '"' || c == '\'':
-			sb.WriteString(p.scanQuotedRaw())
+			flush()
+			parts = append(parts, p.quotedStringToInterp()...)
 			wroteNewline = false
 		case c == '/' && p.peekAt(1) == '*':
 			sb.WriteString(p.scanLoudComment())
