@@ -96,6 +96,13 @@ type frame struct {
 	block         *cssStyleRule
 	group         *groupInfo
 	atContainer   bool
+	// inKeyframes marks a frame whose direct children are keyframe blocks (the
+	// body of a @keyframes at-rule): their leading token is a keyframe selector
+	// (from/to/percentage), not a CSS selector, and no `&`/@extend applies.
+	inKeyframes bool
+	// inKeyframeBlock marks the body of a keyframe block (e.g. `to { … }`), where
+	// declarations and at-rules are allowed but nested style rules are an error.
+	inKeyframeBlock bool
 	// atRoot marks the direct children of a query-less @at-root: the parent
 	// selector stays available so an explicit `&` resolves against it, but the
 	// selector is NOT implicitly prefixed with the parent (dart nestWithin with
@@ -402,6 +409,13 @@ func (e *evaluator) addDecl(fr *frame, d *cssDeclaration) {
 // --- style rules ---
 
 func (e *evaluator) evalStyleRule(n *StyleRule, fr *frame) {
+	if fr.inKeyframes {
+		e.evalKeyframeBlock(n, fr)
+		return
+	}
+	if fr.inKeyframeBlock {
+		e.fail("Style rules may not be used within keyframe blocks.")
+	}
 	selStr := e.resolveInterp(n.Selector)
 	child := parseSelectorList(selStr)
 	var resolved selectorList
@@ -431,6 +445,43 @@ func (e *evaluator) evalStyleRule(n *StyleRule, fr *frame) {
 	e.currentParent = resolved
 	e.evalRuleBody(n.Body, child2)
 	e.currentParent = savedParent
+}
+
+// evalKeyframeBlock evaluates one keyframe block (e.g. `from, 15%, to { … }`)
+// inside a @keyframes at-rule. The leading token is a keyframe selector, not a
+// CSS selector: it is resolved (interpolation only), canonicalised and emitted
+// verbatim. Declarations and at-rules land inside it; nested style rules are an
+// error, and the block never bubbles out of the @keyframes container.
+func (e *evaluator) evalKeyframeBlock(n *StyleRule, fr *frame) {
+	sel := normalizeKeyframeSelector(strings.TrimSpace(e.resolveInterp(n.Selector)))
+	rule := &cssStyleRule{raw: true, rawSel: sel}
+	rule.blankBefore = e.consumeGroup(fr)
+	e.liveContainer(fr).appendNode(rule)
+	child := &frame{
+		container:       rule,
+		rootContainer:   rule,
+		mediaParent:     rule,
+		directDecls:     true,
+		inKeyframeBlock: true,
+		group:           &groupInfo{},
+	}
+	e.evalRuleBody(n.Body, child)
+}
+
+// normalizeKeyframeSelector canonicalises a keyframe selector list the way
+// dart-sass serializes it: single-space after each comma, and the exponent
+// marker of a scientific-notation percentage lower-cased (13E+1% -> 13e+1%).
+func normalizeKeyframeSelector(s string) string {
+	parts := strings.Split(s, ",")
+	out := make([]string, len(parts))
+	for i, p := range parts {
+		p = strings.TrimSpace(p)
+		if strings.ContainsAny(p, "0123456789") {
+			p = strings.ReplaceAll(p, "E", "e")
+		}
+		out[i] = p
+	}
+	return strings.Join(out, ", ")
 }
 
 // evalRuleBody evaluates a style-rule body, handling declarations (into the
@@ -687,8 +738,12 @@ func (e *evaluator) evalMedia(n *Media, fr *frame) {
 		parentSel:     fr.parentSel,
 		hasParent:     fr.hasParent,
 		atRoot:        fr.atRoot,
-		atContainer:   !fr.hasParent,
-		group:         &groupInfo{},
+		// A @media nested in a keyframe block stays inside it and keeps its
+		// declaration-direct, no-style-rules character.
+		directDecls:     fr.inKeyframeBlock,
+		inKeyframeBlock: fr.inKeyframeBlock,
+		atContainer:     !fr.hasParent,
+		group:           &groupInfo{},
 	}
 	e.evalBody(n.Body, child, !fr.hasParent)
 }
@@ -770,13 +825,18 @@ func (e *evaluator) evalGenericAtRule(n *AtRule, fr *frame) {
 	if n.NoBody {
 		return
 	}
-	direct := isDeclarationAtRule(n.Name)
+	keyframes := isKeyframesAtRule(n.Name)
+	// A @keyframes body holds keyframe blocks, but a stray declaration written
+	// directly in it (dart tolerates this) is emitted verbatim rather than being
+	// wrapped in an empty style rule, so treat the body as declaration-direct.
+	direct := isDeclarationAtRule(n.Name) || keyframes
 	child := &frame{
 		container:     at,
 		rootContainer: at,
 		mediaParent:   at,
 		directDecls:   direct,
 		atContainer:   true,
+		inKeyframes:   keyframes,
 		group:         &groupInfo{},
 	}
 	e.evalBody(n.Body, child, true)
@@ -788,6 +848,14 @@ func isDeclarationAtRule(name string) bool {
 		return true
 	}
 	return false
+}
+
+// isKeyframesAtRule reports whether an at-rule name is @keyframes or one of its
+// vendor-prefixed spellings, whose body holds keyframe blocks (selectors are
+// `from`/`to`/percentages) rather than ordinary style rules.
+func isKeyframesAtRule(name string) bool {
+	n := strings.ToLower(name)
+	return n == "keyframes" || strings.HasSuffix(n, "-keyframes")
 }
 
 func (e *evaluator) evalLoudComment(n *LoudComment, fr *frame) {
