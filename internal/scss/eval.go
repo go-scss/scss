@@ -96,6 +96,11 @@ type frame struct {
 	block         *cssStyleRule
 	group         *groupInfo
 	atContainer   bool
+	// atRoot marks the direct children of a query-less @at-root: the parent
+	// selector stays available so an explicit `&` resolves against it, but the
+	// selector is NOT implicitly prefixed with the parent (dart nestWithin with
+	// implicitParent=false). It applies to one nesting level only.
+	atRoot bool
 	// sealed marks that a child (typically a nested @media) has bubbled ABOVE
 	// this frame's container node, so the container must be split: the next
 	// node that stays in this frame gets a fresh copy of the container appended
@@ -392,7 +397,7 @@ func (e *evaluator) evalStyleRule(n *StyleRule, fr *frame) {
 	child := parseSelectorList(selStr)
 	var resolved selectorList
 	if fr.hasParent {
-		resolved = resolveNesting(child, fr.parentSel)
+		resolved = resolveNestingImpl(child, fr.parentSel, !fr.atRoot)
 	} else {
 		resolved = child
 	}
@@ -662,6 +667,7 @@ func (e *evaluator) evalMedia(n *Media, fr *frame) {
 		mediaRuleNode: at,
 		parentSel:     fr.parentSel,
 		hasParent:     fr.hasParent,
+		atRoot:        fr.atRoot,
 		atContainer:   !fr.hasParent,
 		group:         &groupInfo{},
 	}
@@ -689,6 +695,7 @@ func (e *evaluator) evalSupports(n *Supports, fr *frame) {
 		mediaRuleNode: at,
 		parentSel:     fr.parentSel,
 		hasParent:     fr.hasParent,
+		atRoot:        fr.atRoot,
 		atContainer:   !fr.hasParent,
 		group:         &groupInfo{},
 	}
@@ -709,8 +716,14 @@ func (e *evaluator) evalAtRoot(n *AtRoot, fr *frame) {
 			mediaQueries:  fr.mediaQueries,
 			mediaSources:  fr.mediaSources,
 			mediaRuleNode: fr.mediaRuleNode,
-			atContainer:   true,
-			group:         &groupInfo{},
+			// The parent selector stays available so an explicit `&` inside the
+			// @at-root body resolves against it (dart), but atRoot suppresses the
+			// implicit parent prefix so bare selectors escape to the root.
+			parentSel:   fr.parentSel,
+			hasParent:   fr.hasParent,
+			atRoot:      true,
+			atContainer: true,
+			group:       &groupInfo{},
 		}
 		e.evalBody(n.Body, child, true)
 		return

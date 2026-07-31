@@ -39,10 +39,18 @@ func parseSelectorList(str string) selectorList {
 // resolveNesting resolves child's parent selectors (&) against parent, matching
 // Dart Sass's SelectorList.nestWithin with implicitParent = true.
 func resolveNesting(child, parent selectorList) selectorList {
+	return resolveNestingImpl(child, parent, true)
+}
+
+// resolveNestingImpl resolves child's parent selectors against parent. When
+// implicitParent is false (the direct children of a query-less @at-root), a
+// selector without an explicit `&` is emitted as-is rather than being prefixed
+// with the parent, matching dart nestWithin(implicitParent: false).
+func resolveNestingImpl(child, parent selectorList, implicitParent bool) selectorList {
 	if child.list == nil {
 		return child
 	}
-	return selectorList{list: child.list.nestWithin(parent.list, true, false)}
+	return selectorList{list: child.list.nestWithin(parent.list, implicitParent, false)}
 }
 
 // nestWithin returns a new selector list representing sl nested within parent.
