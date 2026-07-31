@@ -23,6 +23,12 @@ type parser struct {
 	pos    int
 	indent bool // indented (.sass) syntax already converted to braces
 	arith  int  // nesting depth inside grouping parens (where "/" divides)
+	// mediaFeatureStop suppresses top-level `<`/`>` comparison operators while
+	// parsing a media feature's operand expression, so the media-query parser
+	// can treat them as range operators. It is cleared on descent into any
+	// nested grouping (parens, brackets, function args, interpolation) so a
+	// comparison written there (e.g. `(width < (1 < 2))`) still parses.
+	mediaFeatureStop bool
 }
 
 func newParser(src string) *parser {

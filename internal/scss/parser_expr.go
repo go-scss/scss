@@ -170,6 +170,13 @@ func (p *parser) parseRelational() Expr {
 		save := p.pos
 		p.ws()
 		var op string
+		if p.mediaFeatureStop && (p.peek() == '<' || p.peek() == '>') {
+			// Inside a media feature's top-level operand, a `<`/`>`/`<=`/`>=` is
+			// a range operator owned by the media-query parser, not a SassScript
+			// comparison.
+			p.pos = save
+			return left
+		}
 		if p.match("<=") {
 			op = "<="
 		} else if p.match(">=") {
@@ -424,6 +431,11 @@ func (p *parser) parseNumber() Expr {
 }
 
 func (p *parser) parseParenOrMap() Expr {
+	// A grouping paren starts a fresh comparison context (the media-feature
+	// range-operator suppression applies only at the feature's top level).
+	savedStop := p.mediaFeatureStop
+	p.mediaFeatureStop = false
+	defer func() { p.mediaFeatureStop = savedStop }()
 	p.next() // (
 	// Parentheses do NOT force a division context: a "/" between literals inside
 	// them keeps its slash provenance (so "(1 2/3 4)" preserves the 2/3). The
@@ -492,6 +504,9 @@ func (p *parser) parseParenOrMap() Expr {
 }
 
 func (p *parser) parseBracketList() Expr {
+	savedStop := p.mediaFeatureStop
+	p.mediaFeatureStop = false
+	defer func() { p.mediaFeatureStop = savedStop }()
 	p.next() // [
 	p.ws()
 	if p.peek() == ']' {
@@ -570,6 +585,9 @@ func (p *parser) parseStringLiteral() Expr {
 
 func (p *parser) parseHashValue() Expr {
 	if p.peekAt(1) == '{' {
+		savedStop := p.mediaFeatureStop
+		p.mediaFeatureStop = false
+		defer func() { p.mediaFeatureStop = savedStop }()
 		p.pos += 2
 		p.ws()
 		e := p.parseExpression()
@@ -862,7 +880,9 @@ func (p *parser) parseArgListOpt(allowEmptySecondArg bool) *ArgList {
 	// `hsl(180 60% 50% / 0.4)`), even when the call is nested in parentheses.
 	savedArith := p.arith
 	p.arith = 0
-	defer func() { p.arith = savedArith }()
+	savedStop := p.mediaFeatureStop
+	p.mediaFeatureStop = false
+	defer func() { p.arith = savedArith; p.mediaFeatureStop = savedStop }()
 	p.next() // (
 	al := &ArgList{}
 	for {
