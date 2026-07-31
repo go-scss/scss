@@ -502,11 +502,15 @@ func (e *evaluator) lookupMixin(ns, name string) *mixinEntry {
 func (e *evaluator) evalIf(n *If, fr *frame) {
 	for _, cl := range n.Clauses {
 		if e.evalExpr(cl.Cond).isTruthy() {
+			e.env.pushControlScope()
+			defer e.env.popScope()
 			e.evalBody(cl.Body, fr, fr.atContainer)
 			return
 		}
 	}
 	if n.HasElse {
+		e.env.pushControlScope()
+		defer e.env.popScope()
 		e.evalBody(n.Else, fr, fr.atContainer)
 	}
 }
@@ -514,6 +518,8 @@ func (e *evaluator) evalIf(n *If, fr *frame) {
 func (e *evaluator) evalEach(n *Each, fr *frame) {
 	list := e.evalExpr(n.List)
 	items := iterationItems(list)
+	e.env.pushControlScope()
+	defer e.env.popScope()
 	for _, item := range items {
 		if len(n.Vars) == 1 {
 			e.env.defineVar(n.Vars[0], item)
@@ -574,6 +580,8 @@ func (e *evaluator) evalFor(n *For, fr *frame) {
 	mkVar := func(i int) *Number {
 		return &Number{Val: float64(i), Numer: from.Numer, Denom: from.Denom}
 	}
+	e.env.pushControlScope()
+	defer e.env.popScope()
 	if start <= end {
 		last := end
 		if !n.Through {
@@ -596,6 +604,8 @@ func (e *evaluator) evalFor(n *For, fr *frame) {
 }
 
 func (e *evaluator) evalWhile(n *While, fr *frame) {
+	e.env.pushControlScope()
+	defer e.env.popScope()
 	for e.evalExpr(n.Cond).isTruthy() {
 		e.evalBody(n.Body, fr, fr.atContainer)
 	}

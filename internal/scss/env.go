@@ -29,10 +29,19 @@ type funcEntry struct {
 
 // environment holds variable scopes plus mixin/function/module tables.
 type environment struct {
-	scopes  []map[string]Value
-	mixins  map[string]*mixinEntry
-	funcs   map[string]*funcEntry
-	modules map[string]*module // namespace -> module
+	scopes []map[string]Value
+	// semiGlobal[i] marks scope i as transparent to the global scope for the
+	// purpose of variable assignment: an implicit (non-!global) assignment to a
+	// variable that only exists at global scope writes THROUGH to global rather
+	// than creating a scope-local shadow. The global scope is semi-global by
+	// definition, and a control-flow scope (@if/@each/@for/@while body) is
+	// semi-global iff its parent is — i.e. no @function/@mixin/style-rule
+	// boundary lies between it and the root. This mirrors dart-sass's
+	// Environment.scope(semiGlobal:) chained down from the global scope.
+	semiGlobal []bool
+	mixins     map[string]*mixinEntry
+	funcs      map[string]*funcEntry
+	modules    map[string]*module // namespace -> module
 	// content holds the @content block passed to the current mixin invocation.
 	content     []Stmt
 	contentEnv  *environment
@@ -45,15 +54,34 @@ type environment struct {
 
 func newEnvironment() *environment {
 	return &environment{
-		scopes:  []map[string]Value{{}},
-		mixins:  map[string]*mixinEntry{},
-		funcs:   map[string]*funcEntry{},
-		modules: map[string]*module{},
+		scopes:     []map[string]Value{{}},
+		semiGlobal: []bool{true},
+		mixins:     map[string]*mixinEntry{},
+		funcs:      map[string]*funcEntry{},
+		modules:    map[string]*module{},
 	}
 }
 
-func (e *environment) pushScope() { e.scopes = append(e.scopes, map[string]Value{}) }
-func (e *environment) popScope()  { e.scopes = e.scopes[:len(e.scopes)-1] }
+// pushScope opens an opaque scope: a @function/@mixin/style-rule boundary that
+// blocks implicit write-through to the global scope.
+func (e *environment) pushScope() {
+	e.scopes = append(e.scopes, map[string]Value{})
+	e.semiGlobal = append(e.semiGlobal, false)
+}
+
+// pushControlScope opens a control-flow (@if/@each/@for/@while) scope. It stays
+// transparent to global assignment iff the current innermost scope is, so
+// implicit writes to a global variable propagate to global at the stylesheet
+// root but are trapped once a rule/function/mixin boundary intervenes.
+func (e *environment) pushControlScope() {
+	e.scopes = append(e.scopes, map[string]Value{})
+	e.semiGlobal = append(e.semiGlobal, e.semiGlobal[len(e.semiGlobal)-1])
+}
+
+func (e *environment) popScope() {
+	e.scopes = e.scopes[:len(e.scopes)-1]
+	e.semiGlobal = e.semiGlobal[:len(e.semiGlobal)-1]
+}
 
 // defineVar declares a variable in the innermost scope (parameter binding and
 // loop variables), unconditionally shadowing any enclosing variable.
@@ -76,16 +104,23 @@ func (e *environment) hasVar(name string) bool {
 	return ok
 }
 
-// setVar implements Sass assignment scoping: update an existing non-global
-// enclosing scope if present, else assign in the current scope.
+// setVar implements Sass assignment scoping (dart-sass Environment.setVariable):
+// an existing binding is updated in the innermost scope that holds it, EXCEPT a
+// binding that only exists at the global scope is written through to global just
+// when the current scope is still transparent to it (semi-global); otherwise —
+// behind a rule/function/mixin boundary — a fresh scope-local shadow is created.
+// A name bound nowhere is created in the current innermost scope.
 func (e *environment) setVar(name string, val Value, global bool) {
 	name = normIdent(name)
 	if global {
 		e.scopes[0][name] = val
 		return
 	}
-	for i := len(e.scopes) - 1; i >= 1; i-- {
+	for i := len(e.scopes) - 1; i >= 0; i-- {
 		if _, ok := e.scopes[i][name]; ok {
+			if i == 0 && !e.semiGlobal[len(e.semiGlobal)-1] {
+				break // global-only binding trapped behind an opaque boundary
+			}
 			e.scopes[i][name] = val
 			return
 		}
