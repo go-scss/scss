@@ -4,7 +4,6 @@
 package scss
 
 import (
-	"math"
 	"strings"
 )
 
@@ -34,7 +33,10 @@ func (e *evaluator) evalExpr(expr Expr) Value {
 	case *Unary:
 		return e.evalUnary(x)
 	case *FuncCall:
-		return e.evalCall(x)
+		// A function-call result is consumed, so a slash number it returns (e.g.
+		// list.nth(3 1/2 4, 2), or a user function returning 1/2) collapses to its
+		// quotient; a list result keeps any inner slash (withoutSlash no-ops it).
+		return numWithoutSlash(e.evalCall(x))
 	case *IfCssExpr:
 		return e.evalIfCss(x)
 	case *preEvaluated:
@@ -44,7 +46,10 @@ func (e *evaluator) evalExpr(expr Expr) Value {
 	case *MapExpr:
 		return e.evalMap(x)
 	case *Paren:
-		return e.evalExpr(x.Expr)
+		// A parenthesized grouping consumes its result, so a bare slash number
+		// like (1/2) collapses to its quotient; a slash inside a parenthesized
+		// list ((1 2/3 4)) survives because withoutSlash is a no-op on lists.
+		return numWithoutSlash(e.evalExpr(x.Expr))
 	case *InterpExpr:
 		return &SassString{Text: e.evalInterpPart(x.Expr)}
 	}
@@ -195,7 +200,15 @@ func (e *evaluator) evalBinary(x *Binary) Value {
 		_, rnum := r.(*Number)
 		if lnum && rnum {
 			if x.Slash {
-				return &List{Elements: []Value{l, r}, Sep: SepSlash, SlashLit: true}
+				// A "/" between two number literals is division, but dart-sass
+				// tags the quotient with as-slash provenance so it serializes as
+				// "left/right" until consumed. The operands (themselves possibly
+				// slash numbers, for nesting) are remembered verbatim. Dividing
+				// two numbers always yields a number, so the assertion holds.
+				m := *(e.arith(x.Op, l, r).(*Number))
+				m.slashL = l.(*Number)
+				m.slashR = r.(*Number)
+				return &m
 			}
 			return e.arith(x.Op, l, r)
 		}
@@ -312,12 +325,11 @@ func (e *evaluator) numberArith(op string, a, b *Number) Value {
 		val, num, den = simplifyUnits(val, num, den)
 		return &Number{Val: val, Numer: num, Denom: den}
 	case "%":
+		// Reuse the calc engine's floored modulo so SassScript "%" and calc()'s
+		// rem/mod agree on the non-finite edge cases (infinite operands → NaN or
+		// the dividend, per sign).
 		bv, num, _ := e.alignForAdd(a, b)
-		val := math.Mod(a.Val, bv)
-		if val != 0 && (val < 0) != (bv < 0) {
-			val += bv
-		}
-		return &Number{Val: val, Numer: num}
+		return &Number{Val: moduloLikeSass(a.Val, bv), Numer: num}
 	}
 	return nil
 }

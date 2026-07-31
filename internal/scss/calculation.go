@@ -139,8 +139,13 @@ func moduloLikeSass(a, b float64) float64 {
 	}
 	if b > 0 {
 		r := math.Mod(a, b)
-		if r != 0 && r < 0 {
+		if r < 0 {
 			r += b
+		}
+		if r == 0 {
+			// Floored modulo lands in [0, b) for a positive divisor, so a zero
+			// result is +0 (dart-sass: math.div(1, mod(-7, 7)) == calc(infinity)).
+			return 0
 		}
 		return r
 	}
@@ -149,7 +154,9 @@ func moduloLikeSass(a, b float64) float64 {
 	}
 	r := math.Mod(a, b)
 	if r == 0 {
-		return 0
+		// Floored modulo lands in (b, 0] for a negative divisor, so a zero result
+		// carries the divisor's negative sign.
+		return math.Copysign(0, -1)
 	}
 	if r > 0 {
 		r += b
@@ -722,8 +729,16 @@ func writeCalcTerm(sb *strings.Builder, t calcTerm, compressed bool) {
 		}
 		if v.hasComplexUnits() {
 			sb.WriteString(formatFloat(v.Val, compressed))
-			sb.WriteString(v.Numer[0])
-			writeCalcUnits(sb, v.Numer[1:], v.Denom, compressed)
+			// The value glues to the first numerator unit ("1px"); any further
+			// numerators and all denominators are written as " * 1u" / " / 1u".
+			// A denominator-only number (no numerators, e.g. 1 / 1px / 1rad) has
+			// nothing to glue, so its whole unit list goes through writeCalcUnits.
+			if len(v.Numer) > 0 {
+				sb.WriteString(v.Numer[0])
+				writeCalcUnits(sb, v.Numer[1:], v.Denom, compressed)
+			} else {
+				writeCalcUnits(sb, nil, v.Denom, compressed)
+			}
 			return
 		}
 		sb.WriteString(serializeValue(v, compressed))

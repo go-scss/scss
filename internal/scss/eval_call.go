@@ -85,19 +85,25 @@ func (e *evaluator) evalArgs(args *ArgList) ([]Value, map[string]Value) {
 		return pos, named
 	}
 	for _, a := range args.Args {
-		val := e.evalExpr(a.Value)
+		// Binding an argument consumes it, so a bare slash number becomes its
+		// quotient. Spreading a list makes each element its own argument, so the
+		// elements are consumed individually too; an unspread list argument keeps
+		// any slash its elements carry (withoutSlash is a no-op on the list).
+		val := numWithoutSlash(e.evalExpr(a.Value))
 		if a.Spread {
 			switch s := val.(type) {
 			case *List:
-				pos = append(pos, s.Elements...)
+				for _, el := range s.Elements {
+					pos = append(pos, numWithoutSlash(el))
+				}
 				// An argument list re-spreads its captured keyword arguments too.
 				for k, v := range s.Keywords {
-					named[k] = v
+					named[k] = numWithoutSlash(v)
 				}
 			case *Map:
 				for i := range s.Keys {
 					if ks, ok := s.Keys[i].(*SassString); ok {
-						named[ks.Text] = s.Values[i]
+						named[ks.Text] = numWithoutSlash(s.Values[i])
 					}
 				}
 			default:
@@ -143,6 +149,35 @@ func (e *evaluator) evalCall(x *FuncCall) Value {
 }
 
 func (e *evaluator) evalIfFunction(x *FuncCall) Value {
+	// A spread argument ($args...) can only be resolved by evaluating it, so the
+	// lazy branch selection below is unavailable: fall back to fully binding the
+	// arguments and picking the taken branch from the resolved values.
+	if x.Args != nil {
+		for _, a := range x.Args.Args {
+			if a.Spread {
+				pos, named := e.evalArgs(x.Args)
+				pick := func(name string, idx int) (Value, bool) {
+					if v, ok := named[name]; ok {
+						return v, true
+					}
+					if idx < len(pos) {
+						return pos[idx], true
+					}
+					return nil, false
+				}
+				cond, ok1 := pick("condition", 0)
+				tv, ok2 := pick("if-true", 1)
+				fv, ok3 := pick("if-false", 2)
+				if !ok1 || !ok2 || !ok3 {
+					e.fail("if() requires three arguments.")
+				}
+				if cond.isTruthy() {
+					return tv
+				}
+				return fv
+			}
+		}
+	}
 	if x.Args == nil || len(x.Args.Args) < 3 {
 		e.fail("if() requires three arguments.")
 	}
@@ -266,7 +301,7 @@ func (e *evaluator) bindResolved(params *ParamList, pos []Value, named map[strin
 			continue
 		}
 		if p.Default != nil {
-			e.env.defineVar(p.Name, e.evalExpr(p.Default))
+			e.env.defineVar(p.Name, numWithoutSlash(e.evalExpr(p.Default)))
 			continue
 		}
 		e.fail("Missing argument $%s.", p.Name)

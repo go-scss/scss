@@ -279,6 +279,11 @@ func isLiteralNumberish(e Expr) bool {
 	switch v := e.(type) {
 	case *NumberLit:
 		return true
+	case *Binary:
+		// A nested slash division (already resolved as slash-preserving) is itself
+		// numberish, so a chain like 1/2/3/4/5 keeps the slash all the way up
+		// rather than dividing at the second "/".
+		return v.Op == "/" && v.Slash
 	case *Unary:
 		return (v.Op == "-" || v.Op == "+") && isLiteralNumberish(v.Expr)
 	case *FuncCall:
@@ -385,8 +390,10 @@ func (p *parser) parseNumber() Expr {
 
 func (p *parser) parseParenOrMap() Expr {
 	p.next() // (
-	p.arith++
-	defer func() { p.arith-- }()
+	// Parentheses do NOT force a division context: a "/" between literals inside
+	// them keeps its slash provenance (so "(1 2/3 4)" preserves the 2/3). The
+	// grouping itself strips provenance from its scalar result at eval time (via
+	// the Paren node), which is why "(1/2)" still collapses to 0.5.
 	p.ws()
 	if p.peek() == ')' {
 		p.next()
@@ -613,8 +620,11 @@ func (p *parser) parseIdentValue() Expr {
 	if p.peek() == ':' && unvendor(strings.ToLower(name)) == "progid" {
 		return p.tryProgid(name)
 	}
-	// namespaced access: ns.func(  or  ns.$var
-	if p.peek() == '.' {
+	// namespaced access: ns.func(  or  ns.$var. The "." must introduce a member
+	// (a "$" variable or an identifier); a "." that begins a spread ("..." after
+	// a bare value, as in `a...`/`null...`) is not namespace access and is left
+	// for the argument-list parser to consume.
+	if p.peek() == '.' && (p.peekAt(1) == '$' || isNameStart(p.peekAt(1)) || p.peekAt(1) == '\\' || p.peekAt(1) == '-') {
 		p.next()
 		if p.peek() == '$' {
 			p.next()

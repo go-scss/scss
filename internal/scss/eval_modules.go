@@ -52,7 +52,9 @@ func (e *evaluator) buildConfig(base map[string]Value, cfg []ConfigVar) map[stri
 	}
 	for _, c := range cfg {
 		name := normIdent(c.Name)
-		v := e.evalExpr(c.Value)
+		// A `with (...)` configuration binding consumes its value like any other
+		// variable assignment, so a slash number is stored as its quotient.
+		v := numWithoutSlash(e.evalExpr(c.Value))
 		if c.Default {
 			if existing, ok := out[name]; ok {
 				if _, isNull := existing.(*Null); !isNull {
