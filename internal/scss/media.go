@@ -143,12 +143,22 @@ func (p *selParser) mediaLogicSequence(operator string) []string {
 func (p *selParser) mediaInParens() string {
 	p.expectChar('(')
 	p.whitespace()
-	var result string
-	if p.peek() == '(' || (p.lookingAtIdentifier() && p.matchesKeyword("not")) {
-		result = "(" + p.mediaCondition() + ")"
-	} else {
-		result = "(" + normalizeMediaFeature(p.declarationValue(false)) + ")"
+	if p.peek() == '(' || (p.lookingAtIdentifier() && p.matchesKeywordCS("not")) {
+		// Try to parse a structured nested condition. If it doesn't cleanly
+		// consume the group up to the closing ')', the resolved text came from
+		// interpolation whose keyword casing/structure dart leaves opaque
+		// (e.g. `(#{"(a) AnD (b)"})` -> `((a) AnD (b))`): backtrack and re-read
+		// the whole parenthesized group verbatim.
+		save := p.pos
+		cond := p.mediaCondition()
+		p.whitespace()
+		if p.peek() == ')' {
+			p.expectChar(')')
+			return "(" + cond + ")"
+		}
+		p.pos = save
 	}
+	result := "(" + normalizeMediaFeature(p.declarationValue(false)) + ")"
 	p.expectChar(')')
 	return result
 }
@@ -169,40 +179,28 @@ func normalizeMediaFeature(s string) string {
 // mediaCondition parses a nested <media-condition>, normalizing the and/or/not
 // keyword casing while preserving feature text.
 func (p *selParser) mediaCondition() string {
-	if p.scanKeyword("not") {
+	if p.scanKeywordCS("not") {
 		p.whitespace()
 		return "not " + p.mediaInParens()
 	}
 	first := p.mediaInParens()
 	p.whitespace()
 	op := ""
-	if p.matchesKeyword("and") {
+	if p.matchesKeywordCS("and") {
 		op = "and"
-	} else if p.matchesKeyword("or") {
+	} else if p.matchesKeywordCS("or") {
 		op = "or"
 	}
 	if op == "" {
 		return first
 	}
 	parts := []string{first}
-	for p.scanKeyword(op) {
+	for p.scanKeywordCS(op) {
 		p.whitespace()
 		parts = append(parts, p.mediaInParens())
 		p.whitespace()
 	}
 	return strings.Join(parts, " "+op+" ")
-}
-
-// matchesKeyword reports whether the next identifier equals text, without
-// consuming input.
-func (p *selParser) matchesKeyword(text string) bool {
-	start := p.pos
-	if !p.lookingAtIdentifier() {
-		return false
-	}
-	id := p.identifier()
-	p.pos = start
-	return strings.EqualFold(id, text)
 }
 
 func (p *selParser) expectWhitespaceMedia() {
@@ -220,6 +218,35 @@ func (p *selParser) scanKeyword(text string) bool {
 	}
 	id := p.identifier()
 	if strings.EqualFold(id, text) {
+		return true
+	}
+	p.pos = start
+	return false
+}
+
+// matchesKeywordCS and scanKeywordCS are the CASE-SENSITIVE counterparts used
+// when reparsing an already-resolved media condition inside parentheses. Unlike
+// the parse-time stylesheet grammar (which normalizes raw and/or/not casing into
+// the query interpolation), the evaluator sees resolved text in which a raw
+// keyword is already lowercase; a mixed-case keyword can therefore only have
+// come from interpolation, which dart leaves opaque — so `(#{"NoT (a)"})`
+// serializes as `(NoT (a))` while a raw `(NoT (a))` was normalized to `not (a)`.
+func (p *selParser) matchesKeywordCS(text string) bool {
+	start := p.pos
+	if !p.lookingAtIdentifier() {
+		return false
+	}
+	id := p.identifier()
+	p.pos = start
+	return id == text
+}
+
+func (p *selParser) scanKeywordCS(text string) bool {
+	start := p.pos
+	if !p.lookingAtIdentifier() {
+		return false
+	}
+	if p.identifier() == text {
 		return true
 	}
 	p.pos = start

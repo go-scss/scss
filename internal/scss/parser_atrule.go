@@ -236,9 +236,9 @@ func (p *parser) parseAtRoot() Stmt {
 }
 
 func (p *parser) parseMedia() Stmt {
-	q := p.parseInterpolatedText(func(pp *parser) bool { return pp.peek() == '{' })
+	q := p.parseMediaQueryInterp(func(pp *parser) bool { return pp.peek() == '{' })
 	body := p.parseBlock()
-	return &Media{Query: trimInterp(q), Body: body}
+	return &Media{Query: q, Body: body}
 }
 
 func (p *parser) parseExtend() Stmt {
@@ -390,7 +390,7 @@ func (p *parser) tryImportModifiers() *Interp {
 // media-query list, up to the statement terminator. Its text is normalized
 // through the media-query serializer at evaluation time.
 func (p *parser) captureMediaQueryList() *Interp {
-	return p.parseInterpolatedText(func(pp *parser) bool {
+	return p.parseMediaQueryInterp(func(pp *parser) bool {
 		c := pp.peek()
 		return c == ';' || c == '}' || c == 0
 	})
