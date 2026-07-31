@@ -132,7 +132,10 @@ func filterForwarded(mod *module, n *Forward, prefix string) *module {
 		}
 		return !vars[normIdent(prefix+k)]
 	}
-	out := &module{vars: map[string]Value{}, mixins: map[string]*mixinEntry{}, funcs: map[string]*funcEntry{}, env: mod.env}
+	// The filtered view copies member values, but a namespaced assignment to a
+	// still-visible variable must reach the underlying module's real storage, so
+	// the view forwards writes to the module it filters.
+	out := &module{vars: map[string]Value{}, mixins: map[string]*mixinEntry{}, funcs: map[string]*funcEntry{}, env: mod.env, forwards: []forwardedMod{{mod: mod}}}
 	for k, v := range mod.vars {
 		if varAllowed(k) {
 			out.vars[k] = v
@@ -207,6 +210,9 @@ func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *
 	// the whole compilation: reuse the singleton and do NOT re-emit its CSS.
 	if m, ok := e.sharedLoaded[resolved]; ok {
 		e.loaded[url] = m
+		// A diamond dependency: this module is reused, but the current module
+		// still depends on it, so downstream extends here must reach its rules.
+		e.dependsOn(m.scope)
 		return m
 	}
 	for _, s := range e.loadStack {
@@ -236,6 +242,8 @@ func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *
 	sub.loadStack = append(append([]string(nil), e.loadStack...), resolved)
 	sub.loadedURLs = e.loadedURLs
 	sub.sharedLoaded = e.sharedLoaded
+	e.adoptScope(sub)
+	e.dependsOn(sub.scope)
 	// Seed the module's globals with the incoming configuration and remember it
 	// so this module's own @forward rules can propagate it downstream.
 	sub.incomingConfig = config
@@ -249,23 +257,17 @@ func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *
 	// the importing stylesheet's top-level blank-line grouping.
 	e.emitModuleCSS(sub.root.children(), fr)
 	mod := &module{
-		vars:   sub.env.scopes[0],
-		mixins: sub.env.mixins,
-		funcs:  sub.env.funcs,
-		env:    sub.env,
+		vars:     sub.env.scopes[0],
+		mixins:   sub.env.mixins,
+		funcs:    sub.env.funcs,
+		env:      sub.env,
+		scope:    sub.scope,
+		forwards: sub.forwarded,
 	}
-	// include forwarded members
-	for _, fw := range sub.forwarded {
-		for k, v := range fw.mod.vars {
-			mod.vars[fw.prefix+k] = v
-		}
-		for k, v := range fw.mod.mixins {
-			mod.mixins[fw.prefix+k] = v
-		}
-		for k, v := range fw.mod.funcs {
-			mod.funcs[fw.prefix+k] = v
-		}
-	}
+	// Forwarded members are already exposed in the module's own tables: while the
+	// stylesheet ran, each @forward called mergeModuleGlobally on the sub-
+	// evaluator, seeding scopes[0]/funcs/mixins (which back mod.vars/funcs/mixins)
+	// while letting the module's OWN definitions win over a forwarded name.
 	e.loaded[url] = mod
 	e.sharedLoaded[resolved] = mod
 	return mod
@@ -282,10 +284,12 @@ func emptyModule() *module {
 	}
 }
 
+// runModule evaluates a loaded module's body. @extend is NOT finalised here:
+// the module's rules may still be extended by downstream modules, so every
+// scope is finalised together at the end of the compilation (applyAllExtends).
 func (e *evaluator) runModule(stmts []Stmt) {
 	fr := &frame{container: e.root, rootContainer: e.root, mediaParent: e.root, atContainer: true, group: &groupInfo{}}
 	e.evalBody(stmts, fr, true)
-	e.applyExtends()
 }
 
 func (e *evaluator) resolve(url string) (string, string, bool) {

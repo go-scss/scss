@@ -262,6 +262,106 @@ func (s *extensionStore) addExtension(extenderList *selList, target simpleSel, o
 	}
 }
 
+// addExtensions merges the extension records from downstream module stores into
+// this (upstream) store and re-extends this store's registered selectors and
+// extensions with them. This is Dart Sass's ExtensionStore.addExtensions and is
+// what makes cross-module @extend both work and stay isolated: a downstream
+// extend only re-extends selectors THIS module registered, never selectors that
+// a different downstream module contributed, so sibling modules never leak into
+// one another. A private placeholder target (`%-x`/`%_x`) is a module-private
+// member and never crosses a module boundary, so it is skipped.
+func (s *extensionStore) addExtensions(others []*extensionStore) {
+	var newExtensions map[string]*targetExtensions
+	add := func(targetK string, target simpleSel, ck string, e *extension) {
+		if newExtensions == nil {
+			newExtensions = map[string]*targetExtensions{}
+		}
+		te := newExtensions[targetK]
+		if te == nil {
+			te = &targetExtensions{target: target, sources: map[string]*extension{}}
+			newExtensions[targetK] = te
+		}
+		te.put(ck, e)
+	}
+	// A downstream extend re-extends only the targets this module already knew
+	// about BEFORE the merge — its own registered selectors and its own extends'
+	// extenders. Selectors/extenders introduced by ANOTHER downstream module
+	// during this same merge must not become extendable, or sibling modules
+	// would leak into each other (e.g. a diamond where left @extends a selector
+	// that only right defines). Snapshot the extendable target set up front.
+	extendable := map[string]bool{}
+	for k := range s.selectors {
+		extendable[k] = true
+	}
+	for k := range s.extensionsByExtender {
+		extendable[k] = true
+	}
+	for _, other := range others {
+		for _, targetK := range sortedKeys(other.extensions) {
+			src := other.extensions[targetK]
+			if ph, ok := src.target.(*placeholderSel); ok && ph.isPrivate() {
+				continue
+			}
+			for _, ck := range src.order {
+				if existing := s.extensions[targetK]; existing != nil {
+					if _, ok := existing.sources[ck]; ok {
+						continue
+					}
+				}
+				e := src.sources[ck]
+				if s.extensions[targetK] == nil {
+					s.extensions[targetK] = &targetExtensions{target: src.target, sources: map[string]*extension{}}
+				}
+				s.extensions[targetK].put(ck, e)
+				for _, simple := range simpleSelectorsIn(e.extender.selector) {
+					sk := simpleKey(simple)
+					s.extensionsByExtender[sk] = append(s.extensionsByExtender[sk], e)
+					if _, ok := s.sourceSpecificity[sk]; !ok {
+						s.sourceSpecificity[sk] = e.extender.selector.specificity()
+					}
+				}
+				// Only extensions targeting a selector or extender this module
+				// already knew about (before the merge) re-extend its output.
+				if extendable[targetK] {
+					add(targetK, src.target, ck, e)
+				}
+			}
+		}
+	}
+	if newExtensions == nil {
+		return
+	}
+	for _, targetK := range sortedKeys(newExtensions) {
+		existingExtensions := s.extensionsByExtender[targetK]
+		if len(existingExtensions) == 0 {
+			continue
+		}
+		// extendExistingExtensions only keys `additional` by targets it has
+		// confirmed present in newExtensions, so dst is always non-nil.
+		additional := s.extendExistingExtensions(existingExtensions, newExtensions)
+		for k, te := range additional {
+			dst := newExtensions[k]
+			for _, ck := range te.order {
+				dst.put(ck, te.sources[ck])
+			}
+		}
+	}
+	// Every newExtensions target came from the pre-merge `extendable` snapshot,
+	// which for a freshly-built store is exactly its registered selectors (each
+	// extender simple is a rule simple), so every target has a selector set.
+	seen := map[*box]bool{}
+	var boxes []*box
+	for _, targetK := range sortedKeys(newExtensions) {
+		for _, b := range s.selectors[targetK].boxes {
+			if !seen[b] {
+				seen[b] = true
+				boxes = append(boxes, b)
+			}
+		}
+	}
+	s.extendExistingSelectors(boxes, newExtensions)
+}
+
 func simpleSelectorsIn(complex *selComplex) []simpleSel {
 	var out []simpleSel
 	for _, component := range complex.components {

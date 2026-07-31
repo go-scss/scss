@@ -28,6 +28,15 @@ type evaluator struct {
 	currentParent selectorList
 	forwarded     []forwardedMod
 	callDepth     int
+	// scope is this evaluator's @extend module scope. @use/@forward/meta.load-css
+	// each spawn a sub-evaluator with its own scope; @import inlines into the
+	// current one. Cross-module @extend propagates downstream→upstream through
+	// scope.upstream at the single global finalize (applyAllExtends).
+	scope *moduleScope
+	// allScopes is the compilation-wide registry of every module scope, shared
+	// by reference with every sub-evaluator so the entry evaluator can finalise
+	// extends across the whole module graph in one pass.
+	allScopes *[]*moduleScope
 	// incomingConfig is the evaluated `with (...)` configuration passed into
 	// this module by the @use/@forward that loaded it. It flows onward through
 	// this module's own @forward rules (a @forward propagates its importer's
@@ -102,13 +111,50 @@ type groupInfo struct {
 }
 
 func newEvaluator(importer Importer) *evaluator {
-	return &evaluator{
+	e := &evaluator{
 		env:          newEnvironment(),
 		root:         &cssRoot{},
 		importer:     importer,
 		loaded:       map[string]*module{},
 		sharedLoaded: map[string]*module{},
 	}
+	e.scope = &moduleScope{ev: e}
+	scopes := []*moduleScope{e.scope}
+	e.allScopes = &scopes
+	return e
+}
+
+// moduleScope is one @extend module boundary. Its evaluator supplies the ordered
+// selector/extend events; upstream lists the modules it depends on (@use/
+// @forward/meta.load-css); incoming accumulates the extends that flow into it
+// from downstream modules during the global finalize.
+type moduleScope struct {
+	ev               *evaluator
+	upstream         []*moduleScope
+	store            *extensionStore
+	downstreamStores []*extensionStore
+	visited          bool
+}
+
+// adoptScope wires a freshly spawned sub-evaluator into this compilation's
+// shared scope registry so its rules take part in the global extend finalize.
+func (e *evaluator) adoptScope(sub *evaluator) {
+	sub.allScopes = e.allScopes
+	*e.allScopes = append(*e.allScopes, sub.scope)
+}
+
+// dependsOn records that this evaluator's module @uses/@forwards/loads another
+// module, so downstream extends written here reach that upstream module's rules.
+func (e *evaluator) dependsOn(up *moduleScope) {
+	if up == nil || up == e.scope {
+		return
+	}
+	for _, u := range e.scope.upstream {
+		if u == up {
+			return
+		}
+	}
+	e.scope.upstream = append(e.scope.upstream, up)
 }
 
 // controlSignal is used to unwind @return / @content from nested evaluation.
@@ -123,7 +169,7 @@ func (e *evaluator) run(stmts []Stmt) {
 		group:         &groupInfo{},
 	}
 	e.evalBody(stmts, fr, true)
-	e.applyExtends()
+	e.applyAllExtends()
 }
 
 func (e *evaluator) evalBody(stmts []Stmt, fr *frame, containerBody bool) {
@@ -253,7 +299,7 @@ func (e *evaluator) assignNamespacedVar(n *VarDecl) {
 			}
 		}
 	}
-	mod.vars[name] = numWithoutSlash(e.evalExpr(n.Value))
+	mod.setVar(name, numWithoutSlash(e.evalExpr(n.Value)))
 }
 
 func (e *evaluator) evalDeclaration(n *Declaration, fr *frame) {
@@ -686,42 +732,107 @@ func mediaContextOf(fr *frame) []string {
 	return out
 }
 
-// applyExtends replays recorded selector/extend events into an extension store
-// (mirroring Dart Sass's evaluator visitation order), then writes each rule's
-// extended selector back for serialization.
-func (e *evaluator) applyExtends() {
-	if len(e.extendEvents) == 0 {
-		return
+// applyAllExtends finalises @extend across the whole module graph. Each module
+// scope gets its own extension store carrying its own extends plus every extend
+// that flows in from a module downstream of it (a module that @uses/@forwards/
+// loads it), mirroring Dart Sass's per-module ExtensionStore and its downstream→
+// upstream propagation. Scopes are finalised downstream-first so that, by the
+// time an upstream module is processed, every downstream extend targeting its
+// rules has been collected.
+func (e *evaluator) applyAllExtends() {
+	// Pass 1: build each module's own store (its own selectors extended by its
+	// own @extends), exactly as a standalone stylesheet would.
+	for _, m := range *e.allScopes {
+		m.store = m.ev.buildOwnStore()
 	}
+	// Pass 2: finalise downstream-first. Merging a module's (already downstream-
+	// enriched) store into each module it depends on carries extends transitively
+	// upstream while keeping sibling modules isolated — a downstream extend only
+	// re-extends the upstream module's own registered selectors, never selectors
+	// introduced by a different downstream module.
+	for _, m := range e.scopeFinalizeOrder() {
+		if len(m.downstreamStores) != 0 {
+			m.store.addExtensions(m.downstreamStores)
+		}
+		m.ev.writeBackSelectors()
+		for _, up := range m.upstream {
+			up.downstreamStores = append(up.downstreamStores, m.store)
+		}
+	}
+}
+
+// scopeFinalizeOrder returns every module scope in downstream-first order: a
+// depth-first post-order over upstream edges (which yields upstream-first) is
+// reversed. Sass forbids module loops, so the graph is a DAG.
+func (e *evaluator) scopeFinalizeOrder() []*moduleScope {
+	var post []*moduleScope
+	var visit func(*moduleScope)
+	visit = func(m *moduleScope) {
+		if m.visited {
+			return
+		}
+		m.visited = true
+		for _, up := range m.upstream {
+			visit(up)
+		}
+		post = append(post, m)
+	}
+	for _, m := range *e.allScopes {
+		visit(m)
+	}
+	for i, j := 0, len(post)-1; i < j; i, j = i+1, j-1 {
+		post[i], post[j] = post[j], post[i]
+	}
+	return post
+}
+
+// buildOwnStore replays this module's own selector/extend events into a fresh
+// store (mirroring Dart Sass's evaluator visitation order), so each rule's box
+// carries the selector extended by the module's OWN @extends. Cross-module
+// extends are layered on later by addExtensions. Even an empty module gets a
+// store so it can carry a downstream module's extends transitively upstream (a
+// pass-through `midstream` that only @uses another module).
+func (e *evaluator) buildOwnStore() *extensionStore {
 	store := newExtensionStore(extendNormal)
 	for _, ev := range e.extendEvents {
 		if ev.rule != nil {
 			ev.rule.box = store.addSelector(ev.rule.selector.list, ev.rule.mediaContext)
 			continue
 		}
-		ext := ev.ext
-		if ext.rule.box == nil {
-			// The enclosing block never registered a selector (e.g. an @extend
-			// nested inside a property-declaration block, which has no style-rule
-			// selector of its own): there is nothing to extend from.
-			continue
-		}
-		for _, complex := range ext.targets.components {
-			compound := complex.singleCompound()
-			if compound == nil {
-				e.fail("complex selectors may not be extended.")
-			}
-			simple := compound.singleSimple()
-			if simple == nil {
-				e.fail("compound selectors may no longer be extended.")
-			}
-			store.addExtension(ext.rule.box.value, simple, ext.optional, ext.media)
-		}
+		e.applyExtendToStore(store, ev.ext)
 	}
+	return store
+}
+
+// writeBackSelectors copies each of this module's rule boxes' final values into
+// the rule nodes for serialization. Called after cross-module extends land.
+func (e *evaluator) writeBackSelectors() {
 	for _, ev := range e.extendEvents {
-		if ev.rule != nil {
+		if ev.rule != nil && ev.rule.box != nil {
 			ev.rule.selector = selectorList{list: ev.rule.box.value}
 		}
+	}
+}
+
+// applyExtendToStore adds a single @extend's targets to store, using the
+// enclosing rule's (possibly already-extended) selector as the extender.
+func (e *evaluator) applyExtendToStore(store *extensionStore, ext *pendingExtend) {
+	if ext.rule.box == nil {
+		// The enclosing block never registered a selector (e.g. an @extend nested
+		// inside a property-declaration block, which has no style-rule selector of
+		// its own): there is nothing to extend from.
+		return
+	}
+	for _, complex := range ext.targets.components {
+		compound := complex.singleCompound()
+		if compound == nil {
+			e.fail("complex selectors may not be extended.")
+		}
+		simple := compound.singleSimple()
+		if simple == nil {
+			e.fail("compound selectors may no longer be extended.")
+		}
+		store.addExtension(ext.rule.box.value, simple, ext.optional, ext.media)
 	}
 }
 
