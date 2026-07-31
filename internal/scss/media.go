@@ -147,10 +147,23 @@ func (p *selParser) mediaInParens() string {
 	if p.peek() == '(' || (p.lookingAtIdentifier() && p.matchesKeyword("not")) {
 		result = "(" + p.mediaCondition() + ")"
 	} else {
-		result = "(" + p.declarationValue(false) + ")"
+		result = "(" + normalizeMediaFeature(p.declarationValue(false)) + ")"
 	}
 	p.expectChar(')')
 	return result
+}
+
+// normalizeMediaFeature canonicalises a `<name>: <value>` media feature the way
+// dart-sass does when it re-serializes a parsed media query: exactly one space
+// follows the colon separating the feature name from its value (so an authored
+// `(orientation:landscape)` becomes `(orientation: landscape)`). Range features
+// and boolean features carry no such colon and pass through untouched.
+func normalizeMediaFeature(s string) string {
+	i := strings.IndexByte(s, ':')
+	if i < 0 {
+		return s
+	}
+	return strings.TrimSpace(s[:i]) + ": " + strings.TrimSpace(s[i+1:])
 }
 
 // mediaCondition parses a nested <media-condition>, normalizing the and/or/not
