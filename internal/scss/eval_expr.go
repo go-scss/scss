@@ -27,7 +27,7 @@ func (e *evaluator) evalExpr(expr Expr) Value {
 		if e.currentParent.isEmpty() {
 			return sassNull
 		}
-		return &SassString{Text: e.currentParent.serialize(false)}
+		return e.currentParent.asSassList()
 	case *Binary:
 		return e.evalBinary(x)
 	case *Unary:
