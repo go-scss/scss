@@ -70,6 +70,92 @@ func (e *evaluator) buildConfig(base map[string]Value, cfg []ConfigVar) map[stri
 	return out
 }
 
+// throughForwardConfig adjusts an incoming (implicit or explicit) configuration
+// as it passes through a @forward rule, mirroring dart-sass
+// Configuration.throughForward: an `as prefix-*` clause unprefixes the visible
+// names (only names carrying the prefix survive, with the prefix stripped), and
+// a show/hide clause limits the configurable variables to the permitted set.
+// The names in show/hide are the members' *forwarded* (already unprefixed) names.
+func throughForwardConfig(base map[string]Value, n *Forward) map[string]Value {
+	if len(base) == 0 {
+		return base
+	}
+	out := base
+	if n.Prefix != "" {
+		prefix := normIdent(n.Prefix)
+		np := map[string]Value{}
+		for k, v := range out {
+			if rest, ok := strings.CutPrefix(k, prefix); ok {
+				np[rest] = v
+			}
+		}
+		out = np
+	}
+	if n.HasShow {
+		shown := forwardVarNames(n.Show)
+		np := map[string]Value{}
+		for k, v := range out {
+			if shown[k] {
+				np[k] = v
+			}
+		}
+		out = np
+	} else if n.HasHide {
+		hidden := forwardVarNames(n.Hide)
+		np := map[string]Value{}
+		for k, v := range out {
+			if !hidden[k] {
+				np[k] = v
+			}
+		}
+		out = np
+	}
+	return out
+}
+
+// forwardVarNames extracts the canonicalised variable names ("$"-prefixed
+// entries) from a @forward show/hide member list.
+func forwardVarNames(members []string) map[string]bool {
+	out := map[string]bool{}
+	for _, m := range members {
+		if strings.HasPrefix(m, "$") {
+			out[normIdent(m[1:])] = true
+		}
+	}
+	return out
+}
+
+// implicitConfigSnapshot captures every variable currently visible in the
+// evaluator's environment (all scopes, innermost winning), the way dart-sass's
+// Environment.toImplicitConfiguration does. A legacy @import of a stylesheet that
+// contains @forward rules passes this snapshot down as the base configuration so
+// variables from the importing scope configure the forwarded modules' !default
+// variables (dart's import configuration flow).
+func (e *evaluator) implicitConfigSnapshot() map[string]Value {
+	out := map[string]Value{}
+	for _, scope := range e.env.scopes {
+		for k, v := range scope {
+			out[k] = v
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+// stmtsHaveForward reports whether a parsed stylesheet contains any top-level
+// @forward rule (dart only builds an implicit import configuration when the
+// imported file forwards something, since @use ignores it).
+func stmtsHaveForward(stmts []Stmt) bool {
+	for _, s := range stmts {
+		if _, ok := s.(*Forward); ok {
+			return true
+		}
+	}
+	return false
+}
+
 func (e *evaluator) namespaceFor(url, explicit string) string {
 	if explicit != "" {
 		return explicit
@@ -89,7 +175,7 @@ func (e *evaluator) evalForward(n *Forward, fr *frame) {
 	if strings.HasPrefix(n.URL, "sass:") {
 		return
 	}
-	mod := filterForwarded(e.loadModule(n.URL, e.buildConfig(e.incomingConfig, n.Config), fr), n, n.Prefix)
+	mod := filterForwarded(e.loadModule(n.URL, e.buildConfig(throughForwardConfig(e.incomingConfig, n), n.Config), fr), n, n.Prefix)
 	e.mergeModuleGlobally(mod, n.Prefix)
 	// track for downstream @use of THIS stylesheet
 	e.forwarded = append(e.forwarded, forwardedMod{mod: mod, prefix: n.Prefix})
@@ -340,6 +426,18 @@ func (e *evaluator) evalImport(n *Import, fr *frame) {
 		if err != nil {
 			panic(err)
 		}
-		e.evalBody(stmts, fr, true)
+		// A legacy @import inlines the file into the current module. If the file
+		// forwards other modules, dart snapshots the importing scope's variables
+		// as an implicit configuration that flows into those @forward rules, so a
+		// variable set before the @import configures a forwarded module's
+		// !default variable. The snapshot is taken once, at the import site.
+		if stmtsHaveForward(stmts) {
+			saved := e.incomingConfig
+			e.incomingConfig = e.implicitConfigSnapshot()
+			e.evalBody(stmts, fr, true)
+			e.incomingConfig = saved
+		} else {
+			e.evalBody(stmts, fr, true)
+		}
 	}
 }
