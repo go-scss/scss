@@ -449,13 +449,50 @@ func foldLogicalLines(phys []string) []logicalLine {
 		text := first
 		i++
 		kind := lineKind(strings.TrimSpace(first))
-		for i < len(phys) && strings.TrimSpace(phys[i]) != "" && headerIncomplete(text, kind) {
+		for i < len(phys) && strings.TrimSpace(phys[i]) != "" && (headerIncomplete(text, kind) || inOpenLoudComment(text)) {
 			text += "\n" + phys[i]
 			i++
 		}
 		lls = append(lls, logicalLine{indent: indent, text: text})
 	}
 	return lls
+}
+
+// inOpenLoudComment reports whether text ends inside an unterminated `/* ... `
+// loud comment, so the indented preprocessor keeps folding physical lines into
+// the same logical statement until the comment closes (matching dart-sass,
+// whose lexer reads a loud comment across indented continuation lines). Quoted
+// strings and `//` silent comments are skipped so a `/*` inside them does not
+// count as opening a comment.
+func inOpenLoudComment(text string) bool {
+	inLoud := false
+	var quote byte
+	for i := 0; i < len(text); i++ {
+		c := text[i]
+		switch {
+		case inLoud:
+			if c == '*' && i+1 < len(text) && text[i+1] == '/' {
+				inLoud = false
+				i++
+			}
+		case quote != 0:
+			if c == '\\' {
+				i++
+			} else if c == quote {
+				quote = 0
+			}
+		case c == '"' || c == '\'':
+			quote = c
+		case c == '/' && i+1 < len(text) && text[i+1] == '*':
+			inLoud = true
+			i++
+		case c == '/' && i+1 < len(text) && text[i+1] == '/':
+			for i < len(text) && text[i] != '\n' {
+				i++
+			}
+		}
+	}
+	return inLoud
 }
 
 func convertIndented(src string) string {
