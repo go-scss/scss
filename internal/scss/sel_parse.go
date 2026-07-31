@@ -135,6 +135,7 @@ func parseSimpleSelectorStr(s string, allowParent bool) simpleSel {
 // --- grammar ---
 
 func (p *selParser) selectorList() *selList {
+	previousLine := p.line()
 	components := []*selComplex{p.complexSelector(false)}
 	p.whitespace()
 	for p.scanChar(',') {
@@ -145,10 +146,21 @@ func (p *selParser) selectorList() *selList {
 		if p.eof() {
 			break
 		}
-		components = append(components, p.complexSelector(false))
+		// A complex selector preceded by a newline (relative to the previous
+		// component) carries a line break, which dart-sass re-emits as `,\n`
+		// between the serialized complex selectors. Mirrors _selectorList.
+		lineBreak := p.line() != previousLine
+		if lineBreak {
+			previousLine = p.line()
+		}
+		components = append(components, p.complexSelector(lineBreak))
 	}
 	return &selList{components: components}
 }
+
+// line returns the 0-based source line of the current scanner position, used to
+// detect the newlines that mark line breaks in a comma-separated selector list.
+func (p *selParser) line() int { return strings.Count(p.src[:p.pos], "\n") }
 
 func (p *selParser) complexSelector(lineBreak bool) *selComplex {
 	var lastCompound *compoundSel

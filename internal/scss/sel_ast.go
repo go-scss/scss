@@ -754,10 +754,12 @@ func (sl *selList) write(sb *strings.Builder, compressed bool) {
 			first = false
 		} else {
 			sb.WriteByte(',')
-			if cx.lineBreak {
-				sb.WriteByte('\n')
-			} else if !compressed {
-				sb.WriteByte(' ')
+			if !compressed {
+				if cx.lineBreak {
+					sb.WriteByte('\n')
+				} else {
+					sb.WriteByte(' ')
+				}
 			}
 		}
 		cx.write(sb, compressed)
