@@ -94,7 +94,7 @@ type serializer struct {
 
 func serialize(root *cssRoot, compressed bool) string {
 	s := &serializer{compressed: compressed}
-	s.emitChildren(root.children(), 0, true)
+	s.emitChildren(root.children(), 0)
 	out := s.sb.String()
 	if compressed {
 		out = strings.TrimRight(out, "\n;")
@@ -140,19 +140,28 @@ func (s *serializer) indent(depth int) {
 	}
 }
 
-func (s *serializer) emitChildren(nodes []cssNode, depth int, top bool) {
-	visible := make([]cssNode, 0, len(nodes))
+func (s *serializer) emitChildren(nodes []cssNode, depth int) {
+	emittedAny := false
+	// An invisible node (an empty parent whose nested rules were hoisted out) is
+	// dropped from the output, but it still carries its source group's blank-line
+	// credit. dart attaches the separating blank to the group boundary, not to the
+	// dropped rule, so hold a dropped node's blankBefore and apply it to the next
+	// visible node — otherwise sibling rules hoisted from separate parents (e.g.
+	// `a b { c & {} }` `d { e & {} }`) would fuse without the blank dart emits.
+	pendingBlank := false
 	for _, n := range nodes {
 		if isEmptyContainer(n) {
+			if blankBeforeOf(n) {
+				pendingBlank = true
+			}
 			continue
 		}
-		visible = append(visible, n)
-	}
-	for i, n := range visible {
-		if !s.compressed && i > 0 && needsBlankBefore(visible[i-1], n, top) {
+		if !s.compressed && emittedAny && (pendingBlank || blankBeforeOf(n)) {
 			s.sb.WriteString("\n")
 		}
 		s.emitNode(n, depth)
+		emittedAny = true
+		pendingBlank = false
 	}
 }
 
@@ -192,13 +201,6 @@ func hasVisible(nodes []cssNode) bool {
 		}
 	}
 	return false
-}
-
-// needsBlankBefore reproduces dart-sass's rule: a blank line precedes a node
-// that starts a new source-level group when the previous sibling is a plain
-// style rule.
-func needsBlankBefore(prev, cur cssNode, top bool) bool {
-	return blankBeforeOf(cur)
 }
 
 func setBlankBefore(n cssNode, b bool) {
