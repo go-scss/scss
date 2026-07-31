@@ -165,13 +165,13 @@ func TestResidualDefensiveArms(t *testing.T) {
 		t.Error("canStartValue('#'): want true")
 	}
 
-	// applyExtends skips an @extend whose enclosing rule has no box (its selector
-	// was never registered), rather than dereferencing a nil box.
+	// The extend finalizer skips an @extend whose enclosing rule has no box (its
+	// selector was never registered), rather than dereferencing a nil box.
 	e := newEvaluator(nil)
 	rule := &cssStyleRule{} // never added via addSelector -> box stays nil
 	e.extendEvents = []extendEvent{{ext: &pendingExtend{
 		rule:    rule,
 		targets: parseSelectorList(".b").list,
 	}}}
-	e.applyExtends() // must not panic; the nil-box arm continues.
+	e.applyAllExtends() // must not panic; the nil-box arm continues.
 }

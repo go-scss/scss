@@ -107,4 +107,34 @@ type module struct {
 	mixins map[string]*mixinEntry
 	funcs  map[string]*funcEntry
 	env    *environment
+	// scope is this module's @extend boundary. It lets a downstream module that
+	// @uses/@forwards this one propagate its extends onto this module's rules at
+	// the global finalize. nil for plain-CSS modules (they expose no members).
+	scope *moduleScope
+	// forwards records the modules this stylesheet re-exports via @forward,
+	// each with its optional prefix. A namespaced variable assignment to a
+	// forwarded member must reach the original defining module's storage (the
+	// map its own functions and mixins read), so writes propagate down this
+	// chain, matching dart-sass's ForwardedModuleView.
+	forwards []forwardedMod
+}
+
+// setVar writes a member variable, propagating the write to whichever forwarded
+// module actually defines it so the defining module's functions observe the new
+// value. Returns whether the variable was found (locally or downstream).
+func (m *module) setVar(name string, val Value) bool {
+	found := false
+	if _, ok := m.vars[name]; ok {
+		m.vars[name] = val
+		found = true
+	}
+	for _, fw := range m.forwards {
+		if !strings.HasPrefix(name, fw.prefix) {
+			continue
+		}
+		if fw.mod.setVar(strings.TrimPrefix(name, fw.prefix), val) {
+			found = true
+		}
+	}
+	return found
 }

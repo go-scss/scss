@@ -509,6 +509,17 @@ func (*preEvaluated) expr() {}
 // loadCSSInto compiles a module and splices its resolved CSS at the include
 // point, matching @include meta.load-css().
 func (e *evaluator) loadCSSInto(url string, config []ConfigVar, fr *frame) {
+	// A built-in module (sass:math, sass:color, …) contributes no CSS, so
+	// meta.load-css of one emits nothing; a configuration would be an error.
+	if strings.HasPrefix(url, "sass:") {
+		if len(config) > 0 {
+			e.fail("Built-in modules can't be configured.")
+		}
+		if !builtinModuleNames[strings.TrimPrefix(url, "sass:")] {
+			e.fail("Can't find stylesheet to import: %s", url)
+		}
+		return
+	}
 	src, resolved, ok := e.resolve(url)
 	if !ok {
 		e.fail("Can't find stylesheet to import: %s", url)
@@ -526,8 +537,18 @@ func (e *evaluator) loadCSSInto(url string, config []ConfigVar, fr *frame) {
 	sub.loadStack = append(append([]string(nil), e.loadStack...), resolved)
 	sub.loadedURLs = e.loadedURLs
 	sub.sharedLoaded = e.sharedLoaded
+	e.adoptScope(sub)
+	e.dependsOn(sub.scope)
+	// Seed the loaded module's globals with the $with configuration and record it
+	// as the incoming config so the module's own @forward rules propagate it
+	// downstream, exactly as @use ... with (...) does (loadModule).
+	cfg := map[string]Value{}
 	for _, c := range config {
-		sub.env.scopes[0][normIdent(c.Name)] = e.evalExpr(c.Value)
+		cfg[normIdent(c.Name)] = numWithoutSlash(e.evalExpr(c.Value))
+	}
+	sub.incomingConfig = cfg
+	for name, v := range cfg {
+		sub.env.scopes[0][name] = v
 	}
 	sub.runModule(stmts)
 	e.warnings = append(e.warnings, sub.warnings...)
