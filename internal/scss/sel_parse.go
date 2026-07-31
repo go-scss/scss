@@ -3,7 +3,10 @@
 
 package scss
 
-import "strings"
+import (
+	"strings"
+	"unicode/utf8"
+)
 
 // This file ports Dart Sass's lib/src/parse/selector.dart: a recursive-descent
 // parser producing the selector AST in sel_ast.go. It supports the full CSS
@@ -659,7 +662,7 @@ func (p *selParser) identifier() string {
 	case isNameStart(c):
 		sb.WriteByte(p.readChar())
 	case c == '\\':
-		sb.WriteString(p.escape())
+		sb.WriteString(p.escapeCanonical(true))
 	default:
 		p.fail("Expected identifier.")
 	}
@@ -674,12 +677,44 @@ func (p *selParser) identifierBody() string {
 		if isNameChar(c) {
 			sb.WriteByte(p.readChar())
 		} else if c == '\\' {
-			sb.WriteString(p.escape())
+			sb.WriteString(p.escapeCanonical(false))
 		} else {
 			break
 		}
 	}
 	return sb.String()
+}
+
+// escapeCanonical consumes a "\" escape inside an identifier and returns
+// dart-sass's canonical rendering of it: the escape is decoded to a code point
+// and re-serialized (`\9` -> `\9 `, `\41` -> `A`, `\.` -> `\.`), matching how
+// dart normalizes escapes in selector and media-query identifiers.
+func (p *selParser) escapeCanonical(identifierStart bool) string {
+	p.readChar() // backslash
+	if p.eof() {
+		return canonicalEscape(0xFFFD, identifierStart)
+	}
+	var value rune
+	if isHexByte(p.peek()) {
+		v := 0
+		for i := 0; i < 6 && !p.eof() && isHexByte(p.peek()); i++ {
+			v = v*16 + hexDigitValue(p.readChar())
+		}
+		if !p.eof() && isWhitespaceByte(p.peek()) {
+			p.readChar()
+		}
+		value = rune(v)
+	} else {
+		value = p.nextRune()
+	}
+	return canonicalEscape(value, identifierStart)
+}
+
+// nextRune consumes one UTF-8 code point at the cursor.
+func (p *selParser) nextRune() rune {
+	r, size := utf8.DecodeRuneInString(p.src[p.pos:])
+	p.pos += size
+	return r
 }
 
 // escape consumes a "\" escape and returns it verbatim (source-preserving).

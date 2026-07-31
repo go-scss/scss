@@ -200,8 +200,13 @@ func (p *parser) parseAdditive() Expr {
 			return left
 		}
 		after := isSpaceByte(p.peekAt(1))
-		// A "-" with space before but not after starts a new unary value.
-		if c == '-' && before && !after {
+		// A "-" with no whitespace after it begins a new unary value (a
+		// space-separated list element) rather than a binary operator when what
+		// follows starts an interpolated identifier (`"q"-a`, `c -d`, `c -#{x}`)
+		// — always — or a number (`c -1`, `10px -5px`) when there was
+		// whitespace before the "-". Otherwise (`c -(d)`, `"q"-2`, `"q"-"r"`,
+		// `1-2`) the "-" is a binary subtraction.
+		if c == '-' && !after && (p.minusBeginsIdent() || (before && p.minusBeginsNumber())) {
 			p.pos = save
 			return left
 		}
@@ -212,6 +217,28 @@ func (p *parser) parseAdditive() Expr {
 		p.arith--
 		left = &Binary{Op: string(c), Left: left, Right: right}
 	}
+}
+
+// minusBeginsIdent reports whether the "-" at the cursor introduces an
+// interpolated identifier (`-d`, `-\9`, `--x`, `-#{x}`), which dart-sass always
+// lexes as the start of a fresh value.
+func (p *parser) minusBeginsIdent() bool {
+	n := p.peekAt(1)
+	switch {
+	case isNameStart(n) || n == '\\' || n == '-':
+		return true
+	case n == '#' && p.peekAt(2) == '{':
+		return true
+	}
+	return false
+}
+
+// minusBeginsNumber reports whether the "-" at the cursor introduces a number
+// (`-1`, `-.5`), which dart-sass lexes as a fresh value only when preceded by
+// whitespace.
+func (p *parser) minusBeginsNumber() bool {
+	n := p.peekAt(1)
+	return isDigit(n) || (n == '.' && isDigit(p.peekAt(2)))
 }
 
 func (p *parser) parseMultiplicative() Expr {
@@ -350,6 +377,14 @@ func (p *parser) parsePrimary() Expr {
 		return p.parseHashValue()
 	case isNameStart(c) || c == '\\' || c == '-':
 		return p.parseIdentValue()
+	case c == '/':
+		// A value may begin with "/" (e.g. `/bar`, or the right operand of a
+		// degenerate slash chain like `1/ / /bar`). dart-sass treats it as a
+		// slash separator with an empty left-hand side, serialising as
+		// "/" + right.
+		p.next()
+		p.ws()
+		return &Binary{Op: "/", Left: nil, Right: p.parseUnary()}
 	}
 	p.fail("Expected expression.")
 	return nil
@@ -552,10 +587,28 @@ func (p *parser) parseHashValue() Expr {
 	}
 	start := p.pos
 	p.next() // #
-	for isHexDigit(p.peek()) {
-		p.next()
+	// A "#" that leads with a digit is a hex colour (`#123`, `#abcdef`); dart
+	// reads only hex digits here. A "#" followed by an identifier is either a
+	// hex colour whose body happens to be all hex digits (`#abcdef`) or, when
+	// the identifier is not a valid colour, a CSS ID token (`#ab`, `#axc`,
+	// `#abcde`) which serialises verbatim.
+	if isDigit(p.peek()) {
+		for isHexDigit(p.peek()) {
+			p.next()
+		}
+		hex := p.src[start:p.pos]
+		if isHexColor(hex) {
+			return &ColorLit{Color: newHexColor(strings.ToLower(hex[:1]) + hex[1:])}
+		}
+		return &Ident{Name: hex}
 	}
-	hex := p.src[start:p.pos]
+	name := p.scanIdentifier()
+	// An ID token may embed interpolation (`#a#{b}`), yielding an unquoted
+	// interpolated string rather than a bare identifier.
+	if p.peek() == '#' && p.peekAt(1) == '{' {
+		return p.continueInterpIdent([]any{"#" + name})
+	}
+	hex := "#" + name
 	if isHexColor(hex) {
 		return &ColorLit{Color: newHexColor(strings.ToLower(hex[:1]) + hex[1:])}
 	}
