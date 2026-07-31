@@ -95,9 +95,14 @@ func registerGlobals() {
 		"map-has-key": mapFns["has-key"],
 
 		// selectors
-		"selector-nest":   selectorFns["nest"],
-		"selector-append": selectorFns["append"],
-		"selector-unify":  selectorFns["unify"],
+		"selector-nest":    selectorFns["nest"],
+		"selector-append":  selectorFns["append"],
+		"selector-unify":   selectorFns["unify"],
+		"selector-extend":  selectorFns["extend"],
+		"selector-replace": selectorFns["replace"],
+		"selector-parse":   selectorFns["parse"],
+		"is-superselector": selectorFns["is-superselector"],
+		"simple-selectors": selectorFns["simple-selectors"],
 
 		// meta
 		"type-of":         metaFns["type-of"],

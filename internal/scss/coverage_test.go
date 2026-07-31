@@ -80,9 +80,11 @@ func TestNestedMediaThreeDeep(t *testing.T) {
 }
 
 func TestAtRootWithQuery(t *testing.T) {
+	// `without: media` drops the @media frame but keeps the enclosing `.a` rule,
+	// which is re-materialised at the root (byte-exact vs dart-sass 1.102).
 	got := compile(t, "@media x {.a{@at-root (without: media) {.b{y:1}}}}")
-	if !strings.Contains(got, ".b") {
-		t.Errorf("at-root query: %q", got)
+	if want := ".a .b {\n  y: 1;\n}\n"; got != want {
+		t.Errorf("at-root query:\n want: %q\n  got: %q", want, got)
 	}
 }
 
