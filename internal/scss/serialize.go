@@ -339,8 +339,23 @@ func serializeValue(v Value, compressed bool) string {
 func serializeValueQ(v Value, compressed, quote bool) string {
 	switch x := v.(type) {
 	case *Number:
-		if math.IsInf(x.Val, 0) || math.IsNaN(x.Val) {
-			return numberCalcRepr(x)
+		// A number that still carries as-slash provenance serializes back as the
+		// literal "left/right" it came from, recursively (so 1/2/3/4/5 stays a
+		// flat slash chain rather than the collapsed quotient).
+		if x.slashL != nil && x.slashR != nil {
+			return serializeValueQ(x.slashL, compressed, quote) + "/" + serializeValueQ(x.slashR, compressed, quote)
+		}
+		// dart-sass serializes a number that isn't expressible as a plain CSS
+		// value — a non-finite magnitude, or one carrying complex units (more
+		// than one numerator unit, or any denominator units) — wrapped in a
+		// calc() expression, e.g. calc(1px * 1rad), calc(infinity * 1px / 1em).
+		// The in-calc term writer already renders that form exactly.
+		if math.IsInf(x.Val, 0) || math.IsNaN(x.Val) || x.hasComplexUnits() {
+			var sb strings.Builder
+			sb.WriteString("calc(")
+			writeCalcTerm(&sb, x, compressed)
+			sb.WriteByte(')')
+			return sb.String()
 		}
 		return formatFloat(x.Val, compressed) + unitOutput(x)
 	case *SassColor:
@@ -380,12 +395,11 @@ func serializeList(l *List, compressed, quote bool) string {
 		if _, isNull := e.(*Null); isNull {
 			continue
 		}
+		// CSS output never parenthesizes a nested list — dart-sass flattens the
+		// appearance, joining with the separator (so a slash list inside a slash
+		// list renders "c / d / e / f", not "(c / d) / (e / f)"). Only inspect,
+		// which has its own path, adds the disambiguating parentheses.
 		s := serializeValueQ(e, compressed, quote)
-		if _, isList := e.(*List); isList {
-			if sub := e.(*List); sub.Sep == l.Sep && !sub.Bracketed && len(sub.Elements) > 1 {
-				s = "(" + s + ")"
-			}
-		}
 		elems = append(elems, s)
 	}
 	var sep string

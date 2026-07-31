@@ -227,7 +227,9 @@ func (e *evaluator) evalVarDecl(n *VarDecl) {
 			}
 		}
 	}
-	val := e.evalExpr(n.Value)
+	// A variable binding consumes its value: a bare slash number is stored as
+	// its quotient (dart-sass's VariableDeclaration.withoutSlash).
+	val := numWithoutSlash(e.evalExpr(n.Value))
 	e.env.setVar(n.Name, val, n.Global)
 }
 
@@ -251,7 +253,7 @@ func (e *evaluator) assignNamespacedVar(n *VarDecl) {
 			}
 		}
 	}
-	mod.vars[name] = e.evalExpr(n.Value)
+	mod.vars[name] = numWithoutSlash(e.evalExpr(n.Value))
 }
 
 func (e *evaluator) evalDeclaration(n *Declaration, fr *frame) {

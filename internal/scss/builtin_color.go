@@ -497,12 +497,54 @@ func parseSlashChannels(e *evaluator, input Value) (Value, Value) {
 	}
 	if l.Sep == SepSpace && len(l.Elements) >= 1 {
 		last := l.Elements[len(l.Elements)-1]
-		if sl, ok := last.(*List); ok && sl.Sep == SepSlash && len(sl.Elements) == 2 {
-			newElems := append(append([]Value(nil), l.Elements[:len(l.Elements)-1]...), sl.Elements[0])
-			return &List{Elements: newElems, Sep: SepSpace}, sl.Elements[1]
+		if chn, alpha, ok := splitSlashAlpha(last); ok {
+			// A chain like "3 / 4 / 5" nests as an as-slash number whose channel
+			// half is itself a slash number: that is three slash-separated values,
+			// which is one too many for a "channels / alpha" split.
+			if n := slashElemCount(last); n > 2 {
+				e.fail("Only 2 slash-separated elements allowed, but %d were passed.", n)
+			}
+			newElems := append(append([]Value(nil), l.Elements[:len(l.Elements)-1]...), chn)
+			return &List{Elements: newElems, Sep: SepSpace}, alpha
 		}
 	}
 	return input, nil
+}
+
+// slashElemCount counts the leaves of a slash chain: an as-slash number
+// contributes its two operands' counts (recursively), a slash list contributes
+// its element count, and anything else counts as one.
+func slashElemCount(v Value) int {
+	switch x := v.(type) {
+	case *Number:
+		if x.slashL != nil && x.slashR != nil {
+			return slashElemCount(x.slashL) + slashElemCount(x.slashR)
+		}
+	case *List:
+		if x.Sep == SepSlash {
+			return len(x.Elements)
+		}
+	}
+	return 1
+}
+
+// splitSlashAlpha recognises the "channel / alpha" slash that trails a color's
+// channel list. A "/" between two number literals now yields a single number
+// carrying as-slash provenance (channel = left, alpha = right); a "/" whose
+// operands aren't both numbers yields a two-element slash list. Either form is
+// split back into its channel and alpha halves here.
+func splitSlashAlpha(v Value) (Value, Value, bool) {
+	switch x := v.(type) {
+	case *Number:
+		if x.slashL != nil && x.slashR != nil {
+			return x.slashL, x.slashR, true
+		}
+	case *List:
+		if x.Sep == SepSlash && len(x.Elements) == 2 {
+			return x.Elements[0], x.Elements[1], true
+		}
+	}
+	return nil, nil, false
 }
 
 func commonListElements(v Value) []Value {

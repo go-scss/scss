@@ -37,6 +37,39 @@ type Number struct {
 	Val   float64
 	Numer []string
 	Denom []string
+	// slashL/slashR carry the "as-slash" provenance dart-sass tracks for a
+	// number produced by a literal "a/b" division of two number literals: the
+	// value is the quotient, but the pair remembers the original operands so it
+	// serializes back as "a/b" (recursively, so 1/2/3 stays flat). The
+	// provenance is stripped by withoutSlash the moment the number is consumed
+	// (arithmetic, a variable/argument/config binding, a function-call result,
+	// or a parenthesized grouping), whereupon it serializes as the quotient.
+	slashL *Number
+	slashR *Number
+}
+
+// withoutSlash returns n stripped of any as-slash provenance. A number with no
+// provenance is returned unchanged; otherwise a shallow copy with the provenance
+// cleared is returned so the original (possibly shared) value is untouched.
+func (n *Number) withoutSlash() *Number {
+	if n.slashL == nil && n.slashR == nil {
+		return n
+	}
+	m := *n
+	m.slashL = nil
+	m.slashR = nil
+	return &m
+}
+
+// numWithoutSlash strips as-slash provenance from a value when it is a Number,
+// mirroring dart-sass's Value.withoutSlash: only SassNumber overrides it, so
+// lists (and their elements) pass through unchanged, which is how a slash inside
+// a list survives being bound or returned while a bare slash number does not.
+func numWithoutSlash(v Value) Value {
+	if n, ok := v.(*Number); ok {
+		return n.withoutSlash()
+	}
+	return v
 }
 
 func newNumber(v float64, units ...string) *Number {
@@ -230,8 +263,13 @@ func (m *Map) set(key, val Value) {
 	m.Values = append(m.Values, val)
 }
 
-// fuzzyEquals compares two floats with Sass's tolerance (1e-11).
+// fuzzyEquals compares two floats with Sass's tolerance (1e-11). Non-finite
+// magnitudes compare exactly (Infinity equals Infinity, NaN equals nothing), so
+// an infinite value works as a map key rather than being lost to a NaN diff.
 func fuzzyEquals(a, b float64) bool {
+	if math.IsInf(a, 0) || math.IsInf(b, 0) || math.IsNaN(a) || math.IsNaN(b) {
+		return a == b
+	}
 	return math.Abs(a-b) < 1e-11
 }
 
