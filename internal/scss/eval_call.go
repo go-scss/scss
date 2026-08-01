@@ -44,6 +44,9 @@ func (e *evaluator) asString(v Value) *SassString {
 
 // callUserResolved calls a user-defined function with pre-resolved arguments.
 func (e *evaluator) callUserResolved(fn *funcEntry, pos []Value, named map[string]Value, restSep Separator) (result Value) {
+	if fn.builtin != nil {
+		return fn.builtin(&callInfo{positional: pos, named: named, e: e, fn: fn.name})
+	}
 	e.enter()
 	defer e.leave()
 	saved := e.env
@@ -254,6 +257,12 @@ func (e *evaluator) lookupFunc(ns, name string) *funcEntry {
 }
 
 func (e *evaluator) callUserFunc(fn *funcEntry, args *ArgList) (result Value) {
+	if fn.builtin != nil {
+		// A built-in function re-exported through @forward "sass:…": dispatch to the
+		// native implementation with resolved arguments.
+		pos, named, _ := e.evalArgs(args)
+		return fn.builtin(&callInfo{positional: pos, named: named, e: e, fn: fn.name})
+	}
 	e.enter()
 	defer e.leave()
 	saved := e.env
