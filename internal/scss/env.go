@@ -357,6 +357,11 @@ type module struct {
 	// view delegates namespaced writes to. Reads use the view's own (already
 	// filtered) maps so hidden members never leak; writes reach real storage.
 	writeThrough *module
+	// cssNodes is the module's top-level CSS as emitted at its first load. A
+	// legacy @import that transitively reaches this already-loaded module re-emits
+	// a deep clone of these nodes at the import site (dart's _combineCss(clone:
+	// true)): @import duplicates CSS even when it has been @used and loaded once.
+	cssNodes []cssNode
 }
 
 // getVar reads a member variable exposed by this module's public API: its own

@@ -357,8 +357,23 @@ func parseModuleSource(resolved, src string) ([]Stmt, error) {
 	return parseStylesheet(src)
 }
 
+// reEmitImportedCSS re-emits a deep clone of an already-loaded module's CSS at
+// the current site when that module is reached through a legacy @import
+// (importDepth > 0). @import duplicates CSS even when the module has been @used
+// and loaded once, so a second @import of a module — directly or through a
+// forwarding `.import.scss` — prints its CSS again (dart's _combineCss with
+// clone: true). A plain @use of an already-loaded module stays deduped and does
+// nothing here.
+func (e *evaluator) reEmitImportedCSS(m *module, fr *frame) {
+	if e.importDepth == 0 || len(m.cssNodes) == 0 {
+		return
+	}
+	e.emitModuleCSS(cloneCSSNodes(m.cssNodes), fr)
+}
+
 func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *module {
 	if m, ok := e.loaded[url]; ok {
+		e.reEmitImportedCSS(m, fr)
 		return m
 	}
 	src, resolved, ok := e.resolve(url)
@@ -366,12 +381,14 @@ func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *
 		e.fail("Can't find stylesheet to import: %s", url)
 	}
 	// A module reached through more than one path (a diamond) is loaded once for
-	// the whole compilation: reuse the singleton and do NOT re-emit its CSS.
+	// the whole compilation: reuse the singleton and do NOT re-emit its CSS —
+	// unless it is reached through a legacy @import, which duplicates the CSS.
 	if m, ok := e.sharedLoaded[resolved]; ok {
 		e.loaded[url] = m
 		// A diamond dependency: this module is reused, but the current module
 		// still depends on it, so downstream extends here must reach its rules.
 		e.dependsOn(m.scope)
+		e.reEmitImportedCSS(m, fr)
 		return m
 	}
 	for _, s := range e.loadStack {
@@ -393,6 +410,7 @@ func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *
 		// stays verbatim until an extend actually targets one of its selectors.
 		e.registerPlainCSSExtendScope(nodes)
 		mod := emptyModule()
+		mod.cssNodes = nodes
 		e.loaded[url] = mod
 		e.sharedLoaded[resolved] = mod
 		return mod
@@ -423,7 +441,8 @@ func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *
 	e.loadedURLs = append(e.loadedURLs, resolved)
 	// include used module CSS in our output, as a chunk that participates in
 	// the importing stylesheet's top-level blank-line grouping.
-	e.emitModuleCSS(sub.root.children(), fr)
+	moduleNodes := sub.root.children()
+	e.emitModuleCSS(moduleNodes, fr)
 	// The module's exported API is its OWN public members (its global scope plus
 	// its own function/mixin tables); anything it @forwards is reached through the
 	// forwards chain by the read/write/enumeration accessors. A `@use ... as *`
@@ -436,6 +455,7 @@ func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *
 		env:      sub.env,
 		scope:    sub.scope,
 		forwards: sub.forwarded,
+		cssNodes: moduleNodes,
 	}
 	e.loaded[url] = mod
 	e.sharedLoaded[resolved] = mod
@@ -482,6 +502,45 @@ func registerPlainRulesForExtend(sub *evaluator, nodes []cssNode) {
 		sr.selector = sl
 		sr.original = sl
 		sub.extendEvents = append(sub.extendEvents, extendEvent{rule: sr})
+	}
+}
+
+// cloneCSSNodes deep-copies a slice of already-resolved CSS output nodes so a
+// legacy @import can emit its own copy of an already-loaded module's CSS. The
+// copy is independent of the original (fresh child slices), so re-nesting or a
+// later blank-line regrouping of one copy never disturbs the other.
+func cloneCSSNodes(in []cssNode) []cssNode {
+	if in == nil {
+		return nil
+	}
+	out := make([]cssNode, len(in))
+	for i, n := range in {
+		out[i] = cloneCSSNode(n)
+	}
+	return out
+}
+
+func cloneCSSNode(n cssNode) cssNode {
+	switch v := n.(type) {
+	case *cssStyleRule:
+		c := *v
+		c.nodes = cloneCSSNodes(v.nodes)
+		// The clone is a fresh, independent rule: it must not share the original's
+		// extension box (that box belongs to the module's own extend scope).
+		c.box = nil
+		return &c
+	case *cssAtRule:
+		c := *v
+		c.nodes = cloneCSSNodes(v.nodes)
+		return &c
+	case *cssDeclaration:
+		c := *v
+		return &c
+	default:
+		// The only remaining output node type is a comment (cssRoot is never a
+		// child). Copy it by value so the clone is independent.
+		c := *n.(*cssComment)
+		return &c
 	}
 }
 
