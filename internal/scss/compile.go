@@ -330,6 +330,130 @@ func stripLineComment(s string) string {
 	return s
 }
 
+// stripIndentedComments removes the inline and trailing comments that the
+// indented (.sass) lexer drops from a statement/selector/at-rule line, so the
+// re-parsed SCSS never sees them. In indented syntax a `//` starts a silent
+// comment that runs to end of line, and a `/* ... */` loud comment appearing
+// inline (i.e. not at the start of a statement, which the caller handles
+// separately) is treated as whitespace: dart-sass collapses it to a single
+// space so surrounding tokens stay separated (`b: 1 /* c */ 2` -> `1 2`).
+// Quoted strings, `#{...}` interpolations and unquoted `url(...)` tokens are
+// copied verbatim so a `//` or `/*` inside them is not mistaken for a comment.
+func stripIndentedComments(s string) string {
+	var b strings.Builder
+	i := 0
+	for i < len(s) {
+		c := s[i]
+		switch {
+		case c == '"' || c == '\'':
+			q := c
+			b.WriteByte(c)
+			i++
+			for i < len(s) {
+				b.WriteByte(s[i])
+				if s[i] == '\\' && i+1 < len(s) {
+					i++
+					b.WriteByte(s[i])
+					i++
+					continue
+				}
+				if s[i] == q {
+					i++
+					break
+				}
+				i++
+			}
+		case c == '#' && i+1 < len(s) && s[i+1] == '{':
+			depth := 0
+			for i < len(s) {
+				b.WriteByte(s[i])
+				if s[i] == '{' {
+					depth++
+				} else if s[i] == '}' {
+					depth--
+					if depth == 0 {
+						i++
+						break
+					}
+				}
+				i++
+			}
+		case (c == 'u' || c == 'U') && matchesURLOpen(s, i):
+			// Copy `url(...)` verbatim, honouring nested parens and quotes, so a
+			// scheme-relative `//` inside the URL is not read as a comment.
+			b.WriteString(s[i : i+4])
+			i += 4
+			depth := 1
+			for i < len(s) && depth > 0 {
+				ch := s[i]
+				if ch == '"' || ch == '\'' {
+					q := ch
+					b.WriteByte(ch)
+					i++
+					for i < len(s) {
+						b.WriteByte(s[i])
+						if s[i] == '\\' && i+1 < len(s) {
+							i++
+							b.WriteByte(s[i])
+							i++
+							continue
+						}
+						if s[i] == q {
+							i++
+							break
+						}
+						i++
+					}
+					continue
+				}
+				if ch == '(' {
+					depth++
+				} else if ch == ')' {
+					depth--
+				}
+				b.WriteByte(ch)
+				i++
+			}
+		case c == '/' && i+1 < len(s) && s[i+1] == '/':
+			// Silent comment: drop the rest of this physical line. When several
+			// physical lines have been folded into one logical statement (an
+			// incomplete header continued on a deeper line), the comment only
+			// consumes up to the newline; the continuation after it survives.
+			for i < len(s) && s[i] != '\n' {
+				i++
+			}
+		case c == '/' && i+1 < len(s) && s[i+1] == '*':
+			// Loud comment used as whitespace: collapse it to a single space.
+			i += 2
+			for i < len(s) {
+				if s[i] == '*' && i+1 < len(s) && s[i+1] == '/' {
+					i += 2
+					break
+				}
+				i++
+			}
+			b.WriteByte(' ')
+		default:
+			b.WriteByte(c)
+			i++
+		}
+	}
+	return strings.TrimRight(b.String(), " \t")
+}
+
+// matchesURLOpen reports whether s[i:] begins an unquoted `url(` token: a
+// case-insensitive "url(" not preceded by an identifier character (so that
+// "blur(" or "myurl(" are not matched).
+func matchesURLOpen(s string, i int) bool {
+	if i+4 > len(s) {
+		return false
+	}
+	if !strings.EqualFold(s[i:i+4], "url(") {
+		return false
+	}
+	return i == 0 || !isIdentChar(s[i-1])
+}
+
 // atRuleHeaderIncomplete reports whether an at-rule header still needs more
 // input to satisfy its own grammar (independently of trailing operators).
 func atRuleHeaderIncomplete(kw, acc string) bool {
@@ -656,7 +780,8 @@ func convertIndented(src string) string {
 			out = append(out, strings.Repeat("  ", len(stack))+"}")
 		}
 	}
-	for idx, ll := range lls {
+	for idx := 0; idx < len(lls); idx++ {
+		ll := lls[idx]
 		content := strings.TrimSpace(ll.text)
 		closeTo(ll.indent)
 		pad := strings.Repeat("  ", len(stack))
@@ -666,8 +791,21 @@ func convertIndented(src string) string {
 			continue
 		}
 		if strings.HasPrefix(content, "//") {
-			out = append(out, pad+content)
+			// A silent comment statement runs to end of line and, like any
+			// indented statement, owns every following line indented more deeply
+			// than itself (dart-sass SassParser._silentComment). Those lines are
+			// part of the comment, so skip them; the comment yields no CSS.
+			for idx+1 < len(lls) && lls[idx+1].indent > ll.indent {
+				idx++
+			}
 			continue
+		}
+		// Drop the inline/trailing comments the indented lexer discards before
+		// deciding how to terminate the statement (`;`, ` {`, or ` {}`). Custom
+		// property declarations (`--x: ...`) carry a raw token stream whose
+		// comments dart-sass preserves verbatim, so they are left untouched.
+		if !strings.HasPrefix(content, "--") {
+			content = stripIndentedComments(content)
 		}
 		ni := -1
 		if idx+1 < len(lls) {
