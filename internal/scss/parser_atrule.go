@@ -177,20 +177,44 @@ func (p *parser) parseIf() Stmt {
 	for {
 		save := p.pos
 		p.ws()
-		if !p.match("@else") {
+		// The `@else` keyword may itself be written with CSS escapes (`@\65lse`),
+		// so decode the at-rule name through the identifier scanner before
+		// comparing rather than matching the literal bytes. Guard the scan against
+		// a `@` not followed by an identifier so a trailing `@media`/`@-webkit-…`
+		// after the clause is simply treated as "not else" instead of failing.
+		if p.peek() != '@' {
 			p.pos = save
 			break
 		}
-		p.ws()
-		if p.match("if") {
+		if c := p.peekAt(1); c != '\\' && !isNameStart(c) {
+			p.pos = save
+			break
+		}
+		p.next() // @
+		switch p.scanIdentifier() {
+		case "else":
+			// `@else` optionally followed by `if` (dart's two-word spelling), with
+			// comments/whitespace permitted between them.
+			p.ws()
+			if p.match("if") {
+				p.ws()
+				c := p.parseExpression()
+				b := p.parseBlock()
+				node.Clauses = append(node.Clauses, IfClause{Cond: c, Body: b})
+				continue
+			}
+			node.Else = p.parseBlock()
+			node.HasElse = true
+		case "elseif":
+			// The deprecated one-word `@elseif` is equivalent to `@else if`.
 			p.ws()
 			c := p.parseExpression()
 			b := p.parseBlock()
 			node.Clauses = append(node.Clauses, IfClause{Cond: c, Body: b})
 			continue
+		default:
+			p.pos = save
 		}
-		node.Else = p.parseBlock()
-		node.HasElse = true
 		break
 	}
 	return node
