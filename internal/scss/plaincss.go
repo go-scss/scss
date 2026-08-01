@@ -20,6 +20,13 @@ import (
 type pcssParser struct {
 	src string
 	pos int
+	// funcDepth is the nesting depth inside a plain-CSS custom-function body
+	// (`@function --a() { … }`). Inside such a body a descriptor declaration
+	// (`result: …`) takes a verbatim token-stream value that may include braces
+	// and other CSS-invalid characters, exactly as dart-sass parses it, so a
+	// value like `{}#&%^*` is captured whole rather than mistaken for a nested
+	// style rule.
+	funcDepth int
 }
 
 // parsePlainCSS parses plain-CSS source into the output CSS node tree, applying
@@ -130,6 +137,15 @@ func (p *pcssParser) statement() cssNode {
 	if p.peek() == '@' {
 		return p.atRule()
 	}
+	// Inside a custom-function body every descriptor is a declaration whose
+	// value is a verbatim token stream (it may contain `{}` and other CSS-
+	// invalid characters), so parse `name: token-stream` without letting a `{`
+	// in the value be mistaken for the start of a nested block.
+	if p.funcDepth > 0 {
+		if d, ok := p.funcDeclaration(); ok {
+			return d
+		}
+	}
 	// Custom properties (--foo) take a verbatim token-stream value that may
 	// include braces, so they are recognised before the prelude scan.
 	if save := p.pos; p.peek() == '-' && p.peekAt(1) == '-' {
@@ -184,7 +200,13 @@ func (p *pcssParser) atRule() cssNode {
 	if term == '{' {
 		p.pos++
 		at.hasBody = true
-		at.nodes = p.statements(false)
+		if strings.EqualFold(name, "function") {
+			p.funcDepth++
+			at.nodes = p.statements(false)
+			p.funcDepth--
+		} else {
+			at.nodes = p.statements(false)
+		}
 		if p.peek() != '}' {
 			p.fail("expected %q", "}")
 		}
@@ -193,6 +215,33 @@ func (p *pcssParser) atRule() cssNode {
 		p.pos++
 	}
 	return at
+}
+
+// funcDeclaration parses a `name: token-stream` descriptor inside a plain-CSS
+// custom-function body. It returns ok=false (without consuming input) when the
+// current statement is not a colon-delimited declaration, so the caller can
+// fall back to the general statement parser.
+func (p *pcssParser) funcDeclaration() (cssNode, bool) {
+	save := p.pos
+	start := p.pos
+	for !p.eof() {
+		switch p.peek() {
+		case ':':
+			name := strings.TrimSpace(p.src[start:p.pos])
+			p.pos++ // consume ':'
+			raw := p.readCustomValue()
+			return &cssDeclaration{name: name, raw: raw, custom: true}, true
+		case '{', ';', '}':
+			// Not a colon-delimited declaration (e.g. a nested style rule); let
+			// the general statement parser handle it.
+			p.pos = save
+			return nil, false
+		default:
+			p.pos++
+		}
+	}
+	p.pos = save
+	return nil, false
 }
 
 // scanPrelude reads up to (but not consuming) the next top-level '{', ';' or
