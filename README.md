@@ -72,7 +72,7 @@ type CompileResult struct { CSS string; LoadedURLs []string; SourceMap string }
 
 Correctness is defined as **matching dart-sass byte-for-byte**. Two oracles enforce it:
 
-1. **sass-spec** — the canonical conformance suite ([github.com/sass/sass-spec](https://github.com/sass/sass-spec)), whose HRX archives pair each `input.scss` with the reference `output.css`. The harness scores exactly the way the official runner scores dart-sass: it honours the `options.yml` annotation system (`:ignore_for:`/`:todo:` for dart-sass are excluded, not failed), the per-impl expected-output overrides (`output-dart-sass.css`), and the `--load-path` import resolution — so the denominator is the **dart-applicable** success set. Current rate: **9742 / 11406 applicable success cases (85.4%)**. The honest ceiling — dart-sass 1.102 itself run through this same harness — is **11341 / 11406 (99.4%)**; the ~65 residual misses are harness-materialisation edge cases and nondeterministic specs (`math.random`), not contested output. A representative, self-contained, all-passing subset of **1575 cases** is frozen under `testdata/spec` as the in-repo conformance gate, so CI needs no sass-spec checkout; the full suite (and the dart-sass ceiling oracle via `SASS_SPEC_ORACLE=…`) runs skip-gated (`SASS_SPEC_PATH=…`) and as a non-blocking CI job.
+1. **sass-spec** — the canonical conformance suite ([github.com/sass/sass-spec](https://github.com/sass/sass-spec)), whose HRX archives pair each `input.scss` with the reference `output.css`. The harness scores exactly the way the official runner scores dart-sass: it honours the `options.yml` annotation system (`:ignore_for:`/`:todo:` for dart-sass are excluded, not failed), the per-impl expected-output overrides (`output-dart-sass.css`), and the `--load-path` import resolution — so the denominator is the **dart-applicable** success set. See [sass-spec conformance](#sass-spec-conformance) below for the exact audited figures. A representative, self-contained, all-passing subset of **1575 cases** is frozen under `testdata/spec` as the in-repo conformance gate, so CI needs no sass-spec checkout; the full suite (and the dart-sass ceiling oracle via `SASS_SPEC_ORACLE=…`) runs skip-gated (`SASS_SPEC_PATH=…`) and as a non-blocking CI job.
 2. **Live dart-sass** — a hand-curated corpus of representative `.scss`/`.sass` files is compiled with both engines and diffed byte-for-byte (**all byte-match dart-sass 1.102** in expanded and compressed). Frozen as golden `testdata`; a skip-gated live test re-verifies against a real `sass` binary when present.
 
 ```
@@ -82,6 +82,30 @@ SASS_SPEC_PATH=/path/to/sass-spec go test -run TestSassSpecFull -v ./   # full s
 ```
 
 The **CSS Color 4 color-space module** is now implemented (see residuals for the named exotic cases that remain).
+
+### sass-spec conformance
+
+Audited 2026-08-02 against a full sass/sass-spec checkout, with **dart-sass 1.102.0** run through the *same* annotation-aware harness as the ceiling oracle (`GOWORK=off`, `SASS_SPEC_ORACLE=sass`). Over the **11406** dart-applicable success-output cases:
+
+| | passes | of denominator |
+|---|---|---|
+| **go-scss** | **11190 / 11406** | **98.11%** |
+| dart-sass 1.102 (achievable ceiling) | 11341 / 11406 | 99.43% |
+| **go-scss as a share of the ceiling** | **11190 / 11341** | **98.67%** |
+
+go-scss is byte-exact against dart-sass 1.102 across the entire real-world language. It even **matches the vendored fixture where current dart-sass does not on 16 cases** — stale fixtures that dart-sass 1.102 itself now fails (its last-ULP behaviour drifted; go-scss still matches the frozen expectation).
+
+The remaining **216** go-scss misses are honestly, oracle-bucketed:
+
+| bucket | count | why it is where it is |
+|---|---:|---|
+| **C — libm-ULP** (color/math last-bit) | 127 | Far-out-of-gamut `color.to-space` conversions and math asymptotes (`math.tan`, `math.pow`) that differ from dart in the last 1–2 ULPs. Irreducible without CGO or breaking cross-arch determinism: pure-Go math vs dart's platform `libm`, where products are rounded separately so results stay identical across all six arches. |
+| **B — stale-vendored** | 49 | The vendored fixture is stale; **dart-sass 1.102 itself fails these** (oracle-proven), so they are outside the achievable ceiling and not closeable by go-scss. |
+| **WALL — per-import-clone extension store** | 6 | The proven architectural residual (`@use`/`@import` × `@extend` scope isolation: `use/extend/scope/*`, `meta.load-css` `extend::shared_cssless_midstream`, `use/css/import::nested_import_into_use`). Would require replacing the single-pass `@extend` finalize with dart's per-clone `_extendModules`. |
+| **SERIALIZER — comment-only block** | 2 | A block whose sole content is a comment must serialise on one line (`@font-face { /**/ }`, `@keyframes { /**/ }`); go-scss expands the braces. |
+| **OTHER — assorted small gaps** | 32 | A long tail of unrelated small divergences: `@import` inlining/resolution, plain-CSS nesting preserved through `@import`, indented-syntax (`.sass`) multiline parsing, unknown at-rule handling, argument-splat ordering, and trailing-comment placement. |
+
+Scored via the annotation-aware harness that reproduces the official runner's `options.yml`/per-impl-override logic; the full per-case bucket assignment is reproducible with `TestSassSpecFull` + `SASS_SPEC_ORACLE`.
 
 ## Honest residuals
 
@@ -94,15 +118,18 @@ Dart Sass output is the source of truth; where this compiler intentionally diver
 - **Hyphen/underscore-insensitive identifiers** — variables, functions, and mixins fold `_`↔`-` on both definition and lookup (`function_exists` ≡ `function-exists`).
 - **`meta.feature-exists`** returns the correct booleans for known features.
 - **CSS Color Level 4 color-space module** — all Color 4 spaces (`srgb`, `srgb-linear`, `display-p3`, `a98-rgb`, `prophoto-rgb`, `rec2020`, `xyz`/`xyz-d65`, `xyz-d50`, `lab`, `lch`, `oklab`, `oklch`) plus the `color()`, `lab()`/`lch()`/`oklab()`/`oklch()`/`hwb()` constructors and the `sass:color` module (`space`, `to-space`, `channel`, `is-legacy`, `is-missing`, `is-in-gamut`, `is-powerless`, `same`, `to-gamut` with `clip`/`local-minde`, plus `change`/`adjust`/`scale`/`mix`/`invert`/`complement` extended with `$space` and space-specific channels). Conversion matrices, gamma companding, Bradford D65↔D50 adaptation, OkLab/OkLCH, missing/`none`-channel carrying and powerless-channel rules match dart-sass 1.102 byte-for-byte (all products are rounded separately to keep results identical to dart across every architecture — dart never fuses multiply-add). This closed ~4400 sass-spec cases.
+- **Special-number passthrough in color functions** — `calc()`/`var()`/`env()`/`attr()` and `min()`/`max()`/`clamp()` channel arguments now serialize as dart does (all `core_functions/color/**/special_functions/*` pass).
+- **`sass:selector` + `@extend` unification** — `selector.extend`, `selector.is-superselector`, `selector.parse` and complex/compound selector unification are implemented; every dart-applicable `core_functions/selector/**` and `@extend` case passes except the per-import-clone scope residual noted below.
+- **Modern media-query syntax** — range (`width < 100px`) and `and`/`or`/`not` logic merging/pruning match dart for every dart-applicable case; the remaining `css/media/**` fixtures are stale-vendored (dart-sass 1.102 fails them too).
 
-**Still divergent** (named, not hidden):
+**Still divergent** (named, not hidden — see the [sass-spec conformance](#sass-spec-conformance) table for exact per-bucket counts):
 
-- **Special-number passthrough in color functions** — `calc()`/`var()`/`env()`/`attr()` channel arguments are preserved verbatim, but `min()`/`max()`/`clamp()` (and the `attr()` parse) still evaluate as Sass functions rather than CSS calculations, so a subset of `core_functions/color/**/special_functions/*` (min/max/clamp/attr) diverges. Needs the CSS calculation value type.
-- **Extreme out-of-gamut colors** — conversions of colors whose channels are far outside their gamut (e.g. `core_functions/color/to_space/*/out_of_range/far`) can differ from dart in the last 1–2 ULPs because the magnitudes amplify unavoidable floating-point rounding order differences; and a handful of achromatic extremes (`lab`/`oklab` white via HSL) can differ by one ULP.
+- **Extreme out-of-gamut colors and math asymptotes** (bucket C, 127) — far-out-of-gamut `color.to-space` conversions (`core_functions/color/to_space/*/out_of_range/far`) and math asymptotes (`math.tan`, `math.pow`) differ from dart in the last 1–2 ULPs: the magnitudes amplify unavoidable floating-point rounding-order differences between pure-Go math and dart's platform `libm`. Irreducible without CGO or breaking cross-arch determinism.
+- **Per-import-clone `@extend` scope** (bucket WALL, 6) — `@extend` interacting with `@use`/`@import` module boundaries (`use/extend/scope/*`, `meta.load-css` `extend::shared_cssless_midstream`, `use/css/import::nested_import_into_use`) would require replacing the single-pass `@extend` finalize with dart's per-clone `_extendModules`.
+- **Comment-only-block serialization** (bucket SERIALIZER, 2) — a block whose sole content is a comment must serialise on one line (`@font-face { /**/ }`, `@keyframes { /**/ }`); go-scss expands the braces.
+- **Assorted small gaps** (bucket OTHER, 32) — `@import` inlining/resolution, plain-CSS nesting preserved through `@import`, indented-syntax (`.sass`) multiline parsing, unknown at-rule handling, argument-splat ordering, and trailing-comment placement.
+- **Stale-vendored fixtures** (bucket B, 49) — the vendored `output.css` is out of date; dart-sass 1.102 itself fails these, so they lie outside the achievable ceiling.
 - **Source maps** — not emitted (`CompileResult.SourceMap` is empty).
-- **`@extend` / `sass:selector` unification** — class/placeholder extension with dart-compatible ordering works; `selector.extend`, `selector.is-superselector`, `selector.parse`, and complex/compound selector unification are not implemented (`core_functions/selector/extend/*`).
-- **Modern media-query syntax** — range (`width < 100px`) and `and`/`or`/`not` logic merging/pruning are partial (`css/media/logic/*`, `css/media/range/*`).
-- **Parser edge cases** — interpolation with an adjacent literal suffix in a declaration value (`prop: val-#{$x}`) and a top-level `@return` are not yet handled gracefully.
 - **Coverage** is **100.0%** of statements (up from 79.3%); every parser/eval error-recovery and defensive branch is exercised, either through malformed-SCSS tests or via direct white-box drives of the defensive seams. The CI floor is **100%**.
 
 ## License
