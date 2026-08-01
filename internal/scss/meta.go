@@ -29,8 +29,17 @@ func fnGlobalVariableExists(ci *callInfo) Value {
 	if mv, ok := ci.get(1, "module"); ok {
 		return boolean(ci.e.moduleHasVar(ci.e.asString(mv).Text, ci.str(0, "name").Text))
 	}
-	_, ok := ci.e.env.scopes[0][normIdent(ci.str(0, "name").Text)]
-	return boolean(ok)
+	name := normIdent(ci.str(0, "name").Text)
+	if _, ok := ci.e.env.scopes[0][name]; ok {
+		return sassTrue
+	}
+	// A `@use as *` module's variable is a global variable in this scope.
+	for _, mod := range ci.e.env.globalModules {
+		if _, ok := mod.getVar(name); ok {
+			return sassTrue
+		}
+	}
+	return sassFalse
 }
 
 func fnFunctionExists(ci *callInfo) Value {
@@ -41,6 +50,9 @@ func fnFunctionExists(ci *callInfo) Value {
 	if _, ok := ci.e.env.funcs[name]; ok {
 		return sassTrue
 	}
+	if _, ok := ci.e.env.globalModuleFunc(name); ok {
+		return sassTrue
+	}
 	_, ok := globalFns[normIdent(strings.ToLower(name))]
 	return boolean(ok)
 }
@@ -49,7 +61,11 @@ func fnMixinExists(ci *callInfo) Value {
 	if mv, ok := ci.get(1, "module"); ok {
 		return boolean(ci.e.moduleHasMixin(ci.e.asString(mv).Text, ci.str(0, "name").Text))
 	}
-	_, ok := ci.e.env.mixins[normIdent(ci.str(0, "name").Text)]
+	name := normIdent(ci.str(0, "name").Text)
+	if _, ok := ci.e.env.mixins[name]; ok {
+		return sassTrue
+	}
+	_, ok := ci.e.env.globalModuleMixin(name)
 	return boolean(ok)
 }
 
@@ -117,7 +133,7 @@ func (e *evaluator) moduleByName(name string) (*module, bool) {
 // variable with the given (dash-insensitive) name.
 func (e *evaluator) moduleHasVar(namespace, name string) bool {
 	if m, ok := e.moduleByName(namespace); ok {
-		_, ok := m.vars[normIdent(name)]
+		_, ok := m.getVar(normIdent(name))
 		return ok
 	}
 	if _, real, ok := e.builtinModule(namespace); ok {
@@ -131,7 +147,7 @@ func (e *evaluator) moduleHasVar(namespace, name string) bool {
 // with the given name.
 func (e *evaluator) moduleHasFunc(namespace, name string) bool {
 	if m, ok := e.moduleByName(namespace); ok {
-		_, ok := m.funcs[normIdent(name)]
+		_, ok := m.getFunc(normIdent(name))
 		return ok
 	}
 	if reg, _, ok := e.builtinModule(namespace); ok {
@@ -145,7 +161,7 @@ func (e *evaluator) moduleHasFunc(namespace, name string) bool {
 // with the given name.
 func (e *evaluator) moduleHasMixin(namespace, name string) bool {
 	if m, ok := e.moduleByName(namespace); ok {
-		_, ok := m.mixins[normIdent(name)]
+		_, ok := m.getMixin(normIdent(name))
 		return ok
 	}
 	if _, real, ok := e.builtinModule(namespace); ok {
@@ -161,7 +177,7 @@ func (e *evaluator) getFunctionValue(name string, css bool, moduleName string) V
 	}
 	if moduleName != "" {
 		if m, ok := e.moduleByName(moduleName); ok {
-			if fn, ok := m.funcs[normIdent(name)]; ok {
+			if fn, ok := m.getFunc(normIdent(name)); ok {
 				return &SassFunction{name: name, user: fn}
 			}
 		}
@@ -175,6 +191,9 @@ func (e *evaluator) getFunctionValue(name string, css bool, moduleName string) V
 	if fn, ok := e.env.funcs[normIdent(name)]; ok {
 		return &SassFunction{name: name, user: fn}
 	}
+	if fn, ok := e.env.globalModuleFunc(normIdent(name)); ok {
+		return &SassFunction{name: name, user: fn}
+	}
 	if bf, ok := globalFns[normIdent(strings.ToLower(name))]; ok {
 		return &SassFunction{name: name, builtin: bf, key: "global:" + normIdent(strings.ToLower(name))}
 	}
@@ -185,7 +204,7 @@ func (e *evaluator) getFunctionValue(name string, css bool, moduleName string) V
 func (e *evaluator) getMixinValue(name, moduleName string) Value {
 	if moduleName != "" {
 		if m, ok := e.moduleByName(moduleName); ok {
-			if mx, ok := m.mixins[normIdent(name)]; ok {
+			if mx, ok := m.getMixin(normIdent(name)); ok {
 				return &SassMixin{name: name, user: mx}
 			}
 		}
@@ -197,6 +216,9 @@ func (e *evaluator) getMixinValue(name, moduleName string) Value {
 		e.fail("There is no module with the namespace \"%s\".", moduleName)
 	}
 	if mx, ok := e.env.mixins[normIdent(name)]; ok {
+		return &SassMixin{name: name, user: mx}
+	}
+	if mx, ok := e.env.globalModuleMixin(normIdent(name)); ok {
 		return &SassMixin{name: name, user: mx}
 	}
 	e.fail("Mixin not found: %s", name)
@@ -291,9 +313,10 @@ func fnModuleFunctions(ci *callInfo) Value {
 		return out
 	}
 	m := ci.e.requireModule(ns)
+	funcs := m.allFuncs()
 	out := &Map{}
-	for _, name := range sortedKeys(m.funcs) {
-		out.set(&SassString{Text: name, Quoted: true}, &SassFunction{name: name, user: m.funcs[name]})
+	for _, name := range sortedKeys(funcs) {
+		out.set(&SassString{Text: name, Quoted: true}, &SassFunction{name: name, user: funcs[name]})
 	}
 	return out
 }
@@ -310,9 +333,10 @@ func fnModuleMixins(ci *callInfo) Value {
 		return out
 	}
 	m := ci.e.requireModule(ns)
+	mixins := m.allMixins()
 	out := &Map{}
-	for _, name := range sortedKeys(m.mixins) {
-		out.set(&SassString{Text: name, Quoted: true}, &SassMixin{name: name, user: m.mixins[name]})
+	for _, name := range sortedKeys(mixins) {
+		out.set(&SassString{Text: name, Quoted: true}, &SassMixin{name: name, user: mixins[name]})
 	}
 	return out
 }
@@ -329,9 +353,10 @@ func fnModuleVariables(ci *callInfo) Value {
 		return out
 	}
 	m := ci.e.requireModule(ns)
+	vars := m.allVars()
 	out := &Map{}
-	for _, name := range sortedKeys(m.vars) {
-		out.set(&SassString{Text: name, Quoted: true}, m.vars[name])
+	for _, name := range sortedKeys(vars) {
+		out.set(&SassString{Text: name, Quoted: true}, vars[name])
 	}
 	return out
 }

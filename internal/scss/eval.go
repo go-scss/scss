@@ -47,6 +47,11 @@ type evaluator struct {
 	// (dart-sass's _inSupportsDeclaration), so `(a: calc(1 + 2))` keeps its
 	// `calc(1 + 2)` text rather than reducing to `3`.
 	inSupportsDecl bool
+	// importDepth counts how many nested legacy @import inlinings are currently on
+	// the stack. A @forward evaluated while this is >0 additionally merges its
+	// re-exported members into the importing scope (dart's import-forward
+	// behaviour); at depth 0 a @forward only records an export.
+	importDepth int
 }
 
 // maxCallDepth bounds mixin/content/function recursion. Dart Sass terminates on
@@ -378,11 +383,11 @@ func (e *evaluator) assignNamespacedVar(n *VarDecl) {
 		e.fail("There is no module with the namespace \"%s\".", n.Namespace)
 	}
 	name := normIdent(n.Name)
-	if _, exists := mod.vars[name]; !exists {
+	if _, exists := mod.getVar(name); !exists {
 		e.fail("Undefined variable.")
 	}
 	if n.Default {
-		if v, ok := mod.vars[name]; ok {
+		if v, ok := mod.getVar(name); ok {
 			if _, isNull := v.(*Null); !isNull {
 				return
 			}
@@ -618,13 +623,16 @@ func (e *evaluator) lookupMixin(ns, name string) *mixinEntry {
 	name = normIdent(name)
 	if ns != "" {
 		if mod, ok := e.env.modules[ns]; ok {
-			if m, ok := mod.mixins[name]; ok {
+			if m, ok := mod.getMixin(name); ok {
 				return m
 			}
 		}
 		return nil
 	}
 	if m, ok := e.env.mixins[name]; ok {
+		return m
+	}
+	if m, ok := e.env.globalModuleMixin(name); ok {
 		return m
 	}
 	return nil

@@ -32,7 +32,10 @@ func (e *evaluator) evalUse(n *Use, fr *frame) {
 	}
 	mod := e.loadModule(n.URL, e.buildConfig(nil, n.Config), fr)
 	if n.NoNS {
-		e.mergeModuleGlobally(mod, "")
+		// `@use ... as *` exposes the module's members by bare name in THIS module
+		// but does NOT re-export them: it joins the resolution environment as a
+		// global module rather than being merged into this module's own tables.
+		e.env.globalModules = append(e.env.globalModules, mod)
 	} else {
 		e.env.modules[ns] = mod
 	}
@@ -133,8 +136,20 @@ func forwardVarNames(members []string) map[string]bool {
 // variables (dart's import configuration flow).
 func (e *evaluator) implicitConfigSnapshot() map[string]Value {
 	out := map[string]Value{}
-	for _, scope := range e.env.scopes {
-		for k, v := range scope {
+	// The module's own global scope is the lowest-precedence source.
+	for k, v := range e.env.scopes[0] {
+		out[k] = v
+	}
+	// Members re-exported through a legacy @import shadow the module's own global
+	// scope; a later import wins over an earlier one.
+	for _, im := range e.env.importedModules {
+		for k, v := range im.mod.allVars() {
+			out[im.prefix+k] = v
+		}
+	}
+	// Inner scopes shadow everything, innermost last.
+	for i := 1; i < len(e.env.scopes); i++ {
+		for k, v := range e.env.scopes[i] {
 			out[k] = v
 		}
 	}
@@ -176,9 +191,17 @@ func (e *evaluator) evalForward(n *Forward, fr *frame) {
 		return
 	}
 	mod := filterForwarded(e.loadModule(n.URL, e.buildConfig(throughForwardConfig(e.incomingConfig, n), n.Config), fr), n, n.Prefix)
-	e.mergeModuleGlobally(mod, n.Prefix)
-	// track for downstream @use of THIS stylesheet
-	e.forwarded = append(e.forwarded, forwardedMod{mod: mod, prefix: n.Prefix})
+	// A @forward re-exports its members but does NOT make them callable in this
+	// stylesheet (dart keeps _forwardedModules separate from the resolution
+	// scope). The one exception is a @forward reached through a legacy @import,
+	// which inlines the forwarded members into the importing scope.
+	if e.importDepth > 0 {
+		e.importForwardedModule(mod, n.Prefix)
+	}
+	// track for downstream @use of THIS stylesheet. The prefix is canonicalised so
+	// the accessors' prefix arithmetic matches the dash/underscore-folded member
+	// keys (a `@forward ... as d_*` prefixes the hyphen-spelled `$d-c`).
+	e.forwarded = append(e.forwarded, forwardedMod{mod: mod, prefix: normIdent(n.Prefix)})
 }
 
 // filterForwarded applies a @forward's show/hide clauses, returning a module
@@ -218,21 +241,22 @@ func filterForwarded(mod *module, n *Forward, prefix string) *module {
 		}
 		return !vars[normIdent(prefix+k)]
 	}
-	// The filtered view copies member values, but a namespaced assignment to a
-	// still-visible variable must reach the underlying module's real storage, so
-	// the view forwards writes to the module it filters.
-	out := &module{vars: map[string]Value{}, mixins: map[string]*mixinEntry{}, funcs: map[string]*funcEntry{}, env: mod.env, forwards: []forwardedMod{{mod: mod}}}
-	for k, v := range mod.vars {
+	// The filtered view materialises the permitted subset of the module's full
+	// (own + forwarded) API into its own maps, so reads never expose a hidden
+	// member. A namespaced assignment to a still-visible variable must reach the
+	// underlying module's real storage, so the view delegates writes to it.
+	out := &module{vars: map[string]Value{}, mixins: map[string]*mixinEntry{}, funcs: map[string]*funcEntry{}, env: mod.env, writeThrough: mod}
+	for k, v := range mod.allVars() {
 		if varAllowed(k) {
 			out.vars[k] = v
 		}
 	}
-	for k, v := range mod.mixins {
+	for k, v := range mod.allMixins() {
 		if nameAllowed(k) {
 			out.mixins[k] = v
 		}
 	}
-	for k, v := range mod.funcs {
+	for k, v := range mod.allFuncs() {
 		if nameAllowed(k) {
 			out.funcs[k] = v
 		}
@@ -274,16 +298,21 @@ func publicMixins(in map[string]*mixinEntry) map[string]*mixinEntry {
 	return out
 }
 
-func (e *evaluator) mergeModuleGlobally(mod *module, prefix string) {
-	for k, v := range mod.vars {
-		e.env.setGlobalIfAbsent(prefix+k, v)
-	}
-	for k, v := range mod.mixins {
+// importForwardedModule inlines a module's re-exported members into the current
+// environment for the legacy @import path, where a @forward reached through
+// @import contributes its members to the importing scope. Functions and mixins
+// are copied into the environment's tables (a later @import's definition winning);
+// variables are exposed through an imported-module reference so reads see the
+// source's live slot, writes propagate to it, and a later import shadows an
+// earlier one. The enumeration accessors compose any nested @forward.
+func (e *evaluator) importForwardedModule(mod *module, prefix string) {
+	for k, v := range mod.allMixins() {
 		e.env.mixins[normIdent(prefix+k)] = v
 	}
-	for k, v := range mod.funcs {
+	for k, v := range mod.allFuncs() {
 		e.env.funcs[normIdent(prefix+k)] = v
 	}
+	e.env.importedModules = append(e.env.importedModules, importedMod{mod: mod, prefix: normIdent(prefix)})
 }
 
 type forwardedMod struct {
@@ -380,12 +409,22 @@ func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *
 	// configured variable does not "exist" (meta.variable-exists) until its own
 	// declaration line runs — where the configured value overrides the default.
 	sub.incomingConfig = config
+	// A `!global` variable assignment creates a slot in the module's global scope
+	// regardless of whether its enclosing code ever runs, so a module always
+	// exposes the same members (dart pre-declares every global variable it can
+	// assign). Pre-seed those slots to null; an executed assignment overwrites.
+	sub.hoistGlobalVarSlots(stmts, sub.env, map[string]bool{})
 	sub.runModule(stmts)
 	e.warnings = append(e.warnings, sub.warnings...)
 	e.loadedURLs = append(e.loadedURLs, resolved)
 	// include used module CSS in our output, as a chunk that participates in
 	// the importing stylesheet's top-level blank-line grouping.
 	e.emitModuleCSS(sub.root.children(), fr)
+	// The module's exported API is its OWN public members (its global scope plus
+	// its own function/mixin tables); anything it @forwards is reached through the
+	// forwards chain by the read/write/enumeration accessors. A `@use ... as *`
+	// this stylesheet performed lives in sub.env.globalModules and is deliberately
+	// NOT part of the export, so it does not leak to a downstream consumer.
 	mod := &module{
 		vars:     sub.env.scopes[0],
 		mixins:   publicMixins(sub.env.mixins),
@@ -394,10 +433,6 @@ func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *
 		scope:    sub.scope,
 		forwards: sub.forwarded,
 	}
-	// Forwarded members are already exposed in the module's own tables: while the
-	// stylesheet ran, each @forward called mergeModuleGlobally on the sub-
-	// evaluator, seeding scopes[0]/funcs/mixins (which back mod.vars/funcs/mixins)
-	// while letting the module's OWN definitions win over a forwarded name.
 	e.loaded[url] = mod
 	e.sharedLoaded[resolved] = mod
 	return mod
@@ -420,6 +455,75 @@ func emptyModule() *module {
 func (e *evaluator) runModule(stmts []Stmt) {
 	fr := &frame{container: e.root, rootContainer: e.root, mediaParent: e.root, atContainer: true, group: &groupInfo{}}
 	e.evalBody(stmts, fr, true)
+}
+
+// hoistGlobalVarSlots pre-declares (as null) every `!global` variable a module
+// could assign, walking into all nested bodies so a declaration guarded by a
+// never-taken branch still creates the slot. Only bare (non-namespaced) `!global`
+// assignments hoist; a plain top-level `$x: v` gets its slot when it runs, and a
+// namespaced `ns.$x: v` writes to another module.
+func (e *evaluator) hoistGlobalVarSlots(stmts []Stmt, env *environment, seen map[string]bool) {
+	for _, s := range stmts {
+		switch n := s.(type) {
+		case *VarDecl:
+			if n.Global && n.Namespace == "" {
+				env.setGlobalIfAbsent(n.Name, sassNull)
+			}
+		case *StyleRule:
+			e.hoistGlobalVarSlots(n.Body, env, seen)
+		case *Declaration:
+			e.hoistGlobalVarSlots(n.Body, env, seen)
+		case *MixinDef:
+			e.hoistGlobalVarSlots(n.Body, env, seen)
+		case *FunctionDef:
+			e.hoistGlobalVarSlots(n.Body, env, seen)
+		case *Include:
+			e.hoistGlobalVarSlots(n.Content, env, seen)
+		case *If:
+			for _, c := range n.Clauses {
+				e.hoistGlobalVarSlots(c.Body, env, seen)
+			}
+			e.hoistGlobalVarSlots(n.Else, env, seen)
+		case *Each:
+			e.hoistGlobalVarSlots(n.Body, env, seen)
+		case *For:
+			e.hoistGlobalVarSlots(n.Body, env, seen)
+		case *While:
+			e.hoistGlobalVarSlots(n.Body, env, seen)
+		case *AtRoot:
+			e.hoistGlobalVarSlots(n.Body, env, seen)
+		case *Media:
+			e.hoistGlobalVarSlots(n.Body, env, seen)
+		case *Supports:
+			e.hoistGlobalVarSlots(n.Body, env, seen)
+		case *AtRule:
+			e.hoistGlobalVarSlots(n.Body, env, seen)
+		case *Import:
+			// A legacy @import inlines the file into this module, so a `!global`
+			// slot declared in the imported source belongs to this module too.
+			e.hoistImportedGlobalVarSlots(n, env, seen)
+		}
+	}
+}
+
+// hoistImportedGlobalVarSlots resolves the sources of a legacy @import and hoists
+// their `!global` variable slots into env, guarding against import cycles.
+func (e *evaluator) hoistImportedGlobalVarSlots(n *Import, env *environment, seen map[string]bool) {
+	for _, item := range n.Imports {
+		if item.Plain {
+			continue
+		}
+		src, resolved, ok := e.resolve(item.URL)
+		if !ok || seen[resolved] || strings.HasSuffix(resolved, ".css") {
+			continue
+		}
+		seen[resolved] = true
+		stmts, err := parseModuleSource(resolved, src)
+		if err != nil {
+			continue
+		}
+		e.hoistGlobalVarSlots(stmts, env, seen)
+	}
 }
 
 func (e *evaluator) resolve(url string) (string, string, bool) {
@@ -479,6 +583,15 @@ func (e *evaluator) evalImport(n *Import, fr *frame) {
 		// as an implicit configuration that flows into those @forward rules, so a
 		// variable set before the @import configures a forwarded module's
 		// !default variable. The snapshot is taken once, at the import site.
+		// A @forward reached while inlining an @import contributes its re-exported
+		// members to the importing scope (unlike a @forward run at a real module's
+		// top level), so mark that we are inside an import.
+		e.importDepth++
+		// A `@use ... as *` inside the imported file joins the resolution scope only
+		// while that file is being inlined; it is not re-exported to the importing
+		// module (dart keeps such a transitive `as *` from leaking through @import),
+		// so restore the global-module list once the import finishes.
+		savedGlobals := e.env.globalModules
 		if stmtsHaveForward(stmts) {
 			saved := e.incomingConfig
 			e.incomingConfig = e.implicitConfigSnapshot()
@@ -487,5 +600,7 @@ func (e *evaluator) evalImport(n *Import, fr *frame) {
 		} else {
 			e.evalBody(stmts, fr, true)
 		}
+		e.env.globalModules = savedGlobals
+		e.importDepth--
 	}
 }

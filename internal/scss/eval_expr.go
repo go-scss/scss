@@ -93,7 +93,7 @@ func (e *evaluator) evalString(x *StringLit) Value {
 func (e *evaluator) evalVarRef(x *VarRef) Value {
 	if x.Namespace != "" {
 		if mod, ok := e.env.modules[x.Namespace]; ok {
-			if v, ok := mod.vars[x.Name]; ok {
+			if v, ok := mod.getVar(normIdent(x.Name)); ok {
 				return v
 			}
 		}
