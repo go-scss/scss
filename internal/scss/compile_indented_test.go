@@ -53,6 +53,7 @@ func TestConvertIndentedContinuation(t *testing.T) {
 		{"escaped_selector_with_children", "\\:hover\n  color: red", ":hover {\n  color: red;\n}"},
 		{"escaped_selector_childless", "\\:hover\na\n  b: c", ":hover {}\na {\n  b: c;\n}"},
 		{"escaped_selector_trailing_loud", "\\.foo /* c */\n  x: y", ".foo {\n  x: y;\n}"},
+		{"unquoted_import_list", "@import unquoted, sub/unquoted", "@import \"unquoted\", \"sub/unquoted\";"},
 	}
 	for _, c := range cases {
 		if got := convertIndented(c.in); got != c.want {
@@ -106,6 +107,72 @@ func TestMatchesURLOpen(t *testing.T) {
 	}
 	if matchesURLOpen("abc(", 0) {
 		t.Error("not url")
+	}
+}
+
+func TestQuoteIndentedImport(t *testing.T) {
+	cases := []struct{ name, in, want string }{
+		{"not_import", "@include m", "@include m"},
+		{"empty_args", "@import", "@import"},
+		{"bare_list", "@import a, b/c", `@import "a", "b/c"`},
+		{"css_extension", "@import other.css", `@import "other.css"`},
+		{"already_quoted", `@import "a", "b"`, `@import "a", "b"`},
+		{"url_left_alone", "@import url(a)", "@import url(a)"},
+		{"mixed_quoted_and_bare", `@import "a", bare`, `@import "a", "bare"`},
+		{"comma_inside_quotes", `@import "a,b"`, `@import "a,b"`},
+		{"supports_query_kept", `@import "a.css" supports(x: y), bare`, `@import "a.css" supports(x: y), "bare"`},
+	}
+	for _, c := range cases {
+		if got := quoteIndentedImport(c.in); got != c.want {
+			t.Errorf("%s: quoteIndentedImport(%q)=%q want %q", c.name, c.in, got, c.want)
+		}
+	}
+}
+
+func TestSplitTopLevelCommas(t *testing.T) {
+	eq := func(a, b []string) bool {
+		if len(a) != len(b) {
+			return false
+		}
+		for i := range a {
+			if a[i] != b[i] {
+				return false
+			}
+		}
+		return true
+	}
+	if got := splitTopLevelCommas("a, b, c"); !eq(got, []string{"a", " b", " c"}) {
+		t.Errorf("plain: %q", got)
+	}
+	if got := splitTopLevelCommas("f(a, b), c"); !eq(got, []string{"f(a, b)", " c"}) {
+		t.Errorf("parens: %q", got)
+	}
+	if got := splitTopLevelCommas(`"a,b", c`); !eq(got, []string{`"a,b"`, " c"}) {
+		t.Errorf("string: %q", got)
+	}
+	if got := splitTopLevelCommas(`"a\,b"`); !eq(got, []string{`"a\,b"`}) {
+		t.Errorf("escaped: %q", got)
+	}
+	if got := splitTopLevelCommas("#{a, b}, c"); !eq(got, []string{"#{a, b}", " c"}) {
+		t.Errorf("interp: %q", got)
+	}
+	if got := splitTopLevelCommas(")a, b"); !eq(got, []string{")a", " b"}) {
+		t.Errorf("stray close: %q", got)
+	}
+}
+
+func TestIsBareImportPath(t *testing.T) {
+	yes := []string{"a", "sub/unquoted", "other.css", "-x_y"}
+	no := []string{"", `"a"`, "'a'", "url(a)", "URL(a)", "a b", "f(a)", "#{a}"}
+	for _, s := range yes {
+		if !isBareImportPath(s) {
+			t.Errorf("expected bare path: %q", s)
+		}
+	}
+	for _, s := range no {
+		if isBareImportPath(s) {
+			t.Errorf("unexpected bare path: %q", s)
+		}
 	}
 }
 

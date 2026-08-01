@@ -434,6 +434,95 @@ func matchesURLOpen(s string, i int) bool {
 	return i == 0 || !isIdentChar(s[i-1])
 }
 
+// quoteIndentedImport rewrites the bare unquoted paths of an indented-syntax
+// `@import` list into quoted strings. The indented grammar lets `@import foo,
+// bar/baz` name import paths without quotes, whereas SCSS requires a quoted
+// string or url(), so the re-parsed header would otherwise fail with "Expected
+// string". Only comma-separated segments that are a single bare path (no
+// leading quote, no url(), and free of whitespace, parentheses and
+// interpolation) are quoted; quoted strings, url(...) tokens and the
+// media/supports queries that trail a `.css` import are left untouched.
+func quoteIndentedImport(content string) string {
+	if atKeyword(content) != "import" {
+		return content
+	}
+	rest := strings.TrimSpace(content[len("@import"):])
+	if rest == "" {
+		return content
+	}
+	segs := splitTopLevelCommas(rest)
+	changed := false
+	for j, seg := range segs {
+		t := strings.TrimSpace(seg)
+		if isBareImportPath(t) {
+			segs[j] = `"` + t + `"`
+			changed = true
+		} else {
+			segs[j] = t
+		}
+	}
+	if !changed {
+		return content
+	}
+	return "@import " + strings.Join(segs, ", ")
+}
+
+// splitTopLevelCommas splits s on commas that are not nested inside quotes,
+// brackets or `#{}` interpolation.
+func splitTopLevelCommas(s string) []string {
+	var segs []string
+	depth := 0
+	var q byte
+	start := 0
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if q != 0 {
+			if c == '\\' {
+				i++
+			} else if c == q {
+				q = 0
+			}
+			continue
+		}
+		switch c {
+		case '"', '\'':
+			q = c
+		case '(', '[', '{':
+			depth++
+		case ')', ']', '}':
+			if depth > 0 {
+				depth--
+			}
+		case ',':
+			if depth == 0 {
+				segs = append(segs, s[start:i])
+				start = i + 1
+			}
+		}
+	}
+	return append(segs, s[start:])
+}
+
+// isBareImportPath reports whether s is a single unquoted import path: a
+// non-empty token with no leading quote, not a url(...) token, and free of the
+// whitespace, parentheses, interpolation or quote characters that would signal
+// a query clause or an already-delimited value.
+func isBareImportPath(s string) bool {
+	if s == "" || s[0] == '"' || s[0] == '\'' {
+		return false
+	}
+	if len(s) >= 4 && strings.EqualFold(s[:4], "url(") {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		switch s[i] {
+		case ' ', '\t', '(', ')', '#', '"', '\'':
+			return false
+		}
+	}
+	return true
+}
+
 // atRuleHeaderIncomplete reports whether an at-rule header still needs more
 // input to satisfy its own grammar (independently of trailing operators).
 func atRuleHeaderIncomplete(kw, acc string) bool {
@@ -805,6 +894,9 @@ func convertIndented(src string) string {
 		if !strings.HasPrefix(content, "--") {
 			content = stripIndentedComments(content)
 		}
+		// The indented `@import` grammar accepts unquoted paths; quote them so
+		// the SCSS re-parser resolves them instead of failing on the bare word.
+		content = quoteIndentedImport(content)
 		ni := -1
 		if idx+1 < len(lls) {
 			ni = lls[idx+1].indent
