@@ -68,10 +68,14 @@ func (p *parser) parseSpaceList(stop func(*parser) bool) Expr {
 		// "&" parent reference is always its own token on both sides, so it too
 		// separates glued neighbours (`&&` -> `& &`, `--&` -> `-- &`,
 		// `foo&bar` -> `foo & bar`).
+		// A leftover "-" at this point can only be one the additive parser handed
+		// back because it begins a fresh value rather than a binary subtraction
+		// (`1--em` -> `1 --em`, `1 -2` -> `1 -2`); it therefore always starts a
+		// new space-list element.
 		adjacentBoundary := prevUnicodeRange || prev == '"' || prev == '\'' ||
 			prev == ')' || prev == ']' || prev == '%' || prev == '&' ||
 			p.peek() == '"' || p.peek() == '\'' || p.peek() == '$' || p.peek() == '&' ||
-			(p.peek() == '#' && p.peekAt(1) == '{')
+			p.peek() == '-' || (p.peek() == '#' && p.peekAt(1) == '{')
 		if (!had && !adjacentBoundary) || stop(p) || p.stopChar() || p.peek() == ',' || !p.canStartValue() {
 			p.pos = save
 			break
@@ -464,10 +468,54 @@ func (p *parser) parseNumber() Expr {
 	if p.peek() == '%' {
 		p.next()
 		unit = "%"
-	} else if p.looksLikeIdentifier() {
-		unit = p.scanIdentifier()
+	} else if p.unitStarts() {
+		unit = p.scanUnit()
 	}
 	return &NumberLit{Val: val, Unit: unit}
+}
+
+// unitStarts reports whether an identifier usable as a number's unit begins at
+// the cursor. A unit may start with a single "-" but never "--" (`1--em` is the
+// number `1` followed by the identifier `--em`, not a unit `--em`), and a "-"
+// before a digit is subtraction, not a unit (`1-2` is `1 - 2`).
+func (p *parser) unitStarts() bool {
+	c := p.peek()
+	if isNameStart(c) || c == '\\' {
+		return true
+	}
+	if c == '-' {
+		n := p.peekAt(1)
+		return isNameStart(n) || n == '\\'
+	}
+	return false
+}
+
+// scanUnit reads a number's unit identifier. Unlike a general identifier, a "-"
+// directly followed by a digit terminates the unit, so `1em-2em` lexes as
+// `1em - 2em` (subtraction) rather than a number with unit `em-2em`, matching
+// dart-sass's dedicated unit lexer. A trailing "-" that is *not* followed by a
+// digit stays part of the unit (`10px- 10px` -> the unit `px-` then `10px`).
+func (p *parser) scanUnit() string {
+	var sb strings.Builder
+	if p.peek() == '-' {
+		sb.WriteByte(p.next())
+	}
+	for !p.eof() {
+		c := p.peek()
+		if c == '\\' {
+			sb.WriteString(p.scanEscape(false))
+			continue
+		}
+		if c == '-' && (isDigit(p.peekAt(1)) || (p.peekAt(1) == '.' && isDigit(p.peekAt(2)))) {
+			break
+		}
+		if isNameChar(c) {
+			sb.WriteByte(p.next())
+			continue
+		}
+		break
+	}
+	return sb.String()
 }
 
 func (p *parser) parseParenOrMap() Expr {
