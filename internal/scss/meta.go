@@ -477,7 +477,7 @@ func (e *evaluator) evalMetaApply(n *Include, fr *frame) {
 	if m.user == nil {
 		e.fail("The mixin %s can't be applied with meta.apply().", m.name)
 	}
-	e.invokeMixin(m.user, pos, named, restSep, n.Content, e.env, fr)
+	e.invokeMixin(m.user, pos, named, restSep, n.Content, n.ContentParams, e.env, fr)
 }
 
 // evalMetaLoadCss implements `@include meta.load-css($url, $with:)`.
@@ -507,20 +507,27 @@ func (e *evaluator) evalMetaLoadCss(n *Include, fr *frame) {
 
 // invokeMixin runs a user mixin with pre-resolved arguments, an optional
 // @content block and the environment in which that content was written.
-func (e *evaluator) invokeMixin(m *mixinEntry, pos []Value, named map[string]Value, restSep Separator, content []Stmt, contentEnv *environment, fr *frame) {
+func (e *evaluator) invokeMixin(m *mixinEntry, pos []Value, named map[string]Value, restSep Separator, content []Stmt, contentParams *ParamList, contentEnv *environment, fr *frame) {
 	e.enter()
 	defer e.leave()
 	saved := e.env
-	e.env = m.env
+	// Run the mixin in its lexical closure (the scopes visible where it was
+	// defined) rather than mutating the shared definition environment. This keeps
+	// each invocation's local variables private — recursion and nested includes no
+	// longer see or clobber an outer invocation's scope.
+	e.env = m.env.closureAt(m.defDepth)
 	e.env.pushScope()
 	e.bindResolved(m.def.Params, pos, named, restSep)
 	savedContent := e.env.content
 	savedContentEnv := e.env.contentEnv
+	savedContentArgs := e.env.contentArgs
 	e.env.content = content
 	e.env.contentEnv = contentEnv
+	e.env.contentArgs = contentParams
 	defer func() {
 		e.env.content = savedContent
 		e.env.contentEnv = savedContentEnv
+		e.env.contentArgs = savedContentArgs
 		e.env.popScope()
 		e.env = saved
 	}()

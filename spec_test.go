@@ -502,7 +502,11 @@ func TestSassSpecFull(t *testing.T) {
 	var pass, fail int
 	bucket := map[string][3]int{} // top dir -> [pass, fail, applicable]
 	var report strings.Builder
+	filter := os.Getenv("SASS_SPEC_FILTER")
 	for _, c := range cases {
+		if filter != "" && !strings.Contains(c.name, filter) {
+			continue
+		}
 		switch {
 		case c.mode == "ignore":
 			ignored++

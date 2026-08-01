@@ -89,7 +89,9 @@ func (p *parser) parseInclude() Stmt {
 		inc.Args = p.parseArgList()
 		p.ws()
 	}
-	if p.match("using") {
+	// `using` is a case-insensitive keyword and needs no surrounding whitespace:
+	// `@include m()using($a)` and `@include m UsInG ($a)` are both valid.
+	if p.matchKeyword("using") {
 		p.ws()
 		inc.ContentParams = p.parseParamList()
 		p.ws()

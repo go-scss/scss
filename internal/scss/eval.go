@@ -264,9 +264,28 @@ func (e *evaluator) evalBody(stmts []Stmt, fr *frame, containerBody bool) {
 			fr.group.pending = true
 			fr.group.curIsStyleRule = isStyleRuleStmt(s)
 			fr.block = nil
+		} else if isNestedRuleStmt(s) {
+			// Inside a style rule (mixin / @content / control-flow body), a nested
+			// rule or bubbling at-rule closes the current block: the declarations
+			// that follow it must land in a fresh copy of the enclosing selector,
+			// preserving source order — exactly as evalRuleBody does for a rule's
+			// own direct children. dart-sass splits the parent this way whether the
+			// nested rule is written inline or emitted from an @include.
+			fr.block = nil
 		}
 		e.evalStmt(s, fr)
 	}
+}
+
+// isNestedRuleStmt reports whether a statement, when it appears inside a style
+// rule, produces a nested rule or an at-rule that bubbles above the current
+// block — the statements after which trailing declarations need a fresh block.
+func isNestedRuleStmt(s Stmt) bool {
+	switch s.(type) {
+	case *StyleRule, *Media, *Supports, *AtRoot, *AtRule:
+		return true
+	}
+	return false
 }
 
 func isStyleRuleStmt(s Stmt) bool {
@@ -328,7 +347,7 @@ func (e *evaluator) evalStmt(s Stmt, fr *frame) {
 	case *StyleRule:
 		e.evalStyleRule(n, fr)
 	case *MixinDef:
-		e.env.defineMixin(n.Name, &mixinEntry{def: n, env: e.env})
+		e.env.defineMixin(n.Name, &mixinEntry{def: n, env: e.env, defDepth: len(e.env.scopes)})
 	case *FunctionDef:
 		e.env.defineFunc(n.Name, &funcEntry{def: n, env: e.env, defDepth: len(e.env.scopes)})
 	case *Include:
@@ -607,8 +626,7 @@ func (e *evaluator) evalRuleBody(stmts []Stmt, fr *frame) {
 	e.env.pushScope()
 	defer e.env.popScope()
 	for _, s := range stmts {
-		switch s.(type) {
-		case *StyleRule, *Media, *Supports, *AtRoot, *AtRule:
+		if isNestedRuleStmt(s) {
 			fr.block = nil
 		}
 		e.evalStmt(s, fr)
@@ -635,15 +653,23 @@ func (e *evaluator) evalInclude(n *Include, fr *frame) {
 	}
 	callEnv := e.env
 	pos, named, restSep := e.evalArgs(n.Args)
-	e.invokeMixin(m, pos, named, restSep, n.Content, callEnv, fr)
+	e.invokeMixin(m, pos, named, restSep, n.Content, n.ContentParams, callEnv, fr)
 }
 
 func (e *evaluator) evalContent(n *ContentStmt, fr *frame) {
 	content := e.env.content
 	contentEnv := e.env.contentEnv
+	contentParams := e.env.contentArgs
 	if content == nil {
 		return
 	}
+	// Arguments to `@content(...)` are evaluated in the mixin's environment (the
+	// current scope), exactly as any other call's arguments are. The content
+	// block itself then runs in the caller's environment (contentEnv), with those
+	// arguments bound to the block's `using (...)` parameters — dart-sass's
+	// ContentBlock closure: parameters are declared at the include site while the
+	// body executes in the lexical scope where the block was written.
+	pos, named, restSep := e.evalArgs(n.Args)
 	e.enter()
 	defer e.leave()
 	saved := e.env
@@ -654,6 +680,7 @@ func (e *evaluator) evalContent(n *ContentStmt, fr *frame) {
 			e.env.popScope()
 			e.env = saved
 		}()
+		e.bindResolved(contentParams, pos, named, restSep)
 		e.evalBody(content, fr, fr.atContainer)
 	}()
 }
