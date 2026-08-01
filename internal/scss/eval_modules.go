@@ -307,10 +307,10 @@ func publicMixins(in map[string]*mixinEntry) map[string]*mixinEntry {
 // earlier one. The enumeration accessors compose any nested @forward.
 func (e *evaluator) importForwardedModule(mod *module, prefix string) {
 	for k, v := range mod.allMixins() {
-		e.env.mixins[normIdent(prefix+k)] = v
+		e.env.defineMixin(prefix+k, v)
 	}
 	for k, v := range mod.allFuncs() {
-		e.env.funcs[normIdent(prefix+k)] = v
+		e.env.defineFunc(prefix+k, v)
 	}
 	e.env.importedModules = append(e.env.importedModules, importedMod{mod: mod, prefix: normIdent(prefix)})
 }
@@ -427,8 +427,8 @@ func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *
 	// NOT part of the export, so it does not leak to a downstream consumer.
 	mod := &module{
 		vars:     sub.env.scopes[0],
-		mixins:   publicMixins(sub.env.mixins),
-		funcs:    publicFuncs(sub.env.funcs),
+		mixins:   publicMixins(sub.env.globalMixins()),
+		funcs:    publicFuncs(sub.env.globalFuncs()),
 		env:      sub.env,
 		scope:    sub.scope,
 		forwards: sub.forwarded,

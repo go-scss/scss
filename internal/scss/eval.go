@@ -290,9 +290,9 @@ func (e *evaluator) evalStmt(s Stmt, fr *frame) {
 	case *StyleRule:
 		e.evalStyleRule(n, fr)
 	case *MixinDef:
-		e.env.mixins[normIdent(n.Name)] = &mixinEntry{def: n, env: e.env}
+		e.env.defineMixin(n.Name, &mixinEntry{def: n, env: e.env})
 	case *FunctionDef:
-		e.env.funcs[normIdent(n.Name)] = &funcEntry{def: n, env: e.env}
+		e.env.defineFunc(n.Name, &funcEntry{def: n, env: e.env})
 	case *Include:
 		e.evalInclude(n, fr)
 	case *If:
@@ -629,7 +629,7 @@ func (e *evaluator) lookupMixin(ns, name string) *mixinEntry {
 		}
 		return nil
 	}
-	if m, ok := e.env.mixins[name]; ok {
+	if m, ok := e.env.getMixin(name); ok {
 		return m
 	}
 	if m, ok := e.env.globalModuleMixin(name); ok {

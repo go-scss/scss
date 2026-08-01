@@ -244,7 +244,7 @@ func (e *evaluator) lookupFunc(ns, name string) *funcEntry {
 		}
 		return nil
 	}
-	if f, ok := e.env.funcs[name]; ok {
+	if f, ok := e.env.getFunc(name); ok {
 		return f
 	}
 	if f, ok := e.env.globalModuleFunc(name); ok {
