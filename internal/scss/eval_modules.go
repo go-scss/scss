@@ -374,12 +374,12 @@ func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *
 	sub.sharedLoaded = e.sharedLoaded
 	e.adoptScope(sub)
 	e.dependsOn(sub.scope)
-	// Seed the module's globals with the incoming configuration and remember it
-	// so this module's own @forward rules can propagate it downstream.
+	// Remember the incoming configuration so this module's own @forward rules can
+	// propagate it downstream. Unlike a pre-seed of the global scope, dart-sass
+	// applies configuration at each top-level `!default` declaration, so a
+	// configured variable does not "exist" (meta.variable-exists) until its own
+	// declaration line runs — where the configured value overrides the default.
 	sub.incomingConfig = config
-	for name, v := range config {
-		sub.env.scopes[0][name] = v
-	}
 	sub.runModule(stmts)
 	e.warnings = append(e.warnings, sub.warnings...)
 	e.loadedURLs = append(e.loadedURLs, resolved)
