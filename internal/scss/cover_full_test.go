@@ -305,14 +305,14 @@ func TestDefensiveDirectCalls(t *testing.T) {
 		t.Errorf("numberArith default: want nil got %v", v)
 	}
 
-	// evalArgs(nil) -> empty pos/named.
-	pos, named := e.evalArgs(nil)
-	if len(pos) != 0 || len(named) != 0 {
-		t.Errorf("evalArgs(nil): %v %v", pos, named)
+	// evalArgs(nil) -> empty pos/named and the default (comma) rest separator.
+	pos, named, restSep := e.evalArgs(nil)
+	if len(pos) != 0 || len(named) != 0 || restSep != SepComma {
+		t.Errorf("evalArgs(nil): %v %v %v", pos, named, restSep)
 	}
 
 	// bindResolved(nil, ...) -> no-op (defensive nil ParamList).
-	e.bindResolved(nil, nil, nil)
+	e.bindResolved(nil, nil, nil, SepComma)
 
 	// evalExpr with an unhandled Expr type fails.
 	func() {

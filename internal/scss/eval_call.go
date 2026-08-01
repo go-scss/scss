@@ -43,13 +43,13 @@ func (e *evaluator) asString(v Value) *SassString {
 }
 
 // callUserResolved calls a user-defined function with pre-resolved arguments.
-func (e *evaluator) callUserResolved(fn *funcEntry, pos []Value, named map[string]Value) (result Value) {
+func (e *evaluator) callUserResolved(fn *funcEntry, pos []Value, named map[string]Value, restSep Separator) (result Value) {
 	e.enter()
 	defer e.leave()
 	saved := e.env
 	e.env = fn.env
 	e.env.pushScope()
-	e.bindResolved(fn.def.Params, pos, named)
+	e.bindResolved(fn.def.Params, pos, named, restSep)
 	defer func() {
 		e.env.popScope()
 		e.env = saved
@@ -78,11 +78,15 @@ func (e *evaluator) asNumber(v Value) *Number {
 }
 
 // evalArgs evaluates an ArgList into positional/named values, expanding spreads.
-func (e *evaluator) evalArgs(args *ArgList) ([]Value, map[string]Value) {
+// The returned separator is the one a var-args ($rest) parameter should adopt:
+// dart-sass gives the rest arglist the separator of a spread list argument
+// (space or comma), defaulting to comma when no list is spread.
+func (e *evaluator) evalArgs(args *ArgList) ([]Value, map[string]Value, Separator) {
 	var pos []Value
 	named := map[string]Value{}
+	restSep := SepComma
 	if args == nil {
-		return pos, named
+		return pos, named, restSep
 	}
 	for _, a := range args.Args {
 		// Binding an argument consumes it, so a bare slash number becomes its
@@ -93,6 +97,9 @@ func (e *evaluator) evalArgs(args *ArgList) ([]Value, map[string]Value) {
 		if a.Spread {
 			switch s := val.(type) {
 			case *List:
+				if s.Sep == SepSpace || s.Sep == SepComma {
+					restSep = s.Sep
+				}
 				for _, el := range s.Elements {
 					pos = append(pos, numWithoutSlash(el))
 				}
@@ -119,7 +126,7 @@ func (e *evaluator) evalArgs(args *ArgList) ([]Value, map[string]Value) {
 			pos = append(pos, val)
 		}
 	}
-	return pos, named
+	return pos, named, restSep
 }
 
 func (e *evaluator) evalCall(x *FuncCall) Value {
@@ -147,7 +154,7 @@ func (e *evaluator) evalCall(x *FuncCall) Value {
 	}
 	// built-in?
 	if bf, ok := e.lookupBuiltin(x.Namespace, x.Name); ok {
-		pos, named := e.evalArgs(x.Args)
+		pos, named, _ := e.evalArgs(x.Args)
 		return bf(&callInfo{positional: pos, named: named, e: e, fn: x.Name})
 	}
 	if x.Namespace != "" {
@@ -164,7 +171,7 @@ func (e *evaluator) evalIfFunction(x *FuncCall) Value {
 	if x.Args != nil {
 		for _, a := range x.Args.Args {
 			if a.Spread {
-				pos, named := e.evalArgs(x.Args)
+				pos, named, _ := e.evalArgs(x.Args)
 				pick := func(name string, idx int) (Value, bool) {
 					if v, ok := named[name]; ok {
 						return v, true
@@ -273,19 +280,19 @@ func (e *evaluator) callUserFunc(fn *funcEntry, args *ArgList) (result Value) {
 func (e *evaluator) bindArgs(params *ParamList, args *ArgList, callEnv *environment) {
 	savedEnv := e.env
 	e.env = callEnv
-	pos, named := e.evalArgs(args)
+	pos, named, restSep := e.evalArgs(args)
 	e.env = savedEnv
-	e.bindResolved(params, pos, named)
+	e.bindResolved(params, pos, named, restSep)
 }
 
-func (e *evaluator) bindResolved(params *ParamList, pos []Value, named map[string]Value) {
+func (e *evaluator) bindResolved(params *ParamList, pos []Value, named map[string]Value, restSep Separator) {
 	if params == nil {
 		return
 	}
 	pi := 0
 	for _, p := range params.Params {
 		if p.Rest {
-			rest := &List{Sep: SepComma, IsArgList: true}
+			rest := &List{Sep: restSep, IsArgList: true}
 			for ; pi < len(pos); pi++ {
 				rest.Elements = append(rest.Elements, pos[pi])
 			}
