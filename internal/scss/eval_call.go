@@ -257,7 +257,7 @@ func (e *evaluator) callUserFunc(fn *funcEntry, args *ArgList) (result Value) {
 	e.enter()
 	defer e.leave()
 	saved := e.env
-	e.env = fn.env
+	e.env = fn.env.closureAt(fn.defDepth)
 	e.env.pushScope()
 	e.bindArgs(fn.def.Params, args, saved)
 	defer func() {

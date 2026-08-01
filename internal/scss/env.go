@@ -25,6 +25,13 @@ type mixinEntry struct {
 type funcEntry struct {
 	def *FunctionDef
 	env *environment
+	// defDepth is the number of scopes open in env when the function was defined
+	// — the length of its lexical scope chain. A call runs in exactly these
+	// scopes (plus a fresh one for the arguments), so the body sees only its
+	// params and whatever was visible where it was declared, never the dynamic
+	// caller's inner scopes. This mirrors dart-sass running a callable in its
+	// captured closure rather than at the call site.
+	defDepth int
 }
 
 // environment holds variable scopes plus mixin/function/module tables.
@@ -148,6 +155,22 @@ func (e *environment) getFunc(name string) (*funcEntry, bool) {
 		}
 	}
 	return nil, false
+}
+
+// closureAt returns an environment that shares this one's module-level state
+// (modules, global-module lists, builtin aliases, @content) but restricts the
+// variable/mixin/function scope chains to their first n scopes, each still the
+// live map so global definitions added later remain visible. Pushing a scope on
+// the result never disturbs the original. It realises a callable's lexical
+// closure: the body runs in the scopes visible where it was defined, not the
+// dynamic caller's inner scopes.
+func (e *environment) closureAt(n int) *environment {
+	c := *e
+	c.scopes = append([]map[string]Value(nil), e.scopes[:n]...)
+	c.semiGlobal = append([]bool(nil), e.semiGlobal[:n]...)
+	c.mixins = append([]map[string]*mixinEntry(nil), e.mixins[:n]...)
+	c.funcs = append([]map[string]*funcEntry(nil), e.funcs[:n]...)
+	return &c
 }
 
 // globalMixins returns the module's own global mixin table (scope 0).
