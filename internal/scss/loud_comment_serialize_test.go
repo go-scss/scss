@@ -170,14 +170,22 @@ func TestWriteCommentReindented(t *testing.T) {
 func TestEmitCommentBranches(t *testing.T) {
 	// Single-line comment: verbatim, newline-terminated in expanded output.
 	s := &serializer{}
-	s.emitComment(&cssComment{text: "/* x */"}, 0)
+	s.emitComment(&cssComment{text: "/* x */"}, 0, false)
 	if got := s.sb.String(); got != "/* x */\n" {
 		t.Errorf("single-line: got %q", got)
 	}
 
+	// A trailing comment skips the leading indentation (the caller wrote the
+	// separating space) but is otherwise identical.
+	s = &serializer{}
+	s.emitComment(&cssComment{text: "/* x */"}, 3, true)
+	if got := s.sb.String(); got != "/* x */\n" {
+		t.Errorf("trailing (no indent): got %q", got)
+	}
+
 	// sourceMappingURL comment is dropped entirely.
 	s = &serializer{}
-	s.emitComment(&cssComment{text: "/*# sourceMappingURL=z */"}, 0)
+	s.emitComment(&cssComment{text: "/*# sourceMappingURL=z */"}, 0, false)
 	if got := s.sb.String(); got != "" {
 		t.Errorf("sourcemap drop: got %q", got)
 	}
@@ -185,7 +193,7 @@ func TestEmitCommentBranches(t *testing.T) {
 	// Compressed output emits a multi-line comment verbatim (no re-indent, no
 	// trailing newline).
 	s = &serializer{compressed: true}
-	s.emitComment(&cssComment{text: "/* a\n  b */", col: 0}, 0)
+	s.emitComment(&cssComment{text: "/* a\n  b */", col: 0}, 0, false)
 	if got := s.sb.String(); got != "/* a\n  b */" {
 		t.Errorf("compressed multi-line: got %q", got)
 	}
@@ -193,7 +201,7 @@ func TestEmitCommentBranches(t *testing.T) {
 	// A comment whose only continuation lines are blank (min == -1) is emitted
 	// verbatim rather than re-indented.
 	s = &serializer{}
-	s.emitComment(&cssComment{text: "/* a\n\n*/", col: 0}, 0)
+	s.emitComment(&cssComment{text: "/* a\n\n*/", col: 0}, 0, false)
 	if got := s.sb.String(); got != "/* a\n\n*/\n" {
 		t.Errorf("all-blank continuation: got %q", got)
 	}

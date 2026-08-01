@@ -130,6 +130,12 @@ type frame struct {
 	// after is one of its own ancestor rules — in which case the first hoisted
 	// node continues that rule with no blank line — versus an unrelated sibling.
 	ruleChain []cssNode
+	// braceLine is the 1-based source line of the enclosing style rule's opening
+	// `{` (0 at the top level or in the indented syntax). Every block segment
+	// this frame materialises for its direct declarations (including the fresh
+	// copies split around nested rules) carries it, so the serializer can decide
+	// whether a first-child loud comment trails the opening brace.
+	braceLine int
 }
 
 // groupInfo tracks source-statement grouping for blank-line insertion.
@@ -459,13 +465,13 @@ func (e *evaluator) evalDeclaration(n *Declaration, fr *frame) {
 		// The raw token stream is reproduced verbatim; whitespace was already
 		// folded at parse time and any re-indentation happens at serialization.
 		raw := e.resolveInterp(n.RawValue)
-		e.addDecl(fr, &cssDeclaration{name: name, raw: raw, custom: true, nameCol: n.NameCol})
+		e.addDecl(fr, &cssDeclaration{name: name, raw: raw, custom: true, nameCol: n.NameCol, endLine: n.EndLine})
 		return
 	}
 	if n.Value != nil {
 		val := e.evalExpr(n.Value)
 		if !isBlankValue(val) {
-			e.addDecl(fr, &cssDeclaration{name: name, value: val})
+			e.addDecl(fr, &cssDeclaration{name: name, value: val, endLine: n.EndLine})
 		}
 	}
 	// Nested properties use a "name-" prefix that applies to every declaration
@@ -523,7 +529,7 @@ func (e *evaluator) liveContainer(fr *frame) cssContainer {
 // at-rule.
 func (e *evaluator) ensureBlock(fr *frame) *cssStyleRule {
 	if fr.block == nil {
-		fr.block = &cssStyleRule{selector: fr.parentSel, original: fr.parentSel, mediaContext: mediaContextOf(fr)}
+		fr.block = &cssStyleRule{selector: fr.parentSel, original: fr.parentSel, mediaContext: mediaContextOf(fr), braceLine: fr.braceLine}
 		fr.block.blankBefore = e.consumeGroup(fr)
 		e.liveContainer(fr).appendNode(fr.block)
 		if !fr.parentSel.isEmpty() {
@@ -559,7 +565,7 @@ func (e *evaluator) evalStyleRule(n *StyleRule, fr *frame) {
 	} else {
 		resolved = child
 	}
-	rule := &cssStyleRule{selector: resolved, original: resolved, mediaContext: mediaContextOf(fr)}
+	rule := &cssStyleRule{selector: resolved, original: resolved, mediaContext: mediaContextOf(fr), braceLine: n.BraceLine}
 	rule.blankBefore = e.consumeGroup(fr)
 	container := e.liveContainer(fr)
 	container.appendNode(rule)
@@ -576,6 +582,7 @@ func (e *evaluator) evalStyleRule(n *StyleRule, fr *frame) {
 		block:         rule,
 		group:         fr.group,
 		ruleChain:     append(append([]cssNode(nil), fr.ruleChain...), rule),
+		braceLine:     n.BraceLine,
 	}
 	savedParent := e.currentParent
 	e.currentParent = resolved
@@ -1136,7 +1143,7 @@ func (e *evaluator) evalLoudComment(n *LoudComment, fr *frame) {
 	if !strings.HasSuffix(text, "*/") {
 		text += " */"
 	}
-	c := &cssComment{text: text, col: n.Col}
+	c := &cssComment{text: text, col: n.Col, line: n.Line}
 	// In a selector context with no open block yet (a loud comment that is the
 	// sole content of a @media bubbled out of a style rule), the comment is
 	// wrapped in the enclosing parent rule, exactly as a declaration would be, so

@@ -365,6 +365,7 @@ func (p *parser) atNamespacedVarDecl() (string, bool) {
 func (p *parser) parseLoudComment() Stmt {
 	start := p.pos
 	col := p.columnAt(start)
+	line := p.lineAt(start)
 	p.pos += 2
 	for !p.eof() && !(p.peek() == '*' && p.peekAt(1) == '/') {
 		p.pos++
@@ -373,7 +374,7 @@ func (p *parser) parseLoudComment() Stmt {
 		p.pos += 2
 	}
 	text := convertCommentNewlines(p.src[start:p.pos])
-	return &LoudComment{Text: commentInterp(text), Col: col}
+	return &LoudComment{Text: commentInterp(text), Col: col, Line: line}
 }
 
 // convertCommentNewlines reproduces dart-sass's ScssParser._loudComment newline
@@ -532,8 +533,9 @@ func (p *parser) tryDeclaration() (stmt Stmt, ok bool) {
 	p.next() // :
 	if custom {
 		raw := p.parseCustomPropertyValue()
+		endLine := p.declEndLine()
 		p.consumeStatementEnd()
-		return &Declaration{Name: trimInterp(name), Custom: true, RawValue: raw, NameCol: nameCol}, true
+		return &Declaration{Name: trimInterp(name), Custom: true, RawValue: raw, NameCol: nameCol, EndLine: endLine}, true
 	}
 	// dart-sass: a name immediately followed (no whitespace) by an interpolated
 	// identifier could be a pseudo-class selector rather than a property, e.g.
@@ -546,20 +548,21 @@ func (p *parser) tryDeclaration() (stmt Stmt, ok bool) {
 	if p.peek() == '{' {
 		// nested declaration namespace, no value
 		body := p.parseBlock()
-		return &Declaration{Name: trimInterp(name), Body: body}, true
+		return &Declaration{Name: trimInterp(name), Body: body, EndLine: p.declEndLine()}, true
 	}
 	val := p.parseExpression()
+	valEnd := p.declEndLine()
 	p.ws()
 	switch p.peek() {
 	case ';', '}', 0:
 		p.consumeStatementEnd()
-		return &Declaration{Name: trimInterp(name), Value: val}, true
+		return &Declaration{Name: trimInterp(name), Value: val, EndLine: valEnd}, true
 	case '{':
 		if couldBeSelector {
 			return nil, false
 		}
 		body := p.parseBlock()
-		return &Declaration{Name: trimInterp(name), Value: val, Body: body}, true
+		return &Declaration{Name: trimInterp(name), Value: val, Body: body, EndLine: p.declEndLine()}, true
 	default:
 		return nil, false
 	}
@@ -608,6 +611,25 @@ func (p *parser) columnAt(pos int) int {
 		col++
 	}
 	return col
+}
+
+// declEndLine returns the 1-based source line at the current cursor, i.e. the
+// line on which a just-parsed declaration value or nested body ends. It anchors
+// the trailing-comment serialization model (`prop: value; /* c */`).
+func (p *parser) declEndLine() int {
+	return p.lineAt(p.pos)
+}
+
+// lineAt returns the 1-based source line of a byte position (counting the
+// newlines that precede it), matching dart-sass's SourceSpan line numbering.
+func (p *parser) lineAt(pos int) int {
+	line := 1
+	for i := 0; i < pos; i++ {
+		if p.src[i] == '\n' {
+			line++
+		}
+	}
+	return line
 }
 
 func isCustomWS(c byte) bool {
@@ -717,8 +739,9 @@ func (p *parser) parseStyleRule() Stmt {
 	if p.peek() != '{' {
 		p.fail("Expected \"{\".")
 	}
+	braceLine := p.lineAt(p.pos)
 	body := p.parseBlock()
-	return &StyleRule{Selector: trimInterp(sel), Body: body}
+	return &StyleRule{Selector: trimInterp(sel), Body: body, BraceLine: braceLine}
 }
 
 func (p *parser) parseBlock() []Stmt {

@@ -15,6 +15,10 @@ type Expr interface{ expr() }
 type StyleRule struct {
 	Selector *Interp
 	Body     []Stmt
+	// BraceLine is the 1-based source line of the rule's opening `{`, used at
+	// serialization time to decide whether a loud comment that is the first
+	// child of the rule's block trails the opening brace (`sel { /* c */`).
+	BraceLine int
 }
 
 // Declaration is a CSS property declaration, optionally with a nested body
@@ -26,6 +30,10 @@ type Declaration struct {
 	Custom   bool // custom property (--*): value is raw interpolated text
 	RawValue *Interp
 	NameCol  int // source column of the name (custom properties only), for re-indentation
+	// EndLine is the 1-based source line where the declaration's value (or nested
+	// body) ends, used at serialization time to decide whether a following loud
+	// comment trails it on the same line (`prop: value; /* c */`).
+	EndLine int
 }
 
 // VarDecl assigns a variable.
@@ -240,6 +248,9 @@ type ErrorStmt struct{ Value Expr }
 type LoudComment struct {
 	Text *Interp
 	Col  int
+	// Line is the 1-based source line of the opening `/*`, used at serialization
+	// time to decide whether the comment trails the preceding statement.
+	Line int
 }
 
 // AtRule is a generic unknown at-rule (@font-face, @keyframes, @page, ...).
