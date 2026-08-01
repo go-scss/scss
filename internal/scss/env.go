@@ -375,6 +375,11 @@ type module struct {
 	// a deep clone of these nodes at the import site (dart's _combineCss(clone:
 	// true)): @import duplicates CSS even when it has been @used and loaded once.
 	cssNodes []cssNode
+	// combine is this module's node in the deferred combine tree (dart's per-
+	// module CSS + preModuleComments). The entry stylesheet walks the tree at
+	// finalize (combineCss) to interleave each module's leading @import region and
+	// pre-@use comments exactly as dart's _combineCss does.
+	combine *combineNode
 }
 
 // getVar reads a member variable exposed by this module's public API: its own

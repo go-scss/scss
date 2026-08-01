@@ -130,6 +130,12 @@ func serialize(root *cssRoot, compressed bool) string {
 	// Every emitted node ends in "\n" in expanded mode, so the result is already
 	// newline-terminated (or empty) after trimming leading blank lines.
 	out = strings.TrimLeft(out, "\n")
+	// A stripped leading sourcemap/sourceURL comment leaves a blank line in dart's
+	// output; restore it (only when real content follows, so a bare stripped
+	// comment still yields empty output).
+	if out != "" && leadsWithStrippedComment(root.children()) {
+		out = "\n" + out
+	}
 	// An expanded stylesheet containing non-ASCII characters is prefixed with an
 	// @charset rule, as dart-sass does. A source-level @charset is dropped during
 	// parsing, so this is the only @charset the output can carry.
@@ -182,6 +188,30 @@ func (s *serializer) emitChildren(nodes []cssNode, depth int) {
 		emittedAny = true
 		pendingBlank = false
 	}
+}
+
+// leadsWithStrippedComment reports whether the top-level output opens with a
+// stripped sourcemap/sourceURL comment that precedes real content. dart-sass
+// still counts such a comment as a serialised node — its `previous` pointer
+// advances to it — so the following node receives its ordinary inter-node
+// linefeed and the stripped comment is left behind as a single blank line.
+// go-scss emits each node with a trailing (not leading) newline, so a comment
+// that writes nothing leaves no line; this restores the leading blank dart
+// keeps, but only when a real node follows (a stripped comment alone yields
+// empty output, matching dart).
+func leadsWithStrippedComment(nodes []cssNode) bool {
+	sawStripped := false
+	for _, n := range nodes {
+		if isEmptyContainer(n) {
+			continue
+		}
+		if c, ok := n.(*cssComment); ok && isSourceURLComment(c.text) {
+			sawStripped = true
+			continue
+		}
+		return sawStripped
+	}
+	return false
 }
 
 func isEmptyContainer(n cssNode) bool {
