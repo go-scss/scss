@@ -128,6 +128,8 @@ func TestColorNamedArgForms(t *testing.T) {
 		"rgb($color: #123, $alpha: 0.5)": "rgba(17, 34, 51, 0.5)",
 		"rgb(blue, var(--foo))":          "rgb(0, 0, 255, var(--foo))",
 		"hsl(blue, var(--foo))":          "hsl(blue, var(--foo))",
+		// $color positional with $alpha named (the two-argument $color/$alpha form).
+		"rgba(#f0e, $alpha: .5)": "rgba(255, 0, 238, 0.5)",
 	}
 	for in, want := range cases {
 		if got := val(t, in); got != want {

@@ -327,6 +327,13 @@ func rgbLike(ci *callInfo, space ColorSpace, names [3]string) Value {
 	if !okColor && len(ci.positional) == 2 {
 		cv, okColor = ci.positional[0], true
 	}
+	// The two-argument $color/$alpha form also accepts the colour positionally
+	// with the alpha named: rgba(#f0e, $alpha: .5).
+	if !okColor && len(ci.positional) == 1 && len(ci.named) == 1 {
+		if _, hasAlpha := ci.named["alpha"]; hasAlpha {
+			cv, okColor = ci.positional[0], true
+		}
+	}
 	if okColor {
 		av, hasAlpha := ci.get(1, "alpha")
 		if c, isColor := cv.(*SassColor); isColor {
