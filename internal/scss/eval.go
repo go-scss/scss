@@ -1232,6 +1232,13 @@ func (e *evaluator) buildOwnStore() *extensionStore {
 func (e *evaluator) writeBackSelectors() {
 	for _, ev := range e.extendEvents {
 		if ev.rule != nil && ev.rule.box != nil {
+			// A plain-CSS rule is emitted verbatim (raw) unless a downstream
+			// @extend actually changed its selector box, in which case it must be
+			// re-serialised from the extended selector — flip it off `raw`. An
+			// untargeted plain-CSS rule keeps its byte-identical verbatim output.
+			if ev.rule.raw && ev.rule.box.value != ev.rule.original.list {
+				ev.rule.raw = false
+			}
 			ev.rule.selector = selectorList{list: ev.rule.box.value}
 		}
 	}
