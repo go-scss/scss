@@ -1133,7 +1133,7 @@ func (e *evaluator) evalGenericAtRule(n *AtRule, fr *frame) {
 	if n.Value != nil {
 		params = e.resolveInterp(n.Value)
 	}
-	at := &cssAtRule{name: name, params: params, hasBody: !n.NoBody}
+	at := &cssAtRule{name: name, params: params, hasBody: !n.NoBody, braceLine: n.BraceLine}
 	if n.NoBody {
 		// A childless at-rule (`@b c;`) behaves like a declaration: inside a
 		// style rule it stays within the enclosing selector's block, interleaving

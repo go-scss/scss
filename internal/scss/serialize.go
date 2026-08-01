@@ -87,6 +87,7 @@ type cssAtRule struct {
 	hasBody     bool
 	blankBefore bool
 	isGroupEnd  bool
+	braceLine   int // 1-based source line of the `{` (0 = unknown), for trailing-comment placement
 }
 
 func (a *cssAtRule) cssNode()             {}
@@ -517,12 +518,48 @@ func (s *serializer) emitRule(selector string, nodes []cssNode, depth, braceLine
 		s.sb.WriteString("{")
 		s.emitDeclList(nodes, depth+1, 0)
 		s.sb.WriteString("}")
+	} else if c := soleTrailingComment(nodes, braceLine); c != nil {
+		s.emitCommentOnlyBlock(c, depth)
 	} else {
 		s.sb.WriteString(" {\n")
 		s.emitDeclList(nodes, depth+1, braceLine)
 		s.indent(depth)
 		s.sb.WriteString("}\n")
 	}
+}
+
+// soleTrailingComment returns the block's single visible child when it is a loud
+// comment written on the opening-brace source line, and nil otherwise. dart-sass
+// prints such a block as `sel { /**/ }` on one line (a block with any other
+// child, or a comment on a different line, keeps the `}` on its own line).
+func soleTrailingComment(nodes []cssNode, braceLine int) *cssComment {
+	var only cssNode
+	for _, n := range nodes {
+		if isEmptyContainer(n) {
+			continue
+		}
+		if only != nil {
+			return nil
+		}
+		only = n
+	}
+	c, ok := only.(*cssComment)
+	if !ok || isSourceURLComment(c.text) {
+		return nil
+	}
+	if !trailingCommentAttaches(c, nil, braceLine) {
+		return nil
+	}
+	return c
+}
+
+// emitCommentOnlyBlock writes ` { <comment> }` on the current line for a block
+// whose sole visible child is a brace-line loud comment.
+func (s *serializer) emitCommentOnlyBlock(c *cssComment, depth int) {
+	s.sb.WriteString(" { ")
+	s.emitComment(c, depth, true)
+	s.trimTrailingNewline()
+	s.sb.WriteString(" }\n")
 }
 
 func (s *serializer) emitAtRule(a *cssAtRule, depth int) {
@@ -558,9 +595,11 @@ func (s *serializer) emitAtRule(a *cssAtRule, depth int) {
 		s.sb.WriteString("{")
 		s.emitDeclList(a.nodes, depth+1, 0)
 		s.sb.WriteString("}")
+	} else if c := soleTrailingComment(a.nodes, a.braceLine); c != nil {
+		s.emitCommentOnlyBlock(c, depth)
 	} else {
 		s.sb.WriteString(" {\n")
-		s.emitDeclList(a.nodes, depth+1, 0)
+		s.emitDeclList(a.nodes, depth+1, a.braceLine)
 		s.indent(depth)
 		s.sb.WriteString("}\n")
 	}

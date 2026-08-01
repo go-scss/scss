@@ -705,8 +705,9 @@ func (p *parser) parseGenericAtRule(name string) Stmt {
 		v = nil
 	}
 	if p.peek() == '{' {
+		braceLine := p.lineAt(p.pos)
 		body := p.parseBlock()
-		return &AtRule{Name: name, Value: v, Body: body}
+		return &AtRule{Name: name, Value: v, Body: body, BraceLine: braceLine}
 	}
 	p.consumeStatementEnd()
 	return &AtRule{Name: name, Value: v, NoBody: true}
