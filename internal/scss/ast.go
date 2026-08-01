@@ -25,6 +25,7 @@ type Declaration struct {
 	Body     []Stmt
 	Custom   bool // custom property (--*): value is raw interpolated text
 	RawValue *Interp
+	NameCol  int // source column of the name (custom properties only), for re-indentation
 }
 
 // VarDecl assigns a variable.

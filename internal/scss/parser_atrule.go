@@ -8,6 +8,13 @@ import "strings"
 func (p *parser) parseAtRule() Stmt {
 	p.next() // @
 	name := p.scanIdentifier()
+	// `@function` (case-insensitively) followed by a custom-property-style name
+	// (`--a`) is the plain-CSS custom-function at-rule, not a Sass function
+	// definition: it is emitted verbatim, with `result:` declarations taking a
+	// token-stream value.
+	if strings.EqualFold(name, "function") && p.customFunctionAhead() {
+		return p.parseCssCustomFunction(name)
+	}
 	switch name {
 	case "mixin":
 		return p.parseMixinDef()
@@ -101,6 +108,35 @@ func (p *parser) parseInclude() Stmt {
 		p.consumeStatementEnd()
 	}
 	return inc
+}
+
+// customFunctionAhead reports whether the token after the `@function` keyword
+// (skipping whitespace) begins a custom-property-style name (`--…`).
+func (p *parser) customFunctionAhead() bool {
+	save := p.pos
+	p.ws()
+	ahead := p.peek() == '-' && p.peekAt(1) == '-'
+	p.pos = save
+	return ahead
+}
+
+// parseCssCustomFunction parses `@function --a(...) { … }` as a plain-CSS
+// at-rule (keyword case preserved). Its prelude is a verbatim token stream and
+// its body is parsed with cssFuncDepth set so `result:` declarations become
+// token-stream values.
+func (p *parser) parseCssCustomFunction(keyword string) Stmt {
+	p.ws()
+	// The prelude always begins with the custom-property name (`--…`), so it is
+	// never empty.
+	v := trimInterp(p.parseAtRulePrelude())
+	if p.peek() == '{' {
+		p.cssFuncDepth++
+		body := p.parseBlock()
+		p.cssFuncDepth--
+		return &AtRule{Name: keyword, Value: v, Body: body}
+	}
+	p.consumeStatementEnd()
+	return &AtRule{Name: keyword, Value: v, NoBody: true}
 }
 
 func (p *parser) parseFunctionDef() Stmt {
@@ -561,10 +597,21 @@ func (p *parser) parseConfig() []ConfigVar {
 }
 
 func (p *parser) parseGenericAtRule(name string) Stmt {
-	value := p.parseInterpolatedText(func(pp *parser) bool {
-		c := pp.peek()
-		return c == '{' || c == ';' || c == '}' || c == 0
-	})
+	// Leading whitespace and comments (both loud and silent) before the prelude
+	// are discarded, mirroring dart-sass's whitespace() skip; loud comments that
+	// appear within a truly-unknown directive's prelude are then preserved
+	// verbatim. dart-sass parses @-moz-document specially (as a list of URL
+	// functions), where loud comments are ordinary whitespace, so it is exempt.
+	p.ws()
+	var value *Interp
+	if unvendor(strings.ToLower(name)) == "document" {
+		value = p.parseInterpolatedText(func(pp *parser) bool {
+			c := pp.peek()
+			return c == '{' || c == ';' || c == '}' || c == 0
+		})
+	} else {
+		value = p.parseAtRulePrelude()
+	}
 	v := trimInterp(value)
 	if plain, ok := v.isPlain(); ok && plain == "" {
 		v = nil

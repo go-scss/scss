@@ -299,6 +299,29 @@ func isIdentifierString(s string) bool {
 	return identBodyOnly(s[i+1:])
 }
 
+// isUnescapedIdentifier reports whether s is a CSS identifier that requires no
+// escaping (so a quoted attribute value equal to it may be emitted unquoted).
+// Unlike isIdentifierString it rejects a leading backslash and any character
+// that is not a plain name character.
+func isUnescapedIdentifier(s string) bool {
+	if s == "" {
+		return false
+	}
+	i := 0
+	if s[i] == '-' {
+		i++
+	}
+	if i >= len(s) || !isNameStart(s[i]) {
+		return false
+	}
+	for i++; i < len(s); i++ {
+		if !isNameChar(s[i]) {
+			return false
+		}
+	}
+	return true
+}
+
 func identBodyOnly(s string) bool {
 	for i := 0; i < len(s); i++ {
 		c := s[i]

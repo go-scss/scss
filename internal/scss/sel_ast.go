@@ -304,7 +304,8 @@ func (p *parentSel) unify([]simpleSel) ([]simpleSel, bool) {
 type attrSel struct {
 	name     qname
 	op       string // "" means no operator
-	value    string
+	value    string // decoded when quoted; raw (escapes preserved) when unquoted
+	quoted   bool   // the source wrote the value in quotes
 	modifier *string
 }
 
@@ -316,7 +317,14 @@ func (a *attrSel) write(sb *strings.Builder, _ bool) {
 	sb.WriteString(a.name.String())
 	if a.op != "" {
 		sb.WriteString(a.op)
-		if isIdentifierString(a.value) && !strings.HasPrefix(a.value, "--") {
+		// A quoted source value is only unquoted when it is a plain identifier
+		// needing no escapes; anything else (a lone backslash, a digit start, a
+		// space) stays quoted. An unquoted source value is kept verbatim.
+		unq := isIdentifierString(a.value) && !strings.HasPrefix(a.value, "--")
+		if a.quoted {
+			unq = isUnescapedIdentifier(a.value) && !strings.HasPrefix(a.value, "--")
+		}
+		if unq {
 			sb.WriteString(a.value)
 			if a.modifier != nil {
 				sb.WriteByte(' ')
