@@ -614,7 +614,7 @@ func (e *evaluator) evalStyleRule(n *StyleRule, fr *frame) {
 	} else {
 		resolved = child
 	}
-	rule := &cssStyleRule{selector: resolved, original: resolved, mediaContext: mediaContextOf(fr), braceLine: n.BraceLine}
+	rule := &cssStyleRule{selector: resolved, original: resolved, mediaContext: mediaContextOf(fr), braceLine: n.BraceLine, closeLine: n.CloseBraceLine}
 	rule.blankBefore = e.consumeGroup(fr)
 	container := e.liveContainer(fr)
 	container.appendNode(rule)
@@ -1133,7 +1133,7 @@ func (e *evaluator) evalGenericAtRule(n *AtRule, fr *frame) {
 	if n.Value != nil {
 		params = e.resolveInterp(n.Value)
 	}
-	at := &cssAtRule{name: name, params: params, hasBody: !n.NoBody, braceLine: n.BraceLine}
+	at := &cssAtRule{name: name, params: params, hasBody: !n.NoBody, braceLine: n.BraceLine, closeLine: n.CloseBraceLine}
 	if n.NoBody {
 		// A childless at-rule (`@b c;`) behaves like a declaration: inside a
 		// style rule it stays within the enclosing selector's block, interleaving

@@ -38,6 +38,25 @@ func TestMediaBraceTrailingComment(t *testing.T) {
 	}
 }
 
+// TestCloseBraceTrailingComment verifies that a loud comment written on the
+// same source line as a rule's or at-rule's closing brace is attached to that
+// brace line (`} /* c */`) rather than dropped to its own line. Byte-verified
+// against dart-sass 1.102.0 (sass-spec libsass-closed-issues/issue_1007).
+func TestCloseBraceTrailingComment(t *testing.T) {
+	for _, tc := range []struct{ in, want string }{
+		{"a {\n  x: 1\n} /* end */\n", "a {\n  x: 1;\n} /* end */\n"},
+		{"@font-face {\n  font-family: x\n} /* trail */\n", "@font-face {\n  font-family: x;\n} /* trail */\n"},
+	} {
+		res, err := scss.CompileString(tc.in, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if res.CSS != tc.want {
+			t.Errorf("in %q: got %q want %q", tc.in, res.CSS, tc.want)
+		}
+	}
+}
+
 func TestCompileStringCompressed(t *testing.T) {
 	res, err := scss.CompileString(".a{x:1}", &scss.Options{Style: scss.Compressed})
 	if err != nil {

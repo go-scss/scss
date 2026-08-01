@@ -38,6 +38,12 @@ type parser struct {
 	// (`@function --a() { … }`), where a `result:` declaration takes a verbatim
 	// custom-property-style token-stream value rather than a SassScript value.
 	cssFuncDepth int
+	// closeBraceLine is the 1-based source line of the `}` most recently
+	// consumed by parseBlock. parseStyleRule / parseAtRule read it immediately
+	// after the block to record the body's closing-brace line, so a loud comment
+	// written on that line can be serialized as a trailing comment attached to
+	// the brace rather than dropped to its own line.
+	closeBraceLine int
 }
 
 func newParser(src string) *parser {
@@ -741,7 +747,7 @@ func (p *parser) parseStyleRule() Stmt {
 	}
 	braceLine := p.lineAt(p.pos)
 	body := p.parseBlock()
-	return &StyleRule{Selector: trimInterp(sel), Body: body, BraceLine: braceLine}
+	return &StyleRule{Selector: trimInterp(sel), Body: body, BraceLine: braceLine, CloseBraceLine: p.closeBraceLine}
 }
 
 func (p *parser) parseBlock() []Stmt {
@@ -753,6 +759,7 @@ func (p *parser) parseBlock() []Stmt {
 	stmts := p.parseStatements(false)
 	// parseStatements(false) only returns on '}' (it fails on EOF), so the closing
 	// brace is guaranteed here.
+	p.closeBraceLine = p.lineAt(p.pos)
 	p.next()
 	return stmts
 }
