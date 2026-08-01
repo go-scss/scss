@@ -539,17 +539,14 @@ func (e *evaluator) loadCSSInto(url string, config []ConfigVar, fr *frame) {
 	sub.sharedLoaded = e.sharedLoaded
 	e.adoptScope(sub)
 	e.dependsOn(sub.scope)
-	// Seed the loaded module's globals with the $with configuration and record it
-	// as the incoming config so the module's own @forward rules propagate it
-	// downstream, exactly as @use ... with (...) does (loadModule).
+	// Record the $with configuration as the incoming config so it is applied at
+	// each top-level `!default` declaration (and propagated through the module's
+	// own @forward rules), exactly as @use ... with (...) does (loadModule).
 	cfg := map[string]Value{}
 	for _, c := range config {
 		cfg[normIdent(c.Name)] = numWithoutSlash(e.evalExpr(c.Value))
 	}
 	sub.incomingConfig = cfg
-	for name, v := range cfg {
-		sub.env.scopes[0][name] = v
-	}
 	sub.runModule(stmts)
 	e.warnings = append(e.warnings, sub.warnings...)
 	e.loadedURLs = append(e.loadedURLs, resolved)

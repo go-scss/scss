@@ -285,6 +285,21 @@ func (e *evaluator) evalVarDecl(n *VarDecl) {
 		return
 	}
 	if n.Default {
+		// A top-level `!default` declaration is the point at which a module's
+		// incoming `with (...)` configuration is applied: a configured value
+		// overrides the default, and the variable comes into existence here (not
+		// before), matching dart-sass's Configuration consumption.
+		if len(e.env.scopes) == 1 && e.incomingConfig != nil {
+			if cv, ok := e.incomingConfig[normIdent(n.Name)]; ok {
+				delete(e.incomingConfig, normIdent(n.Name))
+				// A null configured value is consumed but leaves the variable
+				// unset, so the `!default` clause falls through to its own value.
+				if _, isNull := cv.(*Null); !isNull {
+					e.env.setVar(n.Name, cv, n.Global)
+					return
+				}
+			}
+		}
 		if v, ok := e.env.getVar(n.Name); ok {
 			if _, isNull := v.(*Null); !isNull {
 				return
