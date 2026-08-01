@@ -224,8 +224,13 @@ type Warn struct{ Value Expr }
 type Debug struct{ Value Expr }
 type ErrorStmt struct{ Value Expr }
 
-// LoudComment is a preserved /* */ comment.
-type LoudComment struct{ Text *Interp }
+// LoudComment is a preserved /* */ comment. Col is the 0-based source column of
+// the opening `/*`, used at serialization time to re-indent multi-line comments
+// exactly as dart-sass does (min of the comment body indentation and Col).
+type LoudComment struct {
+	Text *Interp
+	Col  int
+}
 
 // AtRule is a generic unknown at-rule (@font-face, @keyframes, @page, ...).
 type AtRule struct {
