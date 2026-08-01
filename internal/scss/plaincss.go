@@ -111,7 +111,16 @@ func (p *pcssParser) statements(top bool) []cssNode {
 			}
 			break
 		}
-		nodes = append(nodes, p.statement())
+		n := p.statement()
+		// dart-sass consumes a top-level `@charset` (case-sensitively) for encoding
+		// detection and never emits it; the serializer re-derives its own @charset
+		// only for non-ASCII output. This holds in plain-CSS mode too.
+		if top {
+			if ar, ok := n.(*cssAtRule); ok && ar.name == "charset" {
+				continue
+			}
+		}
+		nodes = append(nodes, n)
 	}
 	return nodes
 }

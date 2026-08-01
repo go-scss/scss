@@ -309,6 +309,16 @@ func (p *parser) parseStatements(top bool) []Stmt {
 		}
 		s := p.parseStatement()
 		if s != nil {
+			// dart-sass consumes a top-level `@charset "..."` purely to detect the
+			// source encoding and never emits it: the serializer re-derives its own
+			// `@charset "UTF-8"` only when the output contains non-ASCII characters.
+			// The name match is case-sensitive, so `@CHARSET`/`@Charset` stay as
+			// ordinary unknown at-rules. See stylesheet.dart's root statements loop.
+			if top {
+				if ar, ok := s.(*AtRule); ok && ar.Name == "charset" {
+					continue
+				}
+			}
 			stmts = append(stmts, s)
 		}
 	}

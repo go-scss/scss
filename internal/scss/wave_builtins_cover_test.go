@@ -238,16 +238,27 @@ func TestWaveMetaBuiltins(t *testing.T) {
 }
 
 // TestWaveSerializerCharset exercises the @charset / BOM prefixing for non-ASCII
-// output, including the de-duplication when the author already wrote @charset.
+// output. A source-level @charset is always dropped (dart consumes it purely for
+// encoding detection), so the serializer's @charset is the only one emitted.
 func TestWaveSerializerCharset(t *testing.T) {
 	// Non-ASCII output gains an @charset rule (expanded).
 	if got := compile(t, "a{b: \"föö\"}"); !strings.HasPrefix(got, "@charset \"UTF-8\";\n") {
 		t.Errorf("expected @charset prefix, got %q", got)
 	}
-	// An author-written @charset is not duplicated.
-	got := compile(t, "@charset \"UTF-8\"; a{b: \"föö\"}")
-	if strings.Count(got, "@charset") != 1 {
-		t.Errorf("expected a single @charset, got %q", got)
+	// An author-written @charset is dropped, so exactly one @charset remains and
+	// its label is the serializer's UTF-8 (never the author's), even for a
+	// non-UTF-8 source declaration. Byte-exact against dart-sass 1.102.
+	got := compile(t, "@charset \"iso-8859-1\"; a{b: \"föö\"}")
+	if strings.Count(got, "@charset") != 1 || !strings.HasPrefix(got, "@charset \"UTF-8\";\n") {
+		t.Errorf("expected a single UTF-8 @charset, got %q", got)
+	}
+	// A source @charset over ASCII output is dropped entirely (both syntaxes),
+	// and the name match is case-sensitive so @CHARSET survives as an at-rule.
+	if got := compile(t, "@charset \"a\";\nx{y:z}"); got != "x {\n  y: z;\n}\n" {
+		t.Errorf("expected dropped @charset, got %q", got)
+	}
+	if got := compile(t, "@CHARSET \"a\";\nx{y:z}"); got != "@CHARSET \"a\";\nx {\n  y: z;\n}\n" {
+		t.Errorf("expected kept @CHARSET, got %q", got)
 	}
 	// Compressed non-ASCII output is prefixed with a UTF-8 BOM.
 	if c := compileC(t, "a{b: \"föö\"}"); !strings.HasPrefix(c, "\uFEFF") {
