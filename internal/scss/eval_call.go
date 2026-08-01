@@ -42,6 +42,15 @@ func (e *evaluator) asString(v Value) *SassString {
 	return &SassString{Text: serializeValue(v, false)}
 }
 
+// funcBodyFrame returns a frame for evaluating a user-defined function body. A
+// function produces a value, not CSS, so any CSS a body statement would emit (a
+// loud comment, most notably) is directed at a throwaway container that is never
+// serialized rather than leaked into the stylesheet, matching dart-sass.
+func funcBodyFrame() *frame {
+	discard := &cssRoot{}
+	return &frame{container: discard, rootContainer: discard, mediaParent: discard, group: &groupInfo{}}
+}
+
 // callUserResolved calls a user-defined function with pre-resolved arguments.
 func (e *evaluator) callUserResolved(fn *funcEntry, pos []Value, named map[string]Value, restSep Separator) (result Value) {
 	if fn.builtin != nil {
@@ -64,7 +73,7 @@ func (e *evaluator) callUserResolved(fn *funcEntry, pos []Value, named map[strin
 			panic(r)
 		}
 	}()
-	dummy := &frame{container: e.root, rootContainer: e.root, mediaParent: e.root, group: &groupInfo{}}
+	dummy := funcBodyFrame()
 	for _, s := range fn.def.Body {
 		e.evalStmt(s, dummy)
 	}
@@ -290,7 +299,7 @@ func (e *evaluator) callUserFunc(fn *funcEntry, args *ArgList) (result Value) {
 			panic(r)
 		}
 	}()
-	dummy := &frame{container: e.root, rootContainer: e.root, mediaParent: e.root, group: &groupInfo{}}
+	dummy := funcBodyFrame()
 	for _, s := range fn.def.Body {
 		e.evalStmt(s, dummy)
 	}

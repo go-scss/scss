@@ -57,6 +57,21 @@ func TestCloseBraceTrailingComment(t *testing.T) {
 	}
 }
 
+// TestFunctionBodyCommentDropped verifies that a loud comment inside a
+// user-defined function body is discarded rather than leaked into the output: a
+// function produces a value, not CSS. Byte-verified against dart-sass 1.102.0
+// (sass-spec libsass-closed-issues/issue_646).
+func TestFunctionBodyCommentDropped(t *testing.T) {
+	res, err := scss.CompileString("@function foo() {\n  /* $bar: 1; */\n @return true;\n}\n\nfoo {\n  foo: foo();\n}\n", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "foo {\n  foo: true;\n}\n"
+	if res.CSS != want {
+		t.Errorf("got %q want %q", res.CSS, want)
+	}
+}
+
 func TestCompileStringCompressed(t *testing.T) {
 	res, err := scss.CompileString(".a{x:1}", &scss.Options{Style: scss.Compressed})
 	if err != nil {
