@@ -47,7 +47,7 @@ func fnFunctionExists(ci *callInfo) Value {
 	if mv, ok := ci.get(1, "module"); ok {
 		return boolean(ci.e.moduleHasFunc(ci.e.asString(mv).Text, name))
 	}
-	if _, ok := ci.e.env.funcs[name]; ok {
+	if _, ok := ci.e.env.getFunc(name); ok {
 		return sassTrue
 	}
 	if _, ok := ci.e.env.globalModuleFunc(name); ok {
@@ -62,7 +62,7 @@ func fnMixinExists(ci *callInfo) Value {
 		return boolean(ci.e.moduleHasMixin(ci.e.asString(mv).Text, ci.str(0, "name").Text))
 	}
 	name := normIdent(ci.str(0, "name").Text)
-	if _, ok := ci.e.env.mixins[name]; ok {
+	if _, ok := ci.e.env.getMixin(name); ok {
 		return sassTrue
 	}
 	_, ok := ci.e.env.globalModuleMixin(name)
@@ -188,7 +188,7 @@ func (e *evaluator) getFunctionValue(name string, css bool, moduleName string) V
 		}
 		e.fail("There is no module with the namespace \"%s\".", moduleName)
 	}
-	if fn, ok := e.env.funcs[normIdent(name)]; ok {
+	if fn, ok := e.env.getFunc(name); ok {
 		return &SassFunction{name: name, user: fn}
 	}
 	if fn, ok := e.env.globalModuleFunc(normIdent(name)); ok {
@@ -215,7 +215,7 @@ func (e *evaluator) getMixinValue(name, moduleName string) Value {
 		}
 		e.fail("There is no module with the namespace \"%s\".", moduleName)
 	}
-	if mx, ok := e.env.mixins[normIdent(name)]; ok {
+	if mx, ok := e.env.getMixin(name); ok {
 		return &SassMixin{name: name, user: mx}
 	}
 	if mx, ok := e.env.globalModuleMixin(normIdent(name)); ok {

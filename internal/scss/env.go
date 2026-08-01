@@ -39,9 +39,14 @@ type environment struct {
 	// boundary lies between it and the root. This mirrors dart-sass's
 	// Environment.scope(semiGlobal:) chained down from the global scope.
 	semiGlobal []bool
-	mixins     map[string]*mixinEntry
-	funcs      map[string]*funcEntry
-	modules    map[string]*module // namespace -> module
+	// mixins and funcs are scope stacks parallel to scopes: a @function/@mixin
+	// declared inside a style rule, another function, or a mixin is visible only
+	// within that scope and shadows an outer definition of the same name, exactly
+	// as dart-sass stores callables in its Environment scope chain. Index 0 is the
+	// module's own global table; pushScope/popScope keep the three stacks in step.
+	mixins  []map[string]*mixinEntry
+	funcs   []map[string]*funcEntry
+	modules map[string]*module // namespace -> module
 	// content holds the @content block passed to the current mixin invocation.
 	content     []Stmt
 	contentEnv  *environment
@@ -79,8 +84,8 @@ func newEnvironment() *environment {
 	return &environment{
 		scopes:     []map[string]Value{{}},
 		semiGlobal: []bool{true},
-		mixins:     map[string]*mixinEntry{},
-		funcs:      map[string]*funcEntry{},
+		mixins:     []map[string]*mixinEntry{{}},
+		funcs:      []map[string]*funcEntry{{}},
 		modules:    map[string]*module{},
 	}
 }
@@ -90,6 +95,8 @@ func newEnvironment() *environment {
 func (e *environment) pushScope() {
 	e.scopes = append(e.scopes, map[string]Value{})
 	e.semiGlobal = append(e.semiGlobal, false)
+	e.mixins = append(e.mixins, map[string]*mixinEntry{})
+	e.funcs = append(e.funcs, map[string]*funcEntry{})
 }
 
 // pushControlScope opens a control-flow (@if/@each/@for/@while) scope. It stays
@@ -99,12 +106,55 @@ func (e *environment) pushScope() {
 func (e *environment) pushControlScope() {
 	e.scopes = append(e.scopes, map[string]Value{})
 	e.semiGlobal = append(e.semiGlobal, e.semiGlobal[len(e.semiGlobal)-1])
+	e.mixins = append(e.mixins, map[string]*mixinEntry{})
+	e.funcs = append(e.funcs, map[string]*funcEntry{})
 }
 
 func (e *environment) popScope() {
 	e.scopes = e.scopes[:len(e.scopes)-1]
 	e.semiGlobal = e.semiGlobal[:len(e.semiGlobal)-1]
+	e.mixins = e.mixins[:len(e.mixins)-1]
+	e.funcs = e.funcs[:len(e.funcs)-1]
 }
+
+// defineMixin declares a mixin in the innermost scope, shadowing any enclosing
+// definition of the same name for the lifetime of that scope.
+func (e *environment) defineMixin(name string, m *mixinEntry) {
+	e.mixins[len(e.mixins)-1][normIdent(name)] = m
+}
+
+// defineFunc declares a function in the innermost scope.
+func (e *environment) defineFunc(name string, f *funcEntry) {
+	e.funcs[len(e.funcs)-1][normIdent(name)] = f
+}
+
+// getMixin resolves a mixin by walking the scope chain innermost-first.
+func (e *environment) getMixin(name string) (*mixinEntry, bool) {
+	name = normIdent(name)
+	for i := len(e.mixins) - 1; i >= 0; i-- {
+		if m, ok := e.mixins[i][name]; ok {
+			return m, true
+		}
+	}
+	return nil, false
+}
+
+// getFunc resolves a function by walking the scope chain innermost-first.
+func (e *environment) getFunc(name string) (*funcEntry, bool) {
+	name = normIdent(name)
+	for i := len(e.funcs) - 1; i >= 0; i-- {
+		if f, ok := e.funcs[i][name]; ok {
+			return f, true
+		}
+	}
+	return nil, false
+}
+
+// globalMixins returns the module's own global mixin table (scope 0).
+func (e *environment) globalMixins() map[string]*mixinEntry { return e.mixins[0] }
+
+// globalFuncs returns the module's own global function table (scope 0).
+func (e *environment) globalFuncs() map[string]*funcEntry { return e.funcs[0] }
 
 // defineVar declares a variable in the innermost scope (parameter binding and
 // loop variables), unconditionally shadowing any enclosing variable.
