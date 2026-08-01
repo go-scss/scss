@@ -569,6 +569,20 @@ func (e *evaluator) loadCSSInto(url string, config []ConfigVar, fr *frame) {
 		e.placeLoadedCSS(nodes, fr)
 		return
 	}
+	// Record the $with configuration as the incoming config so it is applied at
+	// each top-level `!default` declaration (and propagated through the module's
+	// own @forward rules), exactly as @use ... with (...) does (loadModule).
+	cfg := map[string]Value{}
+	for _, c := range config {
+		cfg[normIdent(c.Name)] = numWithoutSlash(e.evalExpr(c.Value))
+	}
+	// A module carries a single set of members (variables/config) per compilation.
+	// Re-configuring one that another load site (an earlier @use, @forward or
+	// meta.load-css) already loaded is an error, exactly as `@use ... with`.
+	_, alreadyLoaded := e.sharedLoaded[resolved]
+	if alreadyLoaded && len(cfg) > 0 {
+		e.fail("%s was already loaded, so it can't be configured using \"with\".", resolved)
+	}
 	for _, s := range e.loadStack {
 		if s == resolved {
 			e.fail("Module loop: %s", resolved)
@@ -584,18 +598,33 @@ func (e *evaluator) loadCSSInto(url string, config []ConfigVar, fr *frame) {
 	sub.sharedLoaded = e.sharedLoaded
 	e.adoptScope(sub)
 	e.dependsOn(sub.scope)
-	// Record the $with configuration as the incoming config so it is applied at
-	// each top-level `!default` declaration (and propagated through the module's
-	// own @forward rules), exactly as @use ... with (...) does (loadModule).
-	cfg := map[string]Value{}
-	for _, c := range config {
-		cfg[normIdent(c.Name)] = numWithoutSlash(e.evalExpr(c.Value))
-	}
 	sub.incomingConfig = cfg
+	sub.hoistGlobalVarSlots(stmts, sub.env, map[string]bool{})
 	sub.runModule(stmts)
 	e.warnings = append(e.warnings, sub.warnings...)
 	e.loadedURLs = append(e.loadedURLs, resolved)
-	e.placeLoadedCSS(sub.root.children(), fr)
+	moduleNodes := sub.root.children()
+	// The CSS is spliced independently at every load-css site (its own extend
+	// scope, re-nested under any enclosing selector), so extends written at
+	// different sites never bleed across copies. But the module's members are
+	// registered once so a subsequent @use/@forward of the same URL observes the
+	// configuration this load-css applied (dart's single module registry). A
+	// second load-css of an already-registered module keeps its own fresh copy and
+	// does not overwrite the registered instance.
+	if !alreadyLoaded {
+		mod := &module{
+			vars:     sub.env.scopes[0],
+			mixins:   publicMixins(sub.env.globalMixins()),
+			funcs:    publicFuncs(sub.env.globalFuncs()),
+			env:      sub.env,
+			scope:    sub.scope,
+			forwards: sub.forwarded,
+			cssNodes: moduleNodes,
+		}
+		e.loaded[url] = mod
+		e.sharedLoaded[resolved] = mod
+	}
+	e.placeLoadedCSS(moduleNodes, fr)
 }
 
 // placeLoadedCSS splices a loaded module's already-resolved top-level CSS into
