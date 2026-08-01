@@ -114,9 +114,9 @@ func serialize(root *cssRoot, compressed bool) string {
 	// newline-terminated (or empty) after trimming leading blank lines.
 	out = strings.TrimLeft(out, "\n")
 	// An expanded stylesheet containing non-ASCII characters is prefixed with an
-	// @charset rule, as dart-sass does — unless the output already begins with one
-	// (an author-written @charset is kept rather than duplicated).
-	if hasNonASCII(out) && !strings.HasPrefix(out, "@charset ") {
+	// @charset rule, as dart-sass does. A source-level @charset is dropped during
+	// parsing, so this is the only @charset the output can carry.
+	if hasNonASCII(out) {
 		out = "@charset \"UTF-8\";\n" + out
 	}
 	return out

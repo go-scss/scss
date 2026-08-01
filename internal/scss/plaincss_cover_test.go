@@ -96,7 +96,9 @@ func TestPlainCSSAtRules(t *testing.T) {
 		{"@media (a)and (b) {x {y: z}}", "@media (a) and (b) {\n  x {\n    y: z;\n  }\n}\n"},
 		{"@function --a(--b <color>) {result: c}", "@function --a(--b <color>) {\n  result: c;\n}\n"},
 		{"@FUNCTION --a() {\n  result: $b;\n}", "@FUNCTION --a() {\n  result: $b;\n}\n"},
-		{"@charset \"utf-8\";\na{b:c}", "@charset \"utf-8\";\na {\n  b: c;\n}\n"},
+		// A source @charset is consumed for encoding detection and never emitted;
+		// the serializer re-derives @charset only for non-ASCII output.
+		{"@charset \"utf-8\";\na{b:c}", "a {\n  b: c;\n}\n"},
 		// @import passthrough and hoisting above a preceding style rule.
 		{"@import \"whatever\";", "@import \"whatever\";\n"},
 		{"@import url(whatever);", "@import url(whatever);\n"},
