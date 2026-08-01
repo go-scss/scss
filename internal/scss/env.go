@@ -39,6 +39,12 @@ type funcEntry struct {
 	// caller's inner scopes. This mirrors dart-sass running a callable in its
 	// captured closure rather than at the call site.
 	defDepth int
+	// builtin, when non-nil, makes this entry a built-in module function re-exported
+	// through a user stylesheet's `@forward "sass:math"` (etc.). def/env are unused
+	// in that case; a call dispatches straight to the native implementation. name is
+	// the built-in's bare identifier, passed through as callInfo.fn.
+	builtin builtinFunc
+	name    string
 }
 
 // environment holds variable scopes plus mixin/function/module tables.

@@ -188,6 +188,21 @@ func (e *evaluator) namespaceFor(url, explicit string) string {
 
 func (e *evaluator) evalForward(n *Forward, fr *frame) {
 	if strings.HasPrefix(n.URL, "sass:") {
+		real := strings.TrimPrefix(n.URL, "sass:")
+		if !builtinModuleNames[real] {
+			e.fail("Can't find stylesheet to import: %s", n.URL)
+		}
+		if len(n.Config) > 0 {
+			e.fail("Built-in modules can't be configured.")
+		}
+		// Re-export the built-in module's public members so a downstream @use of THIS
+		// stylesheet can reach them through the forwarding chain (with any as-prefix
+		// and show/hide filter applied), exactly as a @forward of a user module does.
+		mod := filterForwarded(builtinModuleAsModule(real), n, n.Prefix)
+		if e.importDepth > 0 {
+			e.importForwardedModule(mod, n.Prefix)
+		}
+		e.forwarded = append(e.forwarded, forwardedMod{mod: mod, prefix: normIdent(n.Prefix)})
 		return
 	}
 	mod := filterForwarded(e.loadModule(n.URL, e.buildConfig(throughForwardConfig(e.incomingConfig, n), n.Config), fr), n, n.Prefix)
@@ -202,6 +217,24 @@ func (e *evaluator) evalForward(n *Forward, fr *frame) {
 	// the accessors' prefix arithmetic matches the dash/underscore-folded member
 	// keys (a `@forward ... as d_*` prefixes the hyphen-spelled `$d-c`).
 	e.forwarded = append(e.forwarded, forwardedMod{mod: mod, prefix: normIdent(n.Prefix)})
+}
+
+// builtinModuleAsModule materialises a built-in module (sass:math, sass:color, …)
+// as a user-facing *module so it can be re-exported through @forward. Its native
+// functions are wrapped as built-in funcEntries and its exported constant
+// variables are copied verbatim; built-in modules expose no user mixins here.
+func builtinModuleAsModule(real string) *module {
+	funcs := map[string]*funcEntry{}
+	for name, fn := range moduleRegistry(real) {
+		funcs[normIdent(name)] = &funcEntry{builtin: fn, name: name}
+	}
+	vars := map[string]Value{}
+	if real == "math" {
+		for k, v := range mathModuleVars {
+			vars[k] = v
+		}
+	}
+	return &module{vars: vars, mixins: map[string]*mixinEntry{}, funcs: funcs, env: newEnvironment()}
 }
 
 // filterForwarded applies a @forward's show/hide clauses, returning a module
