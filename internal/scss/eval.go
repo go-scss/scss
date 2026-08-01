@@ -590,8 +590,8 @@ func (e *evaluator) evalInclude(n *Include, fr *frame) {
 		e.fail("Undefined mixin.")
 	}
 	callEnv := e.env
-	pos, named := e.evalArgs(n.Args)
-	e.invokeMixin(m, pos, named, n.Content, callEnv, fr)
+	pos, named, restSep := e.evalArgs(n.Args)
+	e.invokeMixin(m, pos, named, restSep, n.Content, callEnv, fr)
 }
 
 func (e *evaluator) evalContent(n *ContentStmt, fr *frame) {

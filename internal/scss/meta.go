@@ -253,7 +253,9 @@ func (e *evaluator) callFunctionValue(fnv Value, pos []Value, named map[string]V
 			return &SassString{Text: f.name + "(" + joinCSSArgs(pos, named) + ")", Quoted: false}
 		}
 		if f.user != nil {
-			return e.callUserResolved(f.user, pos, named)
+			// call() resolves its arguments before dispatch, so the original spread
+			// separator is unavailable; a rest parameter defaults to comma.
+			return e.callUserResolved(f.user, pos, named, SepComma)
 		}
 		return f.builtin(&callInfo{positional: pos, named: named, e: e, fn: f.name})
 	case *SassString:
@@ -432,7 +434,7 @@ func (e *evaluator) isMetaNamespace(ns string) bool {
 
 // evalMetaApply implements `@include meta.apply($mixin, args...)`.
 func (e *evaluator) evalMetaApply(n *Include, fr *frame) {
-	pos, named := e.evalArgs(n.Args)
+	pos, named, restSep := e.evalArgs(n.Args)
 	var mixinVal Value
 	if v, ok := named["mixin"]; ok {
 		mixinVal = v
@@ -450,12 +452,12 @@ func (e *evaluator) evalMetaApply(n *Include, fr *frame) {
 	if m.user == nil {
 		e.fail("The mixin %s can't be applied with meta.apply().", m.name)
 	}
-	e.invokeMixin(m.user, pos, named, n.Content, e.env, fr)
+	e.invokeMixin(m.user, pos, named, restSep, n.Content, e.env, fr)
 }
 
 // evalMetaLoadCss implements `@include meta.load-css($url, $with:)`.
 func (e *evaluator) evalMetaLoadCss(n *Include, fr *frame) {
-	pos, named := e.evalArgs(n.Args)
+	pos, named, _ := e.evalArgs(n.Args)
 	var urlVal Value
 	if v, ok := named["url"]; ok {
 		urlVal = v
@@ -480,13 +482,13 @@ func (e *evaluator) evalMetaLoadCss(n *Include, fr *frame) {
 
 // invokeMixin runs a user mixin with pre-resolved arguments, an optional
 // @content block and the environment in which that content was written.
-func (e *evaluator) invokeMixin(m *mixinEntry, pos []Value, named map[string]Value, content []Stmt, contentEnv *environment, fr *frame) {
+func (e *evaluator) invokeMixin(m *mixinEntry, pos []Value, named map[string]Value, restSep Separator, content []Stmt, contentEnv *environment, fr *frame) {
 	e.enter()
 	defer e.leave()
 	saved := e.env
 	e.env = m.env
 	e.env.pushScope()
-	e.bindResolved(m.def.Params, pos, named)
+	e.bindResolved(m.def.Params, pos, named, restSep)
 	savedContent := e.env.content
 	savedContentEnv := e.env.contentEnv
 	e.env.content = content

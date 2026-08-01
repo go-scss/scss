@@ -112,6 +112,29 @@ func TestSpreadArgs(t *testing.T) {
 	}
 }
 
+// TestVarArgsSpreadSeparator covers the separator a var-args ($rest) parameter
+// adopts: dart-sass gives it the separator of a spread list argument (space or
+// comma), even when leading positional arguments precede the spread, and defaults
+// to comma when nothing is spread. Byte-exact against dart-sass 1.102.
+func TestVarArgsSpreadSeparator(t *testing.T) {
+	m := "@mixin f($a, $b...) { b: $b; }\n"
+	cases := []struct{ in, want string }{
+		// A spread space-list makes the rest arglist space-separated.
+		{m + "$l: 3 4 5;\n.x{@include f(1, 2, $l...)}", "b: 2 3 4 5;"},
+		// A spread comma-list keeps it comma-separated.
+		{m + "$l: 3, 4, 5;\n.x{@include f(1, 2, $l...)}", "b: 2, 3, 4, 5;"},
+		// No spread: the rest arglist defaults to comma.
+		{m + ".x{@include f(1, 2, 3, 4)}", "b: 2, 3, 4;"},
+		// A function's var-args behaves the same way.
+		{"@function g($a, $b...){@return \"#{$b}\"}\n$l: 3 4 5;\n.x{v: g(1, 2, $l...)}", "v: \"2 3 4 5\";"},
+	}
+	for _, c := range cases {
+		if got := compile(t, c.in); !strings.Contains(got, c.want) {
+			t.Errorf("for %q: want %q in %q", c.in, c.want, got)
+		}
+	}
+}
+
 // TestKeywordArgDashUnderscore covers the interchangeability of `-` and `_` in
 // keyword argument names: a caller may spell the keyword with underscores while
 // the parameter is declared with hyphens (or vice versa), and a spread map key
