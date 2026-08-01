@@ -522,7 +522,7 @@ func (p *parser) tryDeclaration() (stmt Stmt, ok bool) {
 	// A plain name that is empty (leading `:`/`::` pseudo) or that starts with a
 	// character that can't begin a CSS property is actually a selector.
 	if isPlain && !custom {
-		if trimmedPlain == "" || isSelectorLeadByte(trimmedPlain[0]) {
+		if (trimmedPlain == "" || isSelectorLeadByte(trimmedPlain[0])) && !isStarHackName(trimmedPlain) {
 			return nil, false
 		}
 	}
@@ -563,6 +563,20 @@ func (p *parser) tryDeclaration() (stmt Stmt, ok bool) {
 	default:
 		return nil, false
 	}
+}
+
+// isStarHackName reports whether a plain declaration name is the IE "star hack":
+// a leading `*` immediately followed by an identifier (e.g. `*width`). dart-sass
+// accepts such a name as a property, while a bare `*` or `*` followed by a
+// selector character (`* {`, `*.foo`, `*:hover`) remains the universal selector.
+// A real selector never places `*` directly against an identifier or `-`/`\`, so
+// this test is unambiguous.
+func isStarHackName(name string) bool {
+	if len(name) < 2 || name[0] != '*' {
+		return false
+	}
+	c := name[1]
+	return isNameStart(c) || c == '-' || c == '\\'
 }
 
 // isSelectorLeadByte reports whether c can begin a selector but not a CSS
