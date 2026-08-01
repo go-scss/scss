@@ -284,6 +284,16 @@ func (e *evaluator) emitModuleCSS(nodes []cssNode, fr *frame) {
 	}
 }
 
+// parseModuleSource parses a resolved stylesheet source, honouring the resolved
+// file's syntax: a `.sass` file is written in the indented grammar and must be
+// converted to bracketed SCSS before parsing, exactly as the entry file is.
+func parseModuleSource(resolved, src string) ([]Stmt, error) {
+	if strings.HasSuffix(resolved, ".sass") {
+		src = convertIndented(src)
+	}
+	return parseStylesheet(src)
+}
+
 func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *module {
 	if m, ok := e.loaded[url]; ok {
 		return m
@@ -320,7 +330,7 @@ func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *
 		e.sharedLoaded[resolved] = mod
 		return mod
 	}
-	stmts, err := parseStylesheet(src)
+	stmts, err := parseModuleSource(resolved, src)
 	if err != nil {
 		panic(err)
 	}
@@ -422,7 +432,7 @@ func (e *evaluator) evalImport(n *Import, fr *frame) {
 			e.emitModuleCSS(nodes, fr)
 			continue
 		}
-		stmts, err := parseStylesheet(src)
+		stmts, err := parseModuleSource(resolved, src)
 		if err != nil {
 			panic(err)
 		}
