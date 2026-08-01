@@ -238,13 +238,16 @@ func (e *evaluator) lookupFunc(ns, name string) *funcEntry {
 	name = normIdent(name)
 	if ns != "" {
 		if mod, ok := e.env.modules[ns]; ok {
-			if f, ok := mod.funcs[name]; ok {
+			if f, ok := mod.getFunc(name); ok {
 				return f
 			}
 		}
 		return nil
 	}
 	if f, ok := e.env.funcs[name]; ok {
+		return f
+	}
+	if f, ok := e.env.globalModuleFunc(name); ok {
 		return f
 	}
 	return nil
