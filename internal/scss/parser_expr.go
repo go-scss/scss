@@ -528,7 +528,13 @@ func (p *parser) parseParenOrMap() Expr {
 	// Parentheses do NOT force a division context: a "/" between literals inside
 	// them keeps its slash provenance (so "(1 2/3 4)" preserves the 2/3). The
 	// grouping itself strips provenance from its scalar result at eval time (via
-	// the Paren node), which is why "(1/2)" still collapses to 0.5.
+	// the Paren node), which is why "(1/2)" still collapses to 0.5. A grouping
+	// also CLEARS any surrounding arithmetic context, so a "/" inside it keeps
+	// its slash even when the parens are an operand of an outer operation
+	// (`x + (5/6 7/8)` -> `x5/6 7/8`, not `x0.833… 0.875`).
+	savedArith := p.arith
+	p.arith = 0
+	defer func() { p.arith = savedArith }()
 	p.ws()
 	if p.peek() == ')' {
 		p.next()
