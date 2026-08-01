@@ -116,6 +116,10 @@ type AtRoot struct {
 type Media struct {
 	Query *Interp
 	Body  []Stmt
+	// BraceLine is the 1-based source line of the body's opening `{`, used at
+	// serialization time to attach a first-child loud comment that trails the
+	// brace on the same line.
+	BraceLine int
 }
 
 // Supports is @supports.
