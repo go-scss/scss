@@ -388,6 +388,10 @@ func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *
 		}
 		e.loadedURLs = append(e.loadedURLs, resolved)
 		e.emitModuleCSS(nodes, fr)
+		// A plain-CSS module gets its own @extend scope so a downstream @extend
+		// reaches its rules (dart treats plain CSS as a real module); its output
+		// stays verbatim until an extend actually targets one of its selectors.
+		e.registerPlainCSSExtendScope(nodes)
 		mod := emptyModule()
 		e.loaded[url] = mod
 		e.sharedLoaded[resolved] = mod
@@ -436,6 +440,49 @@ func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *
 	e.loaded[url] = mod
 	e.sharedLoaded[resolved] = mod
 	return mod
+}
+
+// registerPlainCSSExtendScope gives a loaded plain-CSS module its own @extend
+// module scope so a downstream @extend can reach the module's rules, exactly as
+// dart-sass treats a plain-CSS file as a real module with its own extension
+// store. The rules keep being emitted verbatim (raw); only a rule that a
+// downstream @extend actually targets is re-serialised from its extended
+// selector (writeBackSelectors flips it off `raw` once its box changes), so
+// every untargeted plain-CSS rule's output is byte-for-byte unchanged. A rule
+// whose verbatim selector does not round-trip through the Sass selector parser
+// (an exotic plain-CSS selector) is left as pure raw and simply not extendable.
+func (e *evaluator) registerPlainCSSExtendScope(nodes []cssNode) {
+	sub := newEvaluator(e.importer)
+	registerPlainRulesForExtend(sub, nodes)
+	if len(sub.extendEvents) == 0 {
+		return
+	}
+	e.adoptScope(sub)
+	e.dependsOn(sub.scope)
+}
+
+// registerPlainRulesForExtend records each top-level plain-CSS style rule whose
+// verbatim selector parses and round-trips as an extendable selector, so a
+// downstream @extend can target it. Round-tripping guarantees the un-extended
+// serialisation stays byte-identical to the original raw selector.
+func registerPlainRulesForExtend(sub *evaluator, nodes []cssNode) {
+	for _, n := range nodes {
+		sr, ok := n.(*cssStyleRule)
+		if !ok || !sr.raw {
+			continue
+		}
+		list, err := parseSelectorListStrErr(sr.rawSel, false, true)
+		if err != nil {
+			continue
+		}
+		sl := selectorList{list: list}
+		if sl.serialize(false) != sr.rawSel {
+			continue
+		}
+		sr.selector = sl
+		sr.original = sl
+		sub.extendEvents = append(sub.extendEvents, extendEvent{rule: sr})
+	}
 }
 
 // emptyModule builds a module with no members, used for plain-CSS files loaded
