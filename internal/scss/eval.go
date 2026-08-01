@@ -1063,11 +1063,15 @@ func parseAtRootQuery(q string) (include bool, names map[string]bool, ok bool) {
 // --- generic at-rules ---
 
 func (e *evaluator) evalGenericAtRule(n *AtRule, fr *frame) {
+	name := n.Name
+	if n.NameInterp != nil {
+		name = e.resolveInterp(n.NameInterp)
+	}
 	params := ""
 	if n.Value != nil {
 		params = e.resolveInterp(n.Value)
 	}
-	at := &cssAtRule{name: n.Name, params: params, hasBody: !n.NoBody}
+	at := &cssAtRule{name: name, params: params, hasBody: !n.NoBody}
 	if n.NoBody {
 		// A childless at-rule (`@b c;`) behaves like a declaration: inside a
 		// style rule it stays within the enclosing selector's block, interleaving
@@ -1082,11 +1086,11 @@ func (e *evaluator) evalGenericAtRule(n *AtRule, fr *frame) {
 	}
 	at.blankBefore = e.consumeGroup(fr)
 	e.liveContainer(fr).appendNode(at)
-	keyframes := isKeyframesAtRule(n.Name)
+	keyframes := isKeyframesAtRule(name)
 	// A @keyframes body holds keyframe blocks, but a stray declaration written
 	// directly in it (dart tolerates this) is emitted verbatim rather than being
 	// wrapped in an empty style rule, so treat the body as declaration-direct.
-	direct := isDeclarationAtRule(n.Name) || keyframes
+	direct := isDeclarationAtRule(name) || keyframes
 	// Inside a style rule, an unknown at-rule with a block re-materialises the
 	// enclosing selector around its declarations (dart: `div { @foo { a: b } }`
 	// -> `@foo { div { a: b } }`), so it carries the parent selector. At the top
