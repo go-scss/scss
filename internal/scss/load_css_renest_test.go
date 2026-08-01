@@ -9,7 +9,7 @@ import "testing"
 // present in the file map, else to a `.scss` partial, returning the resolved key
 // so the loader picks the right grammar (and the plain-CSS branch) by extension.
 func renestImporter(files map[string]string) Importer {
-	return func(url string) (string, string, bool) {
+	return func(url, _ string) (string, string, bool) {
 		for _, cand := range []string{url, url + ".css", url + ".scss", "_" + url + ".scss"} {
 			if src, ok := files[cand]; ok {
 				return src, cand, true

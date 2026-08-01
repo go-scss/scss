@@ -169,7 +169,7 @@ func TestBuiltinBranches(t *testing.T) {
 // renderImp compiles src with a map-backed importer.
 func renderImp(t *testing.T, src string, files map[string]string) (Result, error) {
 	t.Helper()
-	imp := func(url string) (string, string, bool) {
+	imp := func(url, _ string) (string, string, bool) {
 		if s, ok := files[url]; ok {
 			return s, url, true
 		}

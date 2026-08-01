@@ -44,6 +44,16 @@ const (
 // Importer resolves an import URL to source text and a canonical URL.
 type Importer func(url string) (source string, canonicalURL string, ok bool)
 
+// ReferrerImporter is the referrer-aware importer form. In addition to the URL
+// being loaded, it receives the canonical URL of the stylesheet issuing the load
+// — the file whose code is currently being evaluated (a module's own URL for its
+// top-level rules, or a mixin/@content block's defining file for a dynamic load,
+// such as meta.load-css, nested inside it). Mirroring Dart Sass's
+// Importer.canonicalize(url, baseUrl:), an importer should resolve url relative to
+// referrer first, then against its configured load paths. referrer is empty for a
+// load issued by the entry stylesheet, which has no canonical URL.
+type ReferrerImporter func(url, referrer string) (source string, canonicalURL string, ok bool)
+
 // Options configures a compilation.
 type Options struct {
 	Syntax    Syntax
@@ -51,8 +61,16 @@ type Options struct {
 	LoadPaths []string
 	// Importer, when set, resolves @use/@forward/@import URLs. When nil, a
 	// filesystem importer based on LoadPaths (and the entry file's directory)
-	// is used.
+	// is used. It receives only the URL; relative resolution is against the
+	// configured load paths. For referrer-relative resolution (Dart Sass's
+	// default behaviour, where a load resolves relative to the file issuing it),
+	// set ImporterWithReferrer instead.
 	Importer Importer
+	// ImporterWithReferrer, when set, takes precedence over Importer and receives
+	// the referrer (the canonical URL of the file issuing the load) so it can
+	// resolve relative-to-referrer first, then load paths — matching Dart Sass.
+	// The built-in filesystem importer used when both are nil is referrer-aware.
+	ImporterWithReferrer ReferrerImporter
 	// baseDir is the directory used to resolve relative imports (set internally
 	// by Compile; may be set by callers of CompileString).
 	BaseDir string
@@ -70,11 +88,19 @@ func CompileString(source string, opts *Options) (*CompileResult, error) {
 	if opts == nil {
 		opts = &Options{}
 	}
-	imp := opts.Importer
-	if imp == nil {
+	var imp engine.Importer
+	switch {
+	case opts.ImporterWithReferrer != nil:
+		imp = engine.Importer(opts.ImporterWithReferrer)
+	case opts.Importer != nil:
+		// A legacy url-only importer ignores the referrer and resolves against its
+		// own configured paths, preserving the pre-referrer public contract.
+		legacy := opts.Importer
+		imp = func(url, _ string) (string, string, bool) { return legacy(url) }
+	default:
 		imp = fileImporter(opts.BaseDir, opts.LoadPaths)
 	}
-	res, err := engine.Render(source, opts.Syntax == SyntaxIndented, opts.Style == Compressed, engine.Importer(imp))
+	res, err := engine.Render(source, opts.Syntax == SyntaxIndented, opts.Style == Compressed, imp)
 	if err != nil {
 		return nil, err
 	}
@@ -105,9 +131,10 @@ func Compile(path string, opts *Options) (*CompileResult, error) {
 	return res, nil
 }
 
-// fileImporter builds a filesystem importer resolving partials and extensions
-// across the entry directory and the configured load paths.
-func fileImporter(baseDir string, loadPaths []string) Importer {
+// fileImporter builds a referrer-aware filesystem importer resolving partials and
+// extensions relative to the file issuing the load first (Dart Sass's default),
+// then across the entry directory and the configured load paths.
+func fileImporter(baseDir string, loadPaths []string) engine.Importer {
 	dirs := make([]string, 0, len(loadPaths)+1)
 	if baseDir != "" {
 		dirs = append(dirs, baseDir)
@@ -115,9 +142,18 @@ func fileImporter(baseDir string, loadPaths []string) Importer {
 		dirs = append(dirs, ".")
 	}
 	dirs = append(dirs, loadPaths...)
-	return func(url string) (string, string, bool) {
+	return func(url, referrer string) (string, string, bool) {
 		if strings.HasPrefix(url, "sass:") {
 			return "", "", false
+		}
+		// Relative-to-referrer first: a load resolves against the directory of the
+		// file that issued it before falling back to the configured load paths.
+		if referrer != "" {
+			for _, cand := range importCandidates(filepath.Dir(referrer), url) {
+				if data, err := os.ReadFile(cand); err == nil {
+					return string(data), cand, true
+				}
+			}
 		}
 		for _, dir := range dirs {
 			for _, cand := range importCandidates(dir, url) {

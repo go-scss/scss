@@ -27,6 +27,13 @@ type mixinEntry struct {
 	// dynamic caller's inner scopes. This isolates each invocation (including
 	// recursion) instead of mutating the shared definition environment.
 	defDepth int
+	// srcURL is the canonical URL of the stylesheet in which this mixin was
+	// defined. A dynamic load issued from the mixin body (notably meta.load-css)
+	// resolves relative to this file, not the include site — dart-sass resolves
+	// each load against its AST node's source URL, and a mixin's body nodes carry
+	// the URL of the file that declared the mixin. Empty for a mixin defined in the
+	// entry stylesheet.
+	srcURL string
 }
 
 type funcEntry struct {
@@ -71,6 +78,12 @@ type environment struct {
 	content     []Stmt
 	contentEnv  *environment
 	contentArgs *ParamList
+	// contentURL is the canonical URL of the stylesheet in which the @content
+	// block was written (the include site's file). A dynamic load inside a
+	// @content block resolves relative to it, not the mixin's defining file, since
+	// the block's statements belong to the caller (dart-sass resolves each load
+	// against its own AST node's source URL). Empty when written in the entry file.
+	contentURL string
 	// builtinAliases maps a namespace to a built-in module name (e.g. "m"->"math").
 	builtinAliases map[string]string
 	// builtinGlobals lists built-in modules imported with "as *".
