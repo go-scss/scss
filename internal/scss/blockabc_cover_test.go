@@ -130,6 +130,11 @@ func TestMetaGetFunctionCall(t *testing.T) {
 	wantCSS(t, base+"a{b: meta.get-function(\"lighten\") == meta.get-function(\"darken\")}", "a {\n  b: false;\n}\n")
 	wantCSS(t, base+"@function u(){@return 1} a{b: meta.get-function(u) == meta.get-function(u)}", "a {\n  b: true;\n}\n")
 	wantCSS(t, base+"a{b: meta.get-function(\"rgb\") == 1}", "a {\n  b: false;\n}\n")
+	// get-function and call are also available in the global namespace (not just
+	// sass:meta), matching dart-sass. Byte-exact against dart-sass 1.102.
+	wantCSS(t, "a {b: inspect(get-function(rgb))}", "a {\n  b: get-function(\"rgb\");\n}\n")
+	wantCSS(t, "a {b: call(get-function(\"rgb\"), 1, 2, 3)}", "a {\n  b: rgb(1, 2, 3);\n}\n")
+	wantCSS(t, "@function add($v){@return $v + 1} a {b: call(get-function(add), 2)}", "a {\n  b: 3;\n}\n")
 }
 
 func TestMetaGetFunctionErrors(t *testing.T) {
