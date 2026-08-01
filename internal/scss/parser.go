@@ -354,6 +354,7 @@ func (p *parser) atNamespacedVarDecl() (string, bool) {
 
 func (p *parser) parseLoudComment() Stmt {
 	start := p.pos
+	col := p.columnAt(start)
 	p.pos += 2
 	for !p.eof() && !(p.peek() == '*' && p.peekAt(1) == '/') {
 		p.pos++
@@ -361,8 +362,36 @@ func (p *parser) parseLoudComment() Stmt {
 	if !p.eof() {
 		p.pos += 2
 	}
-	text := p.src[start:p.pos]
-	return &LoudComment{Text: commentInterp(text)}
+	text := convertCommentNewlines(p.src[start:p.pos])
+	return &LoudComment{Text: commentInterp(text), Col: col}
+}
+
+// convertCommentNewlines reproduces dart-sass's ScssParser._loudComment newline
+// handling inside a loud comment body: everything CSS treats as a newline (bare
+// CR, CR LF, and form feed) is converted to a single LF, matching the sass-spec
+// `css/comment converts_newlines` cases. A CR immediately followed by LF drops
+// the CR (the LF is kept); a lone CR or an FF becomes LF.
+func convertCommentNewlines(text string) string {
+	if !strings.ContainsAny(text, "\r\f") {
+		return text
+	}
+	var b strings.Builder
+	b.Grow(len(text))
+	for i := 0; i < len(text); i++ {
+		switch text[i] {
+		case '\r':
+			if i+1 < len(text) && text[i+1] == '\n' {
+				// CR LF: drop the CR, the LF is copied on the next iteration.
+				continue
+			}
+			b.WriteByte('\n')
+		case '\f':
+			b.WriteByte('\n')
+		default:
+			b.WriteByte(text[i])
+		}
+	}
+	return b.String()
 }
 
 // commentInterp preserves a loud comment verbatim, expanding only #{...}.

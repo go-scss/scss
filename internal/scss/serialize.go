@@ -69,6 +69,7 @@ func (d *cssDeclaration) cssNode() {}
 
 type cssComment struct {
 	text        string
+	col         int // 0-based source column of the opening `/*`, for re-indentation
 	blankBefore bool
 }
 
@@ -248,10 +249,131 @@ func (s *serializer) emitNode(n cssNode, depth int) {
 	case *cssDeclaration:
 		s.emitDecl(v, depth)
 	case *cssComment:
-		s.indent(depth)
+		s.emitComment(v, depth)
+	}
+}
+
+// emitComment serialises a preserved loud comment, reproducing dart-sass's
+// Serializer.visitCssComment: sourceMappingURL/sourceURL comments are dropped,
+// and a multi-line comment's continuation lines are re-indented to the current
+// output depth (bounded by the comment's own source column).
+func (s *serializer) emitComment(v *cssComment, depth int) {
+	// Ignore sourceMappingURL and sourceURL comments (dart-sass drops these).
+	if isSourceURLComment(v.text) {
+		return
+	}
+	s.indent(depth)
+	// In compressed output there is no indentation to re-base against, so the
+	// comment is emitted verbatim; only expanded output re-indents continuation
+	// lines to the current depth.
+	if min, hasMin := commentMinIndentation(v.text); s.compressed || !hasMin || min < 0 {
 		s.sb.WriteString(v.text)
-		if !s.compressed {
-			s.sb.WriteString("\n")
+	} else {
+		if v.col < min {
+			min = v.col
+		}
+		s.writeCommentReindented(v.text, min, depth)
+	}
+	if !s.compressed {
+		s.sb.WriteString("\n")
+	}
+}
+
+// isSourceURLComment reports whether text is a `/*# sourceMappingURL=` or
+// `/*# sourceURL=` comment, which dart-sass omits from serialized output.
+func isSourceURLComment(text string) bool {
+	return strings.HasPrefix(text, "/*# sourceMappingURL=") ||
+		strings.HasPrefix(text, "/*# sourceURL=")
+}
+
+// commentMinIndentation ports dart-sass's Serializer._minimumIndentation for
+// loud comments: it returns the least leading indentation (space/tab count) of
+// any non-blank line after the first. hasMin is false when the comment is a
+// single line (no newline), which is emitted verbatim. A returned min of -1
+// means every line after the first is blank.
+func commentMinIndentation(text string) (int, bool) {
+	n := len(text)
+	i := 0
+	for i < n && text[i] != '\n' {
+		i++
+	}
+	if i >= n {
+		return 0, false // single line
+	}
+	i++ // consume first newline
+	min := -1
+	for i < n {
+		start := i
+		for i < n && (text[i] == ' ' || text[i] == '\t') {
+			i++
+		}
+		if i >= n {
+			break // trailing blank
+		}
+		if text[i] == '\n' {
+			i++
+			continue // blank line
+		}
+		if col := i - start; min == -1 || col < min {
+			min = col
+		}
+		for i < n && text[i] != '\n' {
+			i++
+		}
+		if i < n {
+			i++ // consume newline
+		}
+	}
+	return min, true
+}
+
+// writeCommentReindented ports dart-sass's Serializer._writeWithIndent for loud
+// comments: the first line is written verbatim; each subsequent non-blank line
+// has minIndent leading whitespace columns replaced by the current output
+// indentation. Runs of blank lines are preserved as bare newlines, and a
+// trailing run of whitespace collapses to a single trailing space.
+func (s *serializer) writeCommentReindented(text string, minIndent, depth int) {
+	n := len(text)
+	i := 0
+	for i < n && text[i] != '\n' {
+		s.sb.WriteByte(text[i])
+		i++
+	}
+	for i < n { // text[i] == '\n'
+		newlines := 0
+		var lineStart int
+		for {
+			i++ // consume the newline
+			newlines++
+			lineStart = i
+			for i < n && (text[i] == ' ' || text[i] == '\t') {
+				i++
+			}
+			if i >= n {
+				s.sb.WriteByte(' ')
+				return
+			}
+			if text[i] == '\n' {
+				continue // blank line: fold into the newline run
+			}
+			break
+		}
+		for k := 0; k < newlines; k++ {
+			s.sb.WriteByte('\n')
+		}
+		s.indent(depth)
+		start := lineStart
+		if minIndent > 0 {
+			start += minIndent
+		}
+		if start > i {
+			start = i
+		}
+		s.sb.WriteString(text[start : i+1])
+		i++ // past the non-whitespace char already written
+		for i < n && text[i] != '\n' {
+			s.sb.WriteByte(text[i])
+			i++
 		}
 	}
 }

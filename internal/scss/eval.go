@@ -972,7 +972,12 @@ func isKeyframesAtRule(name string) bool {
 
 func (e *evaluator) evalLoudComment(n *LoudComment, fr *frame) {
 	text := e.resolveInterp(n.Text)
-	c := &cssComment{text: text}
+	// The indented syntax doesn't require a closing `*/`; dart-sass appends one
+	// when the parsed comment body doesn't already end with it.
+	if !strings.HasSuffix(text, "*/") {
+		text += " */"
+	}
+	c := &cssComment{text: text, col: n.Col}
 	// In a selector context with no open block yet (a loud comment that is the
 	// sole content of a @media bubbled out of a style rule), the comment is
 	// wrapped in the enclosing parent rule, exactly as a declaration would be, so

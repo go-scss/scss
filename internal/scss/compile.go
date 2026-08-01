@@ -449,9 +449,29 @@ func foldLogicalLines(phys []string) []logicalLine {
 		text := first
 		i++
 		kind := lineKind(strings.TrimSpace(first))
-		for i < len(phys) && strings.TrimSpace(phys[i]) != "" && (headerIncomplete(text, kind) || inOpenLoudComment(text)) {
-			text += "\n" + phys[i]
-			i++
+		standalone := strings.HasPrefix(strings.TrimSpace(first), "/*")
+		for i < len(phys) {
+			if standalone && inOpenLoudComment(text) {
+				// A standalone loud comment statement: dart-sass's
+				// SassParser._loudComment keeps reading continuation lines —
+				// including the blank lines it preserves — until a non-blank line
+				// dedents to at or above the comment's own indentation.
+				if strings.TrimSpace(phys[i]) != "" && indentOf(phys[i]) <= indent {
+					break
+				}
+				text += "\n" + phys[i]
+				i++
+				continue
+			}
+			// An embedded loud comment (used as whitespace inside a value or
+			// selector) or a continued header folds non-blank lines only, exactly
+			// as before.
+			if strings.TrimSpace(phys[i]) != "" && (headerIncomplete(text, kind) || inOpenLoudComment(text)) {
+				text += "\n" + phys[i]
+				i++
+				continue
+			}
+			break
 		}
 		lls = append(lls, logicalLine{indent: indent, text: text})
 	}
@@ -495,6 +515,133 @@ func inOpenLoudComment(text string) bool {
 	return inLoud
 }
 
+// dartIndentedLoudComment reproduces dart-sass's SassParser._loudComment: it
+// reads a loud comment across indentation-delimited continuation lines and
+// rebuilds its text with a ` * ` prefix on each continuation line (plus any
+// indentation beyond the ` * ` prefix), converting the free-form indented
+// comment into a canonical block comment. content is the trimmed, CR/FF-folded
+// logical comment line (beginning with `/*`); parentIndent is the indentation
+// level of the comment statement. The result always ends with `*/`: dart-sass
+// appends a missing `*/` when evaluating the comment, and doing so here keeps
+// the re-parsed SCSS comment well-formed.
+func dartIndentedLoudComment(content string, parentIndent int) string {
+	n := len(content)
+	var b strings.Builder
+	b.WriteString("/*")
+	p := 2 // just past the opening "/*"
+	first := true
+	currentIndent := parentIndent
+
+	// peekIndentation returns the indentation of the next non-blank line at or
+	// after the newline at position q, or 0 at end of input.
+	peekIndentation := func(q int) int {
+		for {
+			q++ // consume the newline
+			ci := q
+			for q < n && (content[q] == ' ' || content[q] == '\t') {
+				q++
+			}
+			if q >= n {
+				return 0
+			}
+			if content[q] == '\n' {
+				continue
+			}
+			return q - ci
+		}
+	}
+
+	for {
+		if first {
+			bc := p
+			for p < n && (content[p] == ' ' || content[p] == '\t') {
+				p++
+			}
+			if p < n && content[p] == '\n' {
+				// The first line is empty: drop it, add a single space, and move on
+				// to the next line's indentation.
+				b.WriteByte(' ')
+				ci := p + 1
+				q := ci
+				for q < n && (content[q] == ' ' || content[q] == '\t') {
+					q++
+				}
+				currentIndent = q - ci
+				p = q
+			} else {
+				// Preserve any spaces immediately after `/*` on the first line.
+				b.WriteString(content[bc:p])
+			}
+		} else {
+			b.WriteString("\n * ")
+		}
+		first = false
+
+		for i := 3; i < currentIndent-parentIndent; i++ {
+			b.WriteByte(' ')
+		}
+
+		brokeNewline := false
+		for p < n {
+			c := content[p]
+			if c == '\n' {
+				brokeNewline = true
+				break
+			}
+			if c == '#' && p+1 < n && content[p+1] == '{' {
+				start := p
+				p += 2
+				depth := 1
+				for p < n && depth > 0 {
+					switch content[p] {
+					case '{':
+						depth++
+					case '}':
+						depth--
+					}
+					p++
+				}
+				b.WriteString(content[start:p])
+				continue
+			}
+			if c == '*' && p+1 < n && content[p+1] == '/' {
+				b.WriteString("*/")
+				// dart-sass consumes trailing whitespace and any additional loud
+				// comments after the close (backwards compatibility); we drop the
+				// remainder of the logical line, which is equivalent for the cases
+				// the spec exercises.
+				return b.String()
+			}
+			b.WriteByte(c)
+			p++
+		}
+
+		if !brokeNewline {
+			break // ran out of input with no closing `*/`
+		}
+		if peekIndentation(p) <= parentIndent {
+			break // dedent past the comment: the comment ends here
+		}
+		// Preserve blank lines as ` *` continuation lines.
+		for p+1 < n && content[p+1] == '\n' {
+			p++ // consume one newline
+			b.WriteString("\n *")
+		}
+		// _readIndentation: advance onto the next line, past its indentation.
+		p++ // consume the newline
+		ci := p
+		for p < n && (content[p] == ' ' || content[p] == '\t') {
+			p++
+		}
+		currentIndent = p - ci
+	}
+
+	if !strings.HasSuffix(b.String(), "*/") {
+		b.WriteString(" */")
+	}
+	return b.String()
+}
+
 func convertIndented(src string) string {
 	// The indented lexer treats CR, CRLF and form-feed as line breaks.
 	src = strings.ReplaceAll(src, "\r\n", "\n")
@@ -513,7 +660,12 @@ func convertIndented(src string) string {
 		content := strings.TrimSpace(ll.text)
 		closeTo(ll.indent)
 		pad := strings.Repeat("  ", len(stack))
-		if strings.HasPrefix(content, "//") || strings.HasPrefix(content, "/*") {
+		if strings.HasPrefix(content, "/*") {
+			norm := dartIndentedLoudComment(content, ll.indent)
+			out = append(out, pad+norm)
+			continue
+		}
+		if strings.HasPrefix(content, "//") {
 			out = append(out, pad+content)
 			continue
 		}
