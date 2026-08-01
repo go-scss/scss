@@ -199,9 +199,14 @@ func (l *List) asList() []Value { return l.Elements }
 func (l *List) equals(o Value) bool {
 	ol, ok := o.(*List)
 	if !ok {
-		// A single-element bare list may equal a scalar in Sass, but we keep it strict.
-		if len(l.Elements) == 1 {
-			return l.Elements[0].equals(o)
+		// dart-sass: a list is never equal to a scalar (not even a one-element
+		// list to that element), but an empty list equals an empty map. This is
+		// why `& == ".bee"` — where `&` is the one-element list `(.bee,)` — is
+		// false rather than comparing `.bee` to the string.
+		if len(l.Elements) == 0 {
+			if om, isMap := o.(*Map); isMap {
+				return len(om.Keys) == 0
+			}
 		}
 		return false
 	}

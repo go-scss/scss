@@ -655,10 +655,36 @@ func unitOutput(n *Number) string {
 	return n.unitString()
 }
 
+// isBlankListElem reports whether a list element is "blank" in the sense of
+// dart-sass's Value.isBlank, which governs which elements are dropped from CSS
+// list output: sassNull, or an unbracketed list all of whose elements are
+// themselves blank (which makes the empty list `()` blank). Unlike the
+// declaration-level isBlankValue, an empty string is NOT blank here.
+func isBlankListElem(v Value) bool {
+	switch x := v.(type) {
+	case *Null:
+		return true
+	case *List:
+		if x.Bracketed {
+			return false
+		}
+		for _, e := range x.Elements {
+			if !isBlankListElem(e) {
+				return false
+			}
+		}
+		return true
+	}
+	return false
+}
+
 func serializeList(l *List, compressed, quote bool) string {
 	elems := make([]string, 0, len(l.Elements))
 	for _, e := range l.Elements {
-		if _, isNull := e.(*Null); isNull {
+		// dart-sass omits "blank" elements from CSS list output: sassNull and any
+		// unbracketed list whose members are all themselves blank (so an empty
+		// list `()` in `1 2 () 3` renders as `1 2 3`, not `1 2  3`).
+		if isBlankListElem(e) {
 			continue
 		}
 		// CSS output never parenthesizes a nested list — dart-sass flattens the
