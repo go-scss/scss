@@ -177,6 +177,11 @@ type Import struct{ Imports []ImportItem }
 type ImportItem struct {
 	URL   string
 	Plain bool
+	// Raw is the exact source text of a quoted import URL, quotes included, so a
+	// plain-CSS passthrough import round-trips with its original quote style
+	// (dart-sass preserves `'foo.css'` as single-quoted rather than renormalising
+	// to double quotes). Empty for the url(...) form and interpolated preludes.
+	Raw string
 	// URLInterp holds the plain-CSS import prelude (the `url(...)` wrapper or a
 	// quoted URL) as an interpolation when it contains `#{...}`, so the
 	// interpolation is evaluated at compile time. It is nil for the common

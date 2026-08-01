@@ -310,7 +310,9 @@ func (p *parser) parseImport() Stmt {
 		var item ImportItem
 		urlForm := false
 		if p.peek() == '"' || p.peek() == '\'' {
+			qstart := p.pos
 			item.URL = p.scanQuotedString()
+			item.Raw = p.src[qstart:p.pos]
 		} else if pfx := p.pos; p.match("url(") || p.match("URL(") {
 			// url(...) form -> always a plain passthrough import; the url() wrapper
 			// is preserved verbatim so it round-trips as `@import url(...)`.
