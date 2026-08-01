@@ -123,6 +123,13 @@ type frame struct {
 	// declaration emitted in this frame — including those produced by an
 	// @include or @content inside a nested property block — is prefixed with it.
 	declPrefix string
+	// ruleChain lists the style-rule nodes lexically enclosing this frame, in the
+	// order they nest. Because the CSS tree is flat (nesting is carried in the
+	// compound selector), all of them are direct children of the same output
+	// container. It lets a hoisted @at-root body tell whether the node it lands
+	// after is one of its own ancestor rules — in which case the first hoisted
+	// node continues that rule with no blank line — versus an unrelated sibling.
+	ruleChain []cssNode
 }
 
 // groupInfo tracks source-statement grouping for blank-line insertion.
@@ -265,6 +272,37 @@ func (e *evaluator) evalBody(stmts []Stmt, fr *frame, containerBody bool) {
 func isStyleRuleStmt(s Stmt) bool {
 	_, ok := s.(*StyleRule)
 	return ok
+}
+
+// hoistGroup builds the initial blank-line group state for an @at-root body that
+// is hoisted into an already-populated container. dart separates the first
+// hoisted node from a preceding top-level style rule with a blank line — EXCEPT
+// when that preceding node is the very rule the body was hoisted out of, which
+// the first hoisted node continues without a blank (`foo { color: blue; @at-root
+// bar { … } }` emits `foo` then `bar` gap-free, but a second, independent hoist
+// after `bar` is blank-separated). A body landing in an empty container, or one
+// whose origin rule is the last visible node, therefore starts a fresh group; a
+// body landing after any other node inherits that node's group-end state so the
+// normal style-rule separation applies.
+func hoistGroup(target cssContainer, chain []cssNode) *groupInfo {
+	ch := target.children()
+	var last cssNode
+	for i := len(ch) - 1; i >= 0; i-- {
+		if !isEmptyContainer(ch[i]) {
+			last = ch[i]
+			break
+		}
+	}
+	if last == nil {
+		return &groupInfo{}
+	}
+	for _, a := range chain {
+		if a == last {
+			return &groupInfo{}
+		}
+	}
+	_, isSR := last.(*cssStyleRule)
+	return &groupInfo{any: true, prevWasStyleRule: isSR}
 }
 
 // consumeGroup marks the current group as started and reports whether a blank
@@ -518,6 +556,7 @@ func (e *evaluator) evalStyleRule(n *StyleRule, fr *frame) {
 		hasParent:     true,
 		block:         rule,
 		group:         fr.group,
+		ruleChain:     append(append([]cssNode(nil), fr.ruleChain...), rule),
 	}
 	savedParent := e.currentParent
 	e.currentParent = resolved
@@ -825,6 +864,7 @@ func (e *evaluator) evalMedia(n *Media, fr *frame) {
 		inKeyframeBlock: fr.inKeyframeBlock,
 		atContainer:     !fr.hasParent,
 		group:           &groupInfo{},
+		ruleChain:       fr.ruleChain,
 	}
 	e.evalBody(n.Body, child, !fr.hasParent)
 }
@@ -853,6 +893,7 @@ func (e *evaluator) evalSupports(n *Supports, fr *frame) {
 		atRoot:        fr.atRoot,
 		atContainer:   !fr.hasParent,
 		group:         &groupInfo{},
+		ruleChain:     fr.ruleChain,
 	}
 	e.evalBody(n.Body, child, !fr.hasParent)
 }
@@ -892,7 +933,7 @@ func (e *evaluator) evalAtRoot(n *AtRoot, fr *frame) {
 			rootContainer: e.root,
 			mediaParent:   e.root,
 			atContainer:   true,
-			group:         &groupInfo{},
+			group:         hoistGroup(e.root, fr.ruleChain),
 		}
 		if !excludesRule {
 			// The enclosing style rule is kept, so its selector is re-materialised
@@ -921,7 +962,7 @@ func (e *evaluator) evalAtRoot(n *AtRoot, fr *frame) {
 		hasParent:   fr.hasParent,
 		atRoot:      excludesRule,
 		atContainer: true,
-		group:       &groupInfo{},
+		group:       hoistGroup(fr.container, fr.ruleChain),
 	}
 	e.evalBody(n.Body, child, true)
 }
