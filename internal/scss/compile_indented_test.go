@@ -48,6 +48,8 @@ func TestConvertIndentedContinuation(t *testing.T) {
 		{"forward_keyword", "@forward \"x\" show\n  $a", "@forward \"x\" show\n  $a;"},
 		{"extend_empty", "d\n  @extend\n    a\nb\n  e: f", "d {\n  @extend\n    a;\n}\nb {\n  e: f;\n}"},
 		{"tab_indent", "a\n\tb: c", "a {\n  b: c;\n}"},
+		{"selector_comma_trailing_loud", "a, /* comment */\nb\n  x: y", "a,  \nb {\n  x: y;\n}"},
+		{"selector_inline_loud", "a /* c */ b\n  x: y", "a   b {\n  x: y;\n}"},
 	}
 	for _, c := range cases {
 		if got := convertIndented(c.in); got != c.want {
@@ -294,21 +296,6 @@ func TestTrailingContinues(t *testing.T) {
 	}
 	if trailingContinues("a // + ", true, false) {
 		t.Error("operator in comment stripped")
-	}
-}
-
-func TestStripLineComment(t *testing.T) {
-	if stripLineComment("a // b") != "a " {
-		t.Error("strip")
-	}
-	if stripLineComment(`"//" x`) != `"//" x` {
-		t.Error("slashes in string kept")
-	}
-	if stripLineComment("a b") != "a b" {
-		t.Error("no comment")
-	}
-	if got := stripLineComment(`"a\"b" // c`); got != `"a\"b" ` {
-		t.Errorf("escaped quote in string: %q", got)
 	}
 }
 

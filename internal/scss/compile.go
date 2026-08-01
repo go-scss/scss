@@ -279,7 +279,9 @@ var atKeywords = map[string]bool{
 // backslash or continuation keyword that expects more input. expr enables the
 // arithmetic/expression operators; at enables the at-rule keywords.
 func trailingContinues(seg string, expr, at bool) bool {
-	t := strings.TrimRight(stripLineComment(seg), " \t")
+	// Strip the inline comments the indented lexer drops so a trailing loud
+	// comment (`a, /* c */`) cannot hide the continuation token that precedes it.
+	t := strings.TrimRight(stripIndentedComments(seg), " \t")
 	if t == "" {
 		return false
 	}
@@ -306,28 +308,6 @@ func trailingContinues(seg string, expr, at bool) bool {
 		}
 	}
 	return false
-}
-
-// stripLineComment removes a trailing "//" line comment from a single segment,
-// respecting quotes.
-func stripLineComment(s string) string {
-	for i := 0; i < len(s); i++ {
-		switch c := s[i]; c {
-		case '"', '\'':
-			i++
-			for i < len(s) && s[i] != c {
-				if s[i] == '\\' {
-					i++
-				}
-				i++
-			}
-		case '/':
-			if i+1 < len(s) && s[i+1] == '/' {
-				return s[:i]
-			}
-		}
-	}
-	return s
 }
 
 // stripIndentedComments removes the inline and trailing comments that the
