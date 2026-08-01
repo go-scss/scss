@@ -4,6 +4,8 @@
 package scss_test
 
 import (
+	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -123,6 +125,98 @@ func TestCustomImporter(t *testing.T) {
 	}
 	if !strings.Contains(res.CSS, "42px") {
 		t.Errorf("got %q", res.CSS)
+	}
+}
+
+// TestImporterWithReferrer covers the referrer-aware public importer form: it is
+// given the canonical URL of the file issuing each load and resolves the URL
+// relative to that file first. This reproduces the sass-spec through_other_mixin
+// scenario — a meta.load-css inside a mixin defined in subdir/ must resolve
+// "upstream" relative to subdir/ — proving the referrer is threaded to the public
+// ImporterWithReferrer hook (which takes precedence over Importer).
+func TestImporterWithReferrer(t *testing.T) {
+	files := map[string]string{
+		"_upstream.scss":         "a {b: in main dir}\n",
+		"subdir/_midstream.scss": "@use \"sass:meta\";\n@mixin load-css($m) { @include meta.load-css($m); }\n",
+		"subdir/_upstream.scss":  "a {b: in subdir}\n",
+	}
+	try := func(base, url string) (string, string, bool) {
+		joined := path.Clean(path.Join(base, url))
+		key := path.Join(path.Dir(joined), "_"+path.Base(joined)+".scss")
+		key = strings.TrimPrefix(key, "./")
+		if s, ok := files[key]; ok {
+			return s, key, true
+		}
+		return "", "", false
+	}
+	var sawReferrer bool
+	imp := func(url, referrer string) (string, string, bool) {
+		if referrer != "" {
+			sawReferrer = true
+			if s, key, ok := try(path.Dir(referrer), url); ok {
+				return s, key, true
+			}
+		}
+		return try(".", url)
+	}
+	src := "@use \"subdir/midstream\";\n@include midstream.load-css(\"upstream\");\n"
+	res, err := scss.CompileString(src, &scss.Options{ImporterWithReferrer: imp})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(res.CSS, "in subdir") || strings.Contains(res.CSS, "in main dir") {
+		t.Errorf("referrer-relative resolution failed: %q", res.CSS)
+	}
+	if !sawReferrer {
+		t.Error("importer never received a non-empty referrer")
+	}
+}
+
+// TestImporterWithReferrerPrecedence confirms ImporterWithReferrer takes
+// precedence over a simultaneously-set legacy Importer.
+func TestImporterWithReferrerPrecedence(t *testing.T) {
+	ref := func(url, _ string) (string, string, bool) {
+		if url == "v" {
+			return "$x: 9px;", "v", true
+		}
+		return "", "", false
+	}
+	legacy := func(string) (string, string, bool) { return "$x: 1px;", "v", true }
+	res, err := scss.CompileString("@use \"v\"; .a{w: v.$x}",
+		&scss.Options{Importer: legacy, ImporterWithReferrer: ref})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(res.CSS, "9px") {
+		t.Errorf("ImporterWithReferrer should win over Importer: %q", res.CSS)
+	}
+}
+
+// TestFileImporterReferrerRelative exercises the built-in filesystem importer's
+// referrer-relative branch on real files: a meta.load-css issued from a mixin in
+// sub/_mid.scss resolves "up" relative to sub/, picking sub/_up.scss rather than
+// the entry directory's _up.scss.
+func TestFileImporterReferrerRelative(t *testing.T) {
+	dir := t.TempDir()
+	sub := filepath.Join(dir, "sub")
+	if err := os.MkdirAll(sub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	write := func(p, s string) {
+		if err := os.WriteFile(p, []byte(s), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write(filepath.Join(dir, "input.scss"), "@use \"sub/mid\";\n@include mid.load-css(\"up\");\n")
+	write(filepath.Join(dir, "_up.scss"), "a {b: main}\n")
+	write(filepath.Join(sub, "_mid.scss"), "@use \"sass:meta\";\n@mixin load-css($m) { @include meta.load-css($m); }\n")
+	write(filepath.Join(sub, "_up.scss"), "a {b: sub}\n")
+	res, err := scss.Compile(filepath.Join(dir, "input.scss"), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(res.CSS, "b: sub") || strings.Contains(res.CSS, "b: main") {
+		t.Errorf("on-disk referrer-relative resolution failed: %q", res.CSS)
 	}
 }
 

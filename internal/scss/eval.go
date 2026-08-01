@@ -8,13 +8,26 @@ import (
 	"strings"
 )
 
-// Importer resolves an @use/@import/@forward URL to source text.
-type Importer func(url string) (source string, resolvedURL string, ok bool)
+// Importer resolves an @use/@import/@forward URL to source text. referrer is the
+// canonical URL of the stylesheet issuing the load — the file whose code the
+// evaluator is currently running (a module's own URL for its top-level rules, or
+// a mixin/content block's defining file for a dynamic load nested inside it).
+// Mirroring dart-sass's Importer.canonicalize(url, baseUrl:), an importer resolves
+// url relative to referrer first, then against its configured load paths. referrer
+// is empty for a load issued by the entry stylesheet (which has no canonical URL).
+type Importer func(url, referrer string) (source string, resolvedURL string, ok bool)
 
 type evaluator struct {
-	env          *environment
-	root         *cssRoot
-	importer     Importer
+	env      *environment
+	root     *cssRoot
+	importer Importer
+	// currentURL is the canonical URL of the stylesheet whose code is currently
+	// executing in this evaluator. It is the referrer threaded to the importer so
+	// relative loads resolve relative to the file that issued them: a module's own
+	// URL while its top-level statements run, or a mixin/content block's DEFINING
+	// file while its body runs (dart-sass resolves each load against its AST node's
+	// span.sourceUrl). It is empty for the entry stylesheet.
+	currentURL   string
 	loadedURLs   []string
 	warnings     []string
 	extendEvents []extendEvent
@@ -383,7 +396,7 @@ func (e *evaluator) evalStmt(s Stmt, fr *frame) {
 	case *StyleRule:
 		e.evalStyleRule(n, fr)
 	case *MixinDef:
-		e.env.defineMixin(n.Name, &mixinEntry{def: n, env: e.env, defDepth: len(e.env.scopes)})
+		e.env.defineMixin(n.Name, &mixinEntry{def: n, env: e.env, defDepth: len(e.env.scopes), srcURL: e.currentURL})
 	case *FunctionDef:
 		e.env.defineFunc(n.Name, &funcEntry{def: n, env: e.env, defDepth: len(e.env.scopes)})
 	case *Include:
@@ -690,13 +703,14 @@ func (e *evaluator) evalInclude(n *Include, fr *frame) {
 	}
 	callEnv := e.env
 	pos, named, restSep := e.evalArgs(n.Args)
-	e.invokeMixin(m, pos, named, restSep, n.Content, n.ContentParams, callEnv, fr)
+	e.invokeMixin(m, pos, named, restSep, n.Content, n.ContentParams, callEnv, e.currentURL, fr)
 }
 
 func (e *evaluator) evalContent(n *ContentStmt, fr *frame) {
 	content := e.env.content
 	contentEnv := e.env.contentEnv
 	contentParams := e.env.contentArgs
+	contentURL := e.env.contentURL
 	if content == nil {
 		return
 	}
@@ -710,12 +724,17 @@ func (e *evaluator) evalContent(n *ContentStmt, fr *frame) {
 	e.enter()
 	defer e.leave()
 	saved := e.env
+	// The content block's statements belong to the include site's file, so a
+	// dynamic load inside them resolves relative to that file, not the mixin's.
+	savedURL := e.currentURL
+	e.currentURL = contentURL
 	e.env = contentEnv
 	e.env.pushScope()
 	func() {
 		defer func() {
 			e.env.popScope()
 			e.env = saved
+			e.currentURL = savedURL
 		}()
 		e.bindResolved(contentParams, pos, named, restSep)
 		e.evalBody(content, fr, fr.atContainer)

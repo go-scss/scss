@@ -41,7 +41,7 @@ func TestPlainCSSFunctionBody(t *testing.T) {
 // funcDeclaration when the descriptor has no colon and the input ends: the
 // general statement parser then reports the missing ":".
 func TestPlainCSSFunctionUnterminated(t *testing.T) {
-	imp := func(url string) (string, string, bool) {
+	imp := func(url, _ string) (string, string, bool) {
 		if url == "p" {
 			return "@function --a() { result", "p.css", true
 		}

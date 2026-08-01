@@ -42,7 +42,7 @@ func TestCompileFileError(t *testing.T) {
 // importCandidates explicit-extension (hasSassExt) branch directly.
 func TestFileImporterInternals(t *testing.T) {
 	imp := fileImporter("somewhere", nil)
-	if _, _, ok := imp("sass:math"); ok {
+	if _, _, ok := imp("sass:math", ""); ok {
 		t.Error("fileImporter should not resolve sass: URLs")
 	}
 

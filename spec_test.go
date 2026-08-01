@@ -250,14 +250,35 @@ func importCandidateNames(joined, url string) []string {
 // hrxImporter resolves @use/@forward/@import the way the official sass-spec
 // runner does. The runner materialises the whole spec tree to a root and invokes
 // the compiler with cwd at the case directory and --load-path=<spec-root>. So a
-// url resolves (1) relative to the importing case's directory, then (2) relative
-// to the load-path (spec root) — which, for a within-archive partial, means the
-// HRX's own virtual files keyed under hrxPrefix. A final on-disk fallback covers
-// the handful of shared partials that live beside an archive on disk.
-func hrxImporter(files map[string]string, baseDir, specDir, hrxPrefix string) Importer {
-	return func(url string) (string, string, bool) {
+// url resolves (0) relative to the file issuing the load — the referrer, dart's
+// baseUrl-relative first step — then (1) relative to the importing case's
+// directory, then (2) relative to the load-path (spec root) — which, for a
+// within-archive partial, means the HRX's own virtual files keyed under
+// hrxPrefix. A final on-disk fallback covers the handful of shared partials that
+// live beside an archive on disk.
+func hrxImporter(files map[string]string, baseDir, specDir, hrxPrefix string) ReferrerImporter {
+	return func(url, referrer string) (string, string, bool) {
 		if strings.HasPrefix(url, "sass:") {
 			return "", "", false
+		}
+		// 0) referrer-relative: a load resolves against the directory of the file
+		// that issued it before the case dir or load path (dart's baseUrl). The
+		// referrer is a resolved key — a virtual FS key (slash-separated) or an
+		// on-disk path — so try both flavours of its parent directory.
+		if referrer != "" {
+			relJoined := path.Clean(path.Join(path.Dir(filepath.ToSlash(referrer)), url))
+			for _, c := range importCandidateNames(relJoined, url) {
+				c = strings.TrimPrefix(c, "./")
+				if src, ok := files[c]; ok {
+					return src, c, true
+				}
+			}
+			diskRel := filepath.Clean(filepath.Join(filepath.Dir(referrer), filepath.FromSlash(url)))
+			for _, c := range importCandidateNames(diskRel, url) {
+				if data, err := os.ReadFile(c); err == nil {
+					return string(data), c, true
+				}
+			}
 		}
 		// 1) virtual FS, relative to the case dir.
 		joined := path.Clean(path.Join(baseDir, url))
@@ -378,7 +399,7 @@ func runCase(c specCase) (got string, err error) {
 	return runCaseWith(c, hrxImporter(c.files, c.caseDir, c.specDir, c.hrxPrefix))
 }
 
-func runCaseWith(c specCase, imp Importer) (got string, err error) {
+func runCaseWith(c specCase, imp ReferrerImporter) (got string, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = errFromRecover(r)
@@ -388,7 +409,7 @@ func runCaseWith(c specCase, imp Importer) (got string, err error) {
 	if c.indented {
 		syn = SyntaxIndented
 	}
-	res, e := CompileString(c.input, &Options{Syntax: syn, Style: Expanded, Importer: imp})
+	res, e := CompileString(c.input, &Options{Syntax: syn, Style: Expanded, ImporterWithReferrer: imp})
 	if e != nil {
 		return "", e
 	}
@@ -401,11 +422,11 @@ func runCaseWith(c specCase, imp Importer) (got string, err error) {
 // sass-spec checkout and no partials to carry along.
 func selfContained(c specCase) bool {
 	loadedFile := false
-	imp := func(url string) (string, string, bool) {
+	imp := func(url, referrer string) (string, string, bool) {
 		if !strings.HasPrefix(url, "sass:") {
 			loadedFile = true
 		}
-		return hrxImporter(c.files, c.caseDir, c.specDir, c.hrxPrefix)(url)
+		return hrxImporter(c.files, c.caseDir, c.specDir, c.hrxPrefix)(url, referrer)
 	}
 	got, err := runCaseWith(c, imp)
 	return err == nil && !loadedFile && normalizeCSS(got) == normalizeCSS(c.expected)

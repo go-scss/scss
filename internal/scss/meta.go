@@ -477,7 +477,7 @@ func (e *evaluator) evalMetaApply(n *Include, fr *frame) {
 	if m.user == nil {
 		e.fail("The mixin %s can't be applied with meta.apply().", m.name)
 	}
-	e.invokeMixin(m.user, pos, named, restSep, n.Content, n.ContentParams, e.env, fr)
+	e.invokeMixin(m.user, pos, named, restSep, n.Content, n.ContentParams, e.env, e.currentURL, fr)
 }
 
 // evalMetaLoadCss implements `@include meta.load-css($url, $with:)`.
@@ -507,10 +507,16 @@ func (e *evaluator) evalMetaLoadCss(n *Include, fr *frame) {
 
 // invokeMixin runs a user mixin with pre-resolved arguments, an optional
 // @content block and the environment in which that content was written.
-func (e *evaluator) invokeMixin(m *mixinEntry, pos []Value, named map[string]Value, restSep Separator, content []Stmt, contentParams *ParamList, contentEnv *environment, fr *frame) {
+func (e *evaluator) invokeMixin(m *mixinEntry, pos []Value, named map[string]Value, restSep Separator, content []Stmt, contentParams *ParamList, contentEnv *environment, contentURL string, fr *frame) {
 	e.enter()
 	defer e.leave()
 	saved := e.env
+	// A dynamic load issued from the mixin body (meta.load-css) resolves relative
+	// to the file that DEFINED the mixin, not the include site, so switch the
+	// evaluator's current source URL to the mixin's for the body's duration
+	// (dart-sass resolves a load against its AST node's source URL). Restored after.
+	savedURL := e.currentURL
+	e.currentURL = m.srcURL
 	// Run the mixin in its lexical closure (the scopes visible where it was
 	// defined) rather than mutating the shared definition environment. This keeps
 	// each invocation's local variables private — recursion and nested includes no
@@ -521,15 +527,19 @@ func (e *evaluator) invokeMixin(m *mixinEntry, pos []Value, named map[string]Val
 	savedContent := e.env.content
 	savedContentEnv := e.env.contentEnv
 	savedContentArgs := e.env.contentArgs
+	savedContentURL := e.env.contentURL
 	e.env.content = content
 	e.env.contentEnv = contentEnv
 	e.env.contentArgs = contentParams
+	e.env.contentURL = contentURL
 	defer func() {
 		e.env.content = savedContent
 		e.env.contentEnv = savedContentEnv
 		e.env.contentArgs = savedContentArgs
+		e.env.contentURL = savedContentURL
 		e.env.popScope()
 		e.env = saved
+		e.currentURL = savedURL
 	}()
 	e.evalBody(m.def.Body, fr, fr.atContainer)
 }
@@ -594,6 +604,7 @@ func (e *evaluator) loadCSSInto(url string, config []ConfigVar, fr *frame) {
 	}
 	sub := newEvaluator(e.importer)
 	sub.loadStack = append(append([]string(nil), e.loadStack...), resolved)
+	sub.currentURL = resolved
 	sub.loadedURLs = e.loadedURLs
 	sub.sharedLoaded = e.sharedLoaded
 	e.adoptScope(sub)

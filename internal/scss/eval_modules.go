@@ -479,6 +479,7 @@ func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *
 	}
 	sub := newEvaluator(e.importer)
 	sub.loadStack = append(append([]string(nil), e.loadStack...), resolved)
+	sub.currentURL = resolved
 	sub.loadedURLs = e.loadedURLs
 	sub.sharedLoaded = e.sharedLoaded
 	e.adoptScope(sub)
@@ -707,7 +708,7 @@ func (e *evaluator) resolve(url string) (string, string, bool) {
 	if e.importer == nil {
 		return "", "", false
 	}
-	return e.importer(url)
+	return e.importer(url, e.currentURL)
 }
 
 // evalImportBody inlines a legacy @import's statements into the current frame.
@@ -795,6 +796,11 @@ func (e *evaluator) evalImport(n *Import, fr *frame) {
 		// module (dart keeps such a transitive `as *` from leaking through @import),
 		// so restore the global-module list once the import finishes.
 		savedGlobals := e.env.globalModules
+		// The inlined statements belong to the imported file, so a relative load
+		// nested inside them (a further @import/@use/@forward, or a mixin's
+		// meta.load-css) resolves relative to the imported file, not its importer.
+		savedURL := e.currentURL
+		e.currentURL = resolved
 		if stmtsHaveForward(stmts) {
 			saved := e.incomingConfig
 			e.incomingConfig = e.implicitConfigSnapshot()
@@ -803,6 +809,7 @@ func (e *evaluator) evalImport(n *Import, fr *frame) {
 		} else {
 			e.evalImportBody(stmts, fr)
 		}
+		e.currentURL = savedURL
 		e.env.globalModules = savedGlobals
 		e.importDepth--
 	}

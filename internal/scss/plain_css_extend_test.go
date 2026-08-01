@@ -8,7 +8,7 @@ import "testing"
 // cssMapImporter resolves @use/@import URLs against an in-memory file map,
 // trying a plain-CSS candidate as well so a plain `.css` module can be loaded.
 func cssMapImporter(files map[string]string) Importer {
-	return func(url string) (string, string, bool) {
+	return func(url, _ string) (string, string, bool) {
 		for _, cand := range []string{
 			url, url + ".scss", "_" + url + ".scss",
 			url + ".css", "_" + url + ".css",
