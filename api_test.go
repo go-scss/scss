@@ -72,6 +72,28 @@ func TestFunctionBodyCommentDropped(t *testing.T) {
 	}
 }
 
+// TestSplatBeforePositional verifies that an explicit positional argument
+// written after a spread argument still binds before the spread's elements
+// (`f([1, 2]..., 3)` binds 3 first), matching dart-sass's rest-arguments-last
+// binding order. Byte-verified against dart-sass 1.102.0 (sass-spec
+// callable/arguments::function/error/splat/before_positional).
+func TestSplatBeforePositional(t *testing.T) {
+	res, err := scss.CompileString("a {b: rgb([1, 2]..., 3)}", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "a {\n  b: rgb(3, 1, 2);\n}\n"; res.CSS != want {
+		t.Errorf("builtin: got %q want %q", res.CSS, want)
+	}
+	res, err = scss.CompileString("@function f($a,$b,$c){@return ($a, $b, $c)}\na {x: f([1, 2]..., 3)}\n", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "a {\n  x: 3, 1, 2;\n}\n"; res.CSS != want {
+		t.Errorf("user func: got %q want %q", res.CSS, want)
+	}
+}
+
 func TestCompileStringCompressed(t *testing.T) {
 	res, err := scss.CompileString(".a{x:1}", &scss.Options{Style: scss.Compressed})
 	if err != nil {

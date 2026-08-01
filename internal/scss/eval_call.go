@@ -94,7 +94,7 @@ func (e *evaluator) asNumber(v Value) *Number {
 // dart-sass gives the rest arglist the separator of a spread list argument
 // (space or comma), defaulting to comma when no list is spread.
 func (e *evaluator) evalArgs(args *ArgList) ([]Value, map[string]Value, Separator) {
-	var pos []Value
+	var pos, rest []Value
 	named := map[string]Value{}
 	restSep := SepComma
 	if args == nil {
@@ -113,7 +113,7 @@ func (e *evaluator) evalArgs(args *ArgList) ([]Value, map[string]Value, Separato
 					restSep = s.Sep
 				}
 				for _, el := range s.Elements {
-					pos = append(pos, numWithoutSlash(el))
+					rest = append(rest, numWithoutSlash(el))
 				}
 				// An argument list re-spreads its captured keyword arguments too.
 				for k, v := range s.Keywords {
@@ -126,7 +126,7 @@ func (e *evaluator) evalArgs(args *ArgList) ([]Value, map[string]Value, Separato
 					}
 				}
 			default:
-				pos = append(pos, val)
+				rest = append(rest, val)
 			}
 			continue
 		}
@@ -138,6 +138,13 @@ func (e *evaluator) evalArgs(args *ArgList) ([]Value, map[string]Value, Separato
 			pos = append(pos, val)
 		}
 	}
+	// dart-sass binds every explicit positional argument before the rest (spread)
+	// arguments regardless of written order, so a positional written after a
+	// spread (`rgb([1, 2]..., 3)`) still fills an earlier parameter — a deprecated
+	// but supported form. Appending the spread elements after the explicit
+	// positionals reproduces this; when the spread is last (the usual case) the
+	// order is unchanged.
+	pos = append(pos, rest...)
 	return pos, named, restSep
 }
 
