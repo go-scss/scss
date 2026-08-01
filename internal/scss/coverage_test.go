@@ -112,6 +112,25 @@ func TestSpreadArgs(t *testing.T) {
 	}
 }
 
+// TestKeywordArgDashUnderscore covers the interchangeability of `-` and `_` in
+// keyword argument names: a caller may spell the keyword with underscores while
+// the parameter is declared with hyphens (or vice versa), and a spread map key
+// is matched the same way. Byte-exact against dart-sass 1.102.
+func TestKeywordArgDashUnderscore(t *testing.T) {
+	cases := []struct{ in, want string }{
+		// Keyword underscores match a hyphenated parameter, and vice versa.
+		{"@mixin m($yada-yada) { hi: $yada-yada; } .a{@include m($yada_yada: 1)}", "hi: 1"},
+		{"@function f($cool_arg) { @return $cool-arg; } .a{v: f($cool-arg: 2)}", "v: 2"},
+		// A spread map with an underscore key binds a hyphenated parameter.
+		{"@mixin m($foo-bar) { x: $foo-bar; } $m: (foo_bar: 3); .a{@include m($m...)}", "x: 3"},
+	}
+	for _, c := range cases {
+		if got := compile(t, c.in); !strings.Contains(got, c.want) {
+			t.Errorf("for %q: want %q in %q", c.in, c.want, got)
+		}
+	}
+}
+
 func TestPlaceholderNotEmitted(t *testing.T) {
 	got := compile(t, "%p { x: 1; }")
 	if strings.Contains(got, "%p") || strings.TrimSpace(got) != "" {
