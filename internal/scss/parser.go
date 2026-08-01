@@ -525,7 +525,14 @@ func (p *parser) tryDeclaration() (stmt Stmt, ok bool) {
 		p.consumeStatementEnd()
 		return &Declaration{Name: trimInterp(name), Custom: true, RawValue: raw, NameCol: nameCol}, true
 	}
+	// dart-sass: a name immediately followed (no whitespace) by an interpolated
+	// identifier could be a pseudo-class selector rather than a property, e.g.
+	// `a:nth-child(2n)` or `a:lang(nb)`. When such a construct is then followed
+	// by a block, dart forces it to be reparsed as a style rule. See
+	// _declarationOrBuffer's `couldBeSelector` in stylesheet.dart.
+	posAfterColon := p.pos
 	p.ws()
+	couldBeSelector := p.pos == posAfterColon && p.lookingAtInterpolatedIdentifier()
 	if p.peek() == '{' {
 		// nested declaration namespace, no value
 		body := p.parseBlock()
@@ -538,7 +545,7 @@ func (p *parser) tryDeclaration() (stmt Stmt, ok bool) {
 		p.consumeStatementEnd()
 		return &Declaration{Name: trimInterp(name), Value: val}, true
 	case '{':
-		if selectorLike(val) {
+		if couldBeSelector {
 			return nil, false
 		}
 		body := p.parseBlock()
@@ -556,27 +563,6 @@ func isSelectorLeadByte(c byte) bool {
 		return true
 	}
 	return false
-}
-
-// selectorLike reports whether a parsed value is better understood as part of a
-// selector (identifiers/combinators only, no numbers/strings/colors/operators).
-func selectorLike(e Expr) bool {
-	switch v := e.(type) {
-	case *Ident:
-		return true
-	case *ListExpr:
-		if v.Sep == SepComma {
-			return false
-		}
-		for _, el := range v.Elements {
-			if !selectorLike(el) {
-				return false
-			}
-		}
-		return true
-	default:
-		return false
-	}
 }
 
 // initialPlain returns the leading plain (non-interpolated) text of an Interp,
