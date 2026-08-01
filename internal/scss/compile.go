@@ -277,8 +277,10 @@ var atKeywords = map[string]bool{
 // trailingContinues reports whether the final segment seg (the text after the
 // last newline of the accumulated header) ends with an operator, comma,
 // backslash or continuation keyword that expects more input. expr enables the
-// arithmetic/expression operators; at enables the at-rule keywords.
-func trailingContinues(seg string, expr, at bool) bool {
+// arithmetic/expression operators; atKw is the at-rule keyword ("" when the line
+// is not an at-rule) and enables the at-rule continuation keywords.
+func trailingContinues(seg string, expr bool, atKw string) bool {
+	at := atKw != ""
 	// Strip the inline comments the indented lexer drops so a trailing loud
 	// comment (`a, /* c */`) cannot hide the continuation token that precedes it.
 	t := strings.TrimRight(stripIndentedComments(seg), " \t")
@@ -286,7 +288,16 @@ func trailingContinues(seg string, expr, at bool) bool {
 		return false
 	}
 	switch last := t[len(t)-1]; last {
-	case ',', '\\':
+	case ',':
+		// A trailing comma continues a multi-line selector list (`a,\nb`) and a
+		// @forward member list (`@forward "m" show a,\nb`). In the indented syntax
+		// dart-sass does NOT otherwise extend an at-rule prelude, an expression, or
+		// a declaration/variable value across a trailing comma: such a comma is a
+		// one-element list separator and the next line is a fresh,
+		// indentation-scoped statement (`@each $a in b,` iterates `(b,)`, and
+		// `@extend a,` extends only `a`).
+		return !expr || atKw == "forward"
+	case '\\':
 		return true
 	case '=', '<', '>', '~', '!':
 		if expr {
@@ -593,8 +604,11 @@ func headerIncomplete(acc string, kind int) bool {
 		seg = acc[i+1:]
 	}
 	expr := kind != kSelector
-	at := kind == kAtRule
-	if trailingContinues(seg, expr, at) {
+	var atKw string
+	if kind == kAtRule {
+		atKw = atKeyword(strings.TrimSpace(acc))
+	}
+	if trailingContinues(seg, expr, atKw) {
 		return true
 	}
 	switch kind {

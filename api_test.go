@@ -118,6 +118,33 @@ func TestMediaFeatureStringVerbatim(t *testing.T) {
 	}
 }
 
+// TestSassTrailingCommaContinuation verifies indented-syntax trailing-comma
+// line continuation: a selector list and a @forward member list continue across
+// a trailing comma, but an @extend selector (and other at-rule preludes and
+// expressions) do not — a trailing comma there is a one-element list separator
+// and the next line is a fresh statement. Byte-verified against dart-sass
+// 1.102.0 (sass-spec directives/extend/whitespace::multiple_selectors/comma/sass
+// and directives/forward/whitespace::show/after_comma/sass).
+func TestSassTrailingCommaContinuation(t *testing.T) {
+	opt := &scss.Options{Syntax: scss.SyntaxIndented}
+	// @extend: no continuation — g extends only `a`, and `d` is a separate rule.
+	res, err := scss.CompileString("a\n  b: c\nd\n  e: f\n\ng\n  @extend a,\n  d\n", opt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "a, g {\n  b: c;\n}\n\nd {\n  e: f;\n}\n"; res.CSS != want {
+		t.Errorf("@extend: got %q want %q", res.CSS, want)
+	}
+	// Selector list: continuation across the trailing comma.
+	res, err = scss.CompileString("a,\nb\n  c: d\n", opt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "a,\nb {\n  c: d;\n}\n"; res.CSS != want {
+		t.Errorf("selector: got %q want %q", res.CSS, want)
+	}
+}
+
 func TestCompileStringCompressed(t *testing.T) {
 	res, err := scss.CompileString(".a{x:1}", &scss.Options{Style: scss.Compressed})
 	if err != nil {
