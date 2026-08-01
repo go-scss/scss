@@ -103,7 +103,7 @@ func (e *evaluator) evalArgs(args *ArgList) ([]Value, map[string]Value) {
 			case *Map:
 				for i := range s.Keys {
 					if ks, ok := s.Keys[i].(*SassString); ok {
-						named[ks.Text] = numWithoutSlash(s.Values[i])
+						named[normIdent(ks.Text)] = numWithoutSlash(s.Values[i])
 					}
 				}
 			default:
@@ -112,7 +112,9 @@ func (e *evaluator) evalArgs(args *ArgList) ([]Value, map[string]Value) {
 			continue
 		}
 		if a.Name != "" {
-			named[a.Name] = val
+			// `-` and `_` are interchangeable in Sass identifiers, so a keyword
+			// argument is matched against a parameter dash-normalised.
+			named[normIdent(a.Name)] = val
 		} else {
 			pos = append(pos, val)
 		}
@@ -303,7 +305,7 @@ func (e *evaluator) bindResolved(params *ParamList, pos []Value, named map[strin
 			pi++
 			continue
 		}
-		if v, ok := named[p.Name]; ok {
+		if v, ok := named[normIdent(p.Name)]; ok {
 			e.env.defineVar(p.Name, v)
 			continue
 		}
