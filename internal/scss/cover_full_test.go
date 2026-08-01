@@ -406,11 +406,6 @@ func TestDefensiveDirectCalls(t *testing.T) {
 		t.Errorf("commentInterp(\"\"): %v", got.Parts)
 	}
 
-	// selectorLike default branch (a non-selector value type).
-	if selectorLike(&NumberLit{Val: 1}) {
-		t.Error("selectorLike(number): want false")
-	}
-
 	// resolveInterp tolerates a nil Interp.
 	if got := e.resolveInterp(nil); got != "" {
 		t.Errorf("resolveInterp(nil): %q", got)

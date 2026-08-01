@@ -226,3 +226,36 @@ func TestUnknownDirectiveEdges(t *testing.T) {
 		t.Error("expected error for unterminated interpolation in custom property")
 	}
 }
+
+// TestPseudoClassFunctionalSelectorDisambiguation covers the property-vs-selector
+// ambiguity where a name is immediately followed (no whitespace) by an
+// interpolated identifier in functional-notation form, e.g. `a:nth-child(2n)` or
+// `a:lang(nb)`. dart-sass sets `couldBeSelector` in _declarationOrBuffer and, when
+// such a construct is then followed by a block, forces it to be reparsed as a
+// style rule rather than a nested property. A value that is NOT a bare
+// interpolated identifier after the colon (a number, a whitespace-separated
+// value) stays a nested property. Byte-exact against dart-sass 1.102.
+func TestPseudoClassFunctionalSelectorDisambiguation(t *testing.T) {
+	cases := []struct{ in, out string }{
+		// Functional pseudo-classes: the whole statement is a style rule.
+		{"a:nth-child(2n) {b: c}", "a:nth-child(2n) {\n  b: c;\n}\n"},
+		{"a:lang(nb) {b: c}", "a:lang(nb) {\n  b: c;\n}\n"},
+		{"a:dir(ltr) {b: c}", "a:dir(ltr) {\n  b: c;\n}\n"},
+		{"a:nth-of-type(odd) {b: c}", "a:nth-of-type(odd) {\n  b: c;\n}\n"},
+		// An identifier starting with `n` after `:lang(` is not an An+B microsyntax.
+		{"foo:nth-child(5n) {a: b}", "foo:nth-child(5n) {\n  a: b;\n}\n"},
+		// A plain (non-functional) pseudo-class remains a style rule too.
+		{"a:hover {b: c}", "a:hover {\n  b: c;\n}\n"},
+		// Negatives: a number or a whitespace-separated value after the colon is a
+		// nested-property namespace, not a selector.
+		{".a { foo: 1 { bar: 2 } }", ".a {\n  foo: 1;\n  foo-bar: 2;\n}\n"},
+		{".a { font: 10px { family: serif } }", ".a {\n  font: 10px;\n  font-family: serif;\n}\n"},
+		// A space after the colon makes it a nested property even for an identifier.
+		{".a { foo: & bar { x: 1 } }", ".a {\n  foo: .a bar;\n  foo-x: 1;\n}\n"},
+	}
+	for _, c := range cases {
+		if got := compile(t, c.in); got != c.out {
+			t.Errorf("for %q:\n want: %q\n  got: %q", c.in, c.out, got)
+		}
+	}
+}
