@@ -240,6 +240,40 @@ func filterForwarded(mod *module, n *Forward, prefix string) *module {
 	return out
 }
 
+// isPrivateMember reports whether a member name is private to its module.
+// dart-sass treats a leading "-" or "_" as private; normIdent has already
+// folded "_" to "-", so a single hyphen prefix identifies both spellings.
+func isPrivateMember(name string) bool {
+	return strings.HasPrefix(name, "-")
+}
+
+// publicFuncs returns the subset of a module's functions that form its public
+// API: private members (leading "-"/"_") are visible only inside the defining
+// module, never through a namespace, @use "as *" or @forward. The map is copied
+// so filtering never mutates the module's own resolution environment.
+func publicFuncs(in map[string]*funcEntry) map[string]*funcEntry {
+	out := make(map[string]*funcEntry, len(in))
+	for k, v := range in {
+		if isPrivateMember(k) {
+			continue
+		}
+		out[k] = v
+	}
+	return out
+}
+
+// publicMixins is publicFuncs for mixins.
+func publicMixins(in map[string]*mixinEntry) map[string]*mixinEntry {
+	out := make(map[string]*mixinEntry, len(in))
+	for k, v := range in {
+		if isPrivateMember(k) {
+			continue
+		}
+		out[k] = v
+	}
+	return out
+}
+
 func (e *evaluator) mergeModuleGlobally(mod *module, prefix string) {
 	for k, v := range mod.vars {
 		e.env.setGlobalIfAbsent(prefix+k, v)
@@ -354,8 +388,8 @@ func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *
 	e.emitModuleCSS(sub.root.children(), fr)
 	mod := &module{
 		vars:     sub.env.scopes[0],
-		mixins:   sub.env.mixins,
-		funcs:    sub.env.funcs,
+		mixins:   publicMixins(sub.env.mixins),
+		funcs:    publicFuncs(sub.env.funcs),
 		env:      sub.env,
 		scope:    sub.scope,
 		forwards: sub.forwarded,
