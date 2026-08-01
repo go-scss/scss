@@ -331,40 +331,49 @@ func TestHasWordAndLastToken(t *testing.T) {
 }
 
 func TestTrailingContinues(t *testing.T) {
-	if !trailingContinues("a,", false, false) {
-		t.Error("comma")
+	if !trailingContinues("a,", false, "") {
+		t.Error("comma continues a selector list")
 	}
-	if !trailingContinues("a \\", false, false) {
+	if trailingContinues("a,", true, "") {
+		t.Error("comma does not continue a bare expression")
+	}
+	if trailingContinues("a,", true, "each") {
+		t.Error("comma does not continue an @each prelude")
+	}
+	if !trailingContinues("a,", true, "forward") {
+		t.Error("comma continues a @forward member list")
+	}
+	if !trailingContinues("a \\", false, "") {
 		t.Error("backslash")
 	}
-	if !trailingContinues("a !", true, false) {
+	if !trailingContinues("a !", true, "") {
 		t.Error("bang expr")
 	}
-	if trailingContinues("a !", false, false) {
+	if trailingContinues("a !", false, "") {
 		t.Error("bang non-expr")
 	}
-	if !trailingContinues("a +", true, false) {
+	if !trailingContinues("a +", true, "") {
 		t.Error("spaced plus")
 	}
-	if trailingContinues("10%", true, false) {
+	if trailingContinues("10%", true, "") {
 		t.Error("unit percent not operator")
 	}
-	if !trailingContinues("a and", true, false) {
+	if !trailingContinues("a and", true, "") {
 		t.Error("expr keyword")
 	}
-	if !trailingContinues("x show", false, true) {
+	if !trailingContinues("x show", false, "forward") {
 		t.Error("at keyword")
 	}
-	if trailingContinues("x show", false, false) {
+	if trailingContinues("x show", false, "") {
 		t.Error("at keyword needs at context")
 	}
-	if trailingContinues("", true, true) {
+	if trailingContinues("", true, "forward") {
 		t.Error("empty")
 	}
-	if trailingContinues("plain", true, true) {
+	if trailingContinues("plain", true, "forward") {
 		t.Error("no trailing")
 	}
-	if trailingContinues("a // + ", true, false) {
+	if trailingContinues("a // + ", true, "") {
 		t.Error("operator in comment stripped")
 	}
 }
