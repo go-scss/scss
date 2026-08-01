@@ -30,7 +30,18 @@ func TestConvertIndentedContinuation(t *testing.T) {
 		{"childless_media", "@media screen", "@media screen {}"},
 		{"unknown_atrule_stmt", "@value x 1", "@value x 1;"},
 		{"loud_comment", "/* c */", "/* c */"},
-		{"silent_comment", "// c\na\n  b: d", "// c\na {\n  b: d;\n}"},
+		{"silent_comment", "// c\na\n  b: d", "a {\n  b: d;\n}"},
+		{"silent_comment_spans_deeper", "// c\n  deeper\na\n  b: d", "a {\n  b: d;\n}"},
+		{"trailing_silent", "a\n  b: c // note\n  d: e", "a {\n  b: c;\n  d: e;\n}"},
+		{"trailing_loud", "a\n  b: c; /* f */\n  d: e", "a {\n  b: c;;\n  d: e;\n}"},
+		{"inline_loud_whitespace", "a\n  b: 1 /* f */ 2", "a {\n  b: 1   2;\n}"},
+		{"trailing_silent_directive", "@for $i from 1 through 3 //\n  a\n    b: c", "@for $i from 1 through 3 {\n  a {\n    b: c;\n  }\n}"},
+		{"silent_in_folded_header", "@for $i from //\n  1 through 3\n  a\n    b: c", "@for $i from \n  1 through 3 {\n  a {\n    b: c;\n  }\n}"},
+		{"custom_prop_keeps_loud", "a\n  --b: c /* f */", "a {\n  --b: c /* f */;\n}"},
+		{"custom_prop_keeps_silent", "a\n  --b: c // f", "a {\n  --b: c // f;\n}"},
+		{"url_scheme_slashes_kept", "a\n  b: url(http://ex.com/x) // c", "a {\n  b: url(http://ex.com/x);\n}"},
+		{"comment_in_string_kept", "a\n  b: \"x /* y */ z\"", "a {\n  b: \"x /* y */ z\";\n}"},
+		{"comment_in_interp_kept", "a\n  b: #{1 + 2}px", "a {\n  b: #{1 + 2}px;\n}"},
 		{"crlf", "a\r\n  b: c", "a {\n  b: c;\n}"},
 		{"formfeed", "a\f  b: c", "a {\n  b: c;\n}"},
 		{"blank_lines", "a\n\n  b: c\n", "a {\n  b: c;\n}"},
@@ -42,6 +53,54 @@ func TestConvertIndentedContinuation(t *testing.T) {
 		if got := convertIndented(c.in); got != c.want {
 			t.Errorf("%s:\n got: %q\nwant: %q", c.name, got, c.want)
 		}
+	}
+}
+
+func TestStripIndentedComments(t *testing.T) {
+	cases := []struct{ name, in, want string }{
+		{"plain", "plain", "plain"},
+		{"inline_loud_space", "a /* c */ b", "a   b"},
+		{"trailing_silent", "a // c", "a"},
+		{"silent_keeps_continuation", "a // c\n  b", "a \n  b"},
+		{"silent_no_newline", "a //", "a"},
+		{"loud_in_single_string", "'x // y'", "'x // y'"},
+		{"loud_in_double_string", "\"x /* y */ z\"", "\"x /* y */ z\""},
+		{"escaped_quote_in_string", "\"a\\\"b\"", "\"a\\\"b\""},
+		{"unterminated_string", "'abc", "'abc"},
+		{"interp_kept", "#{a}b", "#{a}b"},
+		{"interp_nested_braces", "#{a{b}}x", "#{a{b}}x"},
+		{"unterminated_interp", "#{ab", "#{ab"},
+		{"url_scheme_slashes", "url(http://x//y)", "url(http://x//y)"},
+		{"url_uppercase", "URL(a)", "URL(a)"},
+		{"url_nested_parens", "url(a(b)c)", "url(a(b)c)"},
+		{"url_quote_inside", "url('a//b')", "url('a//b')"},
+		{"url_escaped_quote", "url(\"a\\\"b\")", "url(\"a\\\"b\")"},
+		{"unterminated_url", "url(abc", "url(abc"},
+		{"not_url_preceded_by_ident", "myurl(x) // c", "myurl(x)"},
+		{"unterminated_loud", "a /* bc", "a"},
+	}
+	for _, c := range cases {
+		if got := stripIndentedComments(c.in); got != c.want {
+			t.Errorf("%s: stripIndentedComments(%q)=%q want %q", c.name, c.in, got, c.want)
+		}
+	}
+}
+
+func TestMatchesURLOpen(t *testing.T) {
+	if !matchesURLOpen("url(x)", 0) {
+		t.Error("url at start")
+	}
+	if !matchesURLOpen("a url(x)", 2) {
+		t.Error("url after space")
+	}
+	if matchesURLOpen("xurl(x)", 1) {
+		t.Error("url preceded by ident is not a url token")
+	}
+	if matchesURLOpen("ur", 0) {
+		t.Error("too short")
+	}
+	if matchesURLOpen("abc(", 0) {
+		t.Error("not url")
 	}
 }
 
