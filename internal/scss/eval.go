@@ -188,6 +188,62 @@ func (e *evaluator) run(stmts []Stmt) {
 	}
 	e.evalBody(stmts, fr, true)
 	e.applyAllExtends()
+	hoistCSSImports(e.root)
+}
+
+// hoistCSSImports reorders the stylesheet's top-level nodes so that plain-CSS
+// @import rules precede style rules, matching dart-sass. dart keeps a contiguous
+// "import region" at the top of the output — the leading run of CSS @import
+// rules and the comments interleaved among them. Once a non-import, non-comment
+// node is emitted the region is frozen; any later top-level @import is spliced
+// back to the end of that region (dart's _endOfImports / _outOfOrderImports).
+func hoistCSSImports(root *cssRoot) {
+	nodes := root.nodes
+	b := 0
+	for b < len(nodes) && isImportRegionNode(nodes[b]) {
+		b++
+	}
+	var out, rest []cssNode
+	for _, n := range nodes[b:] {
+		if isCSSImport(n) {
+			out = append(out, n)
+		} else {
+			rest = append(rest, n)
+		}
+	}
+	if len(out) == 0 {
+		return
+	}
+	// A hoisted @import joins the import region, so it never keeps the blank line
+	// it may have carried after a style rule; the first node left behind starts
+	// the post-import body and likewise sits flush against the imports.
+	for _, n := range out {
+		setBlankBefore(n, false)
+	}
+	if len(rest) > 0 {
+		setBlankBefore(rest[0], false)
+	}
+	newNodes := make([]cssNode, 0, len(nodes))
+	newNodes = append(newNodes, nodes[:b]...)
+	newNodes = append(newNodes, out...)
+	newNodes = append(newNodes, rest...)
+	root.nodes = newNodes
+}
+
+// isCSSImport reports whether a node is a plain-CSS @import at-rule.
+func isCSSImport(n cssNode) bool {
+	a, ok := n.(*cssAtRule)
+	return ok && a.name == "import"
+}
+
+// isImportRegionNode reports whether a node may appear inside the leading import
+// region: a CSS @import rule or a comment (dart lets comments interleave imports).
+func isImportRegionNode(n cssNode) bool {
+	if isCSSImport(n) {
+		return true
+	}
+	_, ok := n.(*cssComment)
+	return ok
 }
 
 func (e *evaluator) evalBody(stmts []Stmt, fr *frame, containerBody bool) {
