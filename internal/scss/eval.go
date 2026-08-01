@@ -330,7 +330,7 @@ func (e *evaluator) evalStmt(s Stmt, fr *frame) {
 	case *MixinDef:
 		e.env.defineMixin(n.Name, &mixinEntry{def: n, env: e.env})
 	case *FunctionDef:
-		e.env.defineFunc(n.Name, &funcEntry{def: n, env: e.env})
+		e.env.defineFunc(n.Name, &funcEntry{def: n, env: e.env, defDepth: len(e.env.scopes)})
 	case *Include:
 		e.evalInclude(n, fr)
 	case *If:
