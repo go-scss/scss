@@ -310,8 +310,9 @@ func (p *parser) parseAtRoot() Stmt {
 
 func (p *parser) parseMedia() Stmt {
 	q := p.parseMediaQueryInterp(func(pp *parser) bool { return pp.peek() == '{' })
+	braceLine := p.lineAt(p.pos)
 	body := p.parseBlock()
-	return &Media{Query: q, Body: body}
+	return &Media{Query: q, Body: body, BraceLine: braceLine}
 }
 
 func (p *parser) parseExtend() Stmt {

@@ -927,7 +927,7 @@ func (e *evaluator) evalMedia(n *Media, fr *frame) {
 		parent = fr.rootContainer
 	}
 
-	at := &cssAtRule{name: "media", params: mediaQueriesString(effective), hasBody: true}
+	at := &cssAtRule{name: "media", params: mediaQueriesString(effective), hasBody: true, braceLine: n.BraceLine}
 	blank := e.consumeGroup(fr)
 	// If this @media bubbled to a container strictly above the enclosing frame's
 	// own container, that container must be split so any following siblings land

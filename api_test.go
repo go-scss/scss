@@ -23,6 +23,21 @@ func TestCompileStringBasic(t *testing.T) {
 	}
 }
 
+// TestMediaBraceTrailingComment verifies that a loud comment written on the
+// opening-brace line of an @media prelude is attached to that brace line rather
+// than dropped to its own line. Output byte-verified against dart-sass 1.102.0
+// (sass-spec libsass-closed-issues/issue_1567).
+func TestMediaBraceTrailingComment(t *testing.T) {
+	res, err := scss.CompileString("@media screen {  /* c */\n  a { x: 1 }\n}\n", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "@media screen { /* c */\n  a {\n    x: 1;\n  }\n}\n"
+	if res.CSS != want {
+		t.Errorf("got %q want %q", res.CSS, want)
+	}
+}
+
 func TestCompileStringCompressed(t *testing.T) {
 	res, err := scss.CompileString(".a{x:1}", &scss.Options{Style: scss.Compressed})
 	if err != nil {
