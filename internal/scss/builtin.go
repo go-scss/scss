@@ -5,8 +5,11 @@ package scss
 
 import (
 	"math"
+	"math/rand/v2"
 	"sort"
+	"strconv"
 	"strings"
+	"sync/atomic"
 )
 
 type builtinFunc func(ci *callInfo) Value
@@ -111,6 +114,7 @@ var mathFns = map[string]builtinFunc{
 	"is-unitless": fnUnitless,
 	"compatible":  fnComparable,
 	"clamp":       fnClamp,
+	"random":      fnRandom,
 }
 
 func unaryMath(f func(float64) float64) builtinFunc {
@@ -181,6 +185,38 @@ func fnMin(ci *callInfo) Value {
 	return best
 }
 
+// randSource is the pseudo-random source backing math.random(). It is a
+// package-level seam so tests can install a deterministic sequence.
+var randSource interface {
+	Float64() float64
+	IntN(n int) int
+} = rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
+
+func fnRandom(ci *callInfo) Value {
+	limit, ok := ci.get(0, "limit")
+	// No argument (or an explicit null $limit) yields a float in [0, 1).
+	if !ok {
+		return numOut(randSource.Float64())
+	}
+	if _, isNull := limit.(*Null); isNull {
+		return numOut(randSource.Float64())
+	}
+	n, isNum := limit.(*Number)
+	if !isNum {
+		ci.e.fail("$limit: %s is not a number.", serializeValue(limit, false))
+	}
+	// $limit's units are ignored (a deprecated behaviour in dart-sass), so the
+	// bare value must be a positive integer.
+	if !fuzzyIsIntC(n.Val) {
+		ci.e.fail("$limit: %s is not an int.", serializeValue(n, false))
+	}
+	li := int(fuzzyRound(n.Val))
+	if li < 1 {
+		ci.e.fail("$limit: Must be greater than 0, was %d.", li)
+	}
+	return numOut(float64(randSource.IntN(li) + 1))
+}
+
 func fnPow(ci *callInfo) Value {
 	b := ci.num(0, "base")
 	x := ci.num(1, "exponent")
@@ -210,12 +246,20 @@ func fnExp(ci *callInfo) Value {
 }
 
 func fnHypot(ci *callInfo) Value {
+	if len(ci.positional) == 0 {
+		ci.e.fail("At least one argument must be passed.")
+	}
+	// dart-sass expresses every argument in the first argument's units and
+	// returns the result carrying those units, so hypot(3cm, 40mm, ...) is a
+	// length in cm rather than a bare number.
+	first := ci.e.asNumber(ci.positional[0])
 	sum := 0.0
 	for _, v := range ci.positional {
 		n := ci.e.asNumber(v)
-		sum += n.Val * n.Val
+		val := n.convertValueToMatch(first)
+		sum += val * val
 	}
-	return numOut(math.Sqrt(sum))
+	return matchUnits(math.Sqrt(sum), first)
 }
 
 func fnLog(ci *callInfo) Value {
@@ -297,9 +341,19 @@ func asListVal(v Value) *List {
 		return l
 	}
 	if m, ok := v.(*Map); ok {
-		return &List{Elements: m.asList(), Sep: SepComma}
+		// A non-empty map is comma-separated; an empty map has an undecided
+		// separator (it is indistinguishable from the literal `()`), matching
+		// dart-sass's SassMap.separator.
+		sep := SepComma
+		if len(m.Keys) == 0 {
+			sep = SepUndecided
+		}
+		return &List{Elements: m.asList(), Sep: sep}
 	}
-	return &List{Elements: []Value{v}, Sep: SepSpace}
+	// A scalar coerces to a single-element list with an undecided separator, so
+	// that combining it (e.g. via list.join) adopts the other operand's
+	// separator rather than forcing spaces.
+	return &List{Elements: []Value{v}, Sep: SepUndecided}
 }
 
 func fnLength(ci *callInfo) Value {
@@ -354,7 +408,11 @@ func fnJoin(ci *callInfo) Value {
 	elems := append(append([]Value(nil), l1.Elements...), l2.Elements...)
 	bracketed := l1.Bracketed
 	if b, ok := ci.get(3, "bracketed"); ok {
-		bracketed = b.isTruthy()
+		// $bracketed: auto (the default) inherits list1's bracketing; any other
+		// value is interpreted for truthiness.
+		if s, isStr := b.(*SassString); !isStr || s.Quoted || s.Text != "auto" {
+			bracketed = b.isTruthy()
+		}
 	}
 	return &List{Elements: elems, Sep: sep, Bracketed: bracketed}
 }
@@ -1002,8 +1060,19 @@ var stringFns = map[string]builtinFunc{
 	"slice":         fnStrSlice,
 	"to-upper-case": fnUpper,
 	"to-lower-case": fnLower,
-	"unique-id":     func(ci *callInfo) Value { return &SassString{Text: "u" + "id00000", Quoted: false} },
+	"unique-id":     fnUniqueID,
 	"split":         fnStrSplit,
+}
+
+// uniqueIDCounter backs string.unique-id(). A monotonic counter guarantees the
+// "every call returns a different value" contract without the tiny collision
+// probability a random id would carry; the leading "u" keeps the result a valid
+// identifier that is unlikely to clash with an author-written id.
+var uniqueIDCounter atomic.Uint64
+
+func fnUniqueID(ci *callInfo) Value {
+	n := uniqueIDCounter.Add(1)
+	return &SassString{Text: "u" + strconv.FormatUint(n, 36), Quoted: false}
 }
 
 func fnQuote(ci *callInfo) Value {
