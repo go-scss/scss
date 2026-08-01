@@ -265,6 +265,10 @@ type AtRule struct {
 	Value      *Interp // may be nil
 	Body       []Stmt  // nil = no block
 	NoBody     bool
+	// BraceLine is the 1-based source line of the body's opening `{` (0 = no
+	// block or unknown), so the serializer can print a block whose sole child is
+	// a loud comment on that line as `@rule { /**/ }` on one line, as dart does.
+	BraceLine int
 }
 
 func (*StyleRule) stmt()   {}
