@@ -94,6 +94,30 @@ func TestSplatBeforePositional(t *testing.T) {
 	}
 }
 
+// TestMediaFeatureStringVerbatim verifies that a media/import feature written
+// structurally (`(min-width:0)`) is canonicalised with a post-colon space,
+// while a feature whose text originates from a string or interpolation
+// (`("min-width:0")`, `(#{$bar})`) is emitted verbatim without re-spacing.
+// Byte-verified against dart-sass 1.102.0 (sass-spec libsass-closed-issues
+// issue_1218 and issue_1322).
+func TestMediaFeatureStringVerbatim(t *testing.T) {
+	for _, tc := range []struct{ in, want string }{
+		{"@media (orientation:landscape) { a{x:1} }", "@media (orientation: landscape) {\n  a {\n    x: 1;\n  }\n}\n"},
+		{"@media screen and (\"min-width:0\") { a{x:1} }", "@media screen and (min-width:0) {\n  a {\n    x: 1;\n  }\n}\n"},
+		{"$f: \"orientation:landscape\";\n@media (#{$f}) { a{x:1} }", "@media (orientation:landscape) {\n  a {\n    x: 1;\n  }\n}\n"},
+		{"@import url(foo.css) (min-width:400px);", "@import url(foo.css) (min-width: 400px);\n"},
+		{"$bar: \"min-width:400px\";\n@import url(foo.css) (#{$bar});", "@import url(foo.css) (min-width:400px);\n"},
+	} {
+		res, err := scss.CompileString(tc.in, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if res.CSS != tc.want {
+			t.Errorf("in %q: got %q want %q", tc.in, res.CSS, tc.want)
+		}
+	}
+}
+
 func TestCompileStringCompressed(t *testing.T) {
 	res, err := scss.CompileString(".a{x:1}", &scss.Options{Style: scss.Compressed})
 	if err != nil {

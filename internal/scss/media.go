@@ -158,22 +158,16 @@ func (p *selParser) mediaInParens() string {
 		}
 		p.pos = save
 	}
-	result := "(" + normalizeMediaFeature(p.declarationValue(false)) + ")"
+	// The feature text is emitted verbatim. A literal `(name:value)` feature has
+	// already had its single post-colon space inserted by the parse-time media
+	// parser (parser_media.go), so re-splitting here would be redundant; a feature
+	// whose text originates from a string or interpolation (`("min-width:0")`,
+	// `(#{$bar})`) must NOT be re-spaced, matching dart-sass, which only
+	// canonicalises structurally-parsed features and leaves interpolated ones as
+	// written.
+	result := "(" + p.declarationValue(false) + ")"
 	p.expectChar(')')
 	return result
-}
-
-// normalizeMediaFeature canonicalises a `<name>: <value>` media feature the way
-// dart-sass does when it re-serializes a parsed media query: exactly one space
-// follows the colon separating the feature name from its value (so an authored
-// `(orientation:landscape)` becomes `(orientation: landscape)`). Range features
-// and boolean features carry no such colon and pass through untouched.
-func normalizeMediaFeature(s string) string {
-	i := strings.IndexByte(s, ':')
-	if i < 0 {
-		return s
-	}
-	return strings.TrimSpace(s[:i]) + ": " + strings.TrimSpace(s[i+1:])
 }
 
 // mediaCondition parses a nested <media-condition>, normalizing the and/or/not
