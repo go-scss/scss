@@ -870,6 +870,16 @@ func (p *parser) parseInterpolatedText(stop func(*parser) bool) *Interp {
 		}
 		c := p.peek()
 		switch {
+		case c == '\\':
+			// A CSS escape: consume the backslash and the following byte verbatim so
+			// an escaped delimiter (`\:`, `\{`, `\"`, `\/`) is identifier text and
+			// never triggers the stop function, a comment scan, or a string scan.
+			// dart-sass consumes escapes as identifier content, so `something\:` is a
+			// type selector, not a `something\` declaration terminated by a colon.
+			sb.WriteByte(p.next())
+			if !p.eof() {
+				sb.WriteByte(p.next())
+			}
 		case c == '#' && p.peekAt(1) == '{':
 			flush()
 			p.pos += 2
