@@ -537,6 +537,10 @@ func (e *evaluator) evalImport(n *Import, fr *frame) {
 	for _, item := range n.Imports {
 		if item.Plain {
 			params := "\"" + item.URL + "\""
+			if item.Raw != "" {
+				// Preserve the original quote style of a plain-CSS passthrough import.
+				params = item.Raw
+			}
 			if item.URLInterp != nil {
 				// A url() prelude carrying interpolation: evaluate it so
 				// `url("...#{$x}...")` resolves at compile time.
