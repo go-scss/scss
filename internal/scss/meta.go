@@ -653,6 +653,16 @@ func (e *evaluator) placeLoadedCSS(nodes []cssNode, fr *frame) {
 	for _, n := range nodes {
 		e.renestLoadedNode(n, fr)
 	}
+	// A meta.load-css inside a style rule bubbles the loaded module's CSS out of
+	// that rule and splits it at the load-css point, exactly as a literally-nested
+	// rule or at-rule does: any declarations that follow must open a fresh copy of
+	// the enclosing selector positioned after the loaded content (dart's
+	// copy-on-bubble). Resetting the open block achieves that. A CSS-less module
+	// contributes nothing to bubble, so the enclosing block stays open and the
+	// surrounding declarations remain in one rule.
+	if hasVisible(nodes) {
+		fr.block = nil
+	}
 }
 
 // renestLoadedNode re-nests one top-level node of loaded CSS under the enclosing
