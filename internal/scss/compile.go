@@ -765,6 +765,24 @@ func convertIndented(src string) string {
 		content := strings.TrimSpace(ll.text)
 		closeTo(ll.indent)
 		pad := strings.Repeat("  ", len(stack))
+		if strings.HasPrefix(content, "\\") {
+			// Indented-syntax selector escape: dart-sass drops a leading
+			// backslash and parses the rest of the line as a selector (never a
+			// declaration, comment or at-rule), so `\:hover` yields the
+			// pseudo-class `:hover` and `\.foo` the class `.foo`.
+			sel := stripIndentedComments(content[1:])
+			ni := -1
+			if idx+1 < len(lls) {
+				ni = lls[idx+1].indent
+			}
+			if ni > ll.indent {
+				out = append(out, pad+sel+" {")
+				stack = append(stack, ll.indent)
+			} else {
+				out = append(out, pad+sel+" {}")
+			}
+			continue
+		}
 		if strings.HasPrefix(content, "/*") {
 			norm := dartIndentedLoudComment(content, ll.indent)
 			out = append(out, pad+norm)
