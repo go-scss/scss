@@ -4,6 +4,7 @@
 package scss
 
 import (
+	"bytes"
 	"math"
 	"strconv"
 	"strings"
@@ -51,6 +52,7 @@ type cssStyleRule struct {
 	blankBefore  bool
 	raw          bool   // plain-CSS rule: emit rawSel verbatim, never extend/resolve
 	rawSel       string // verbatim selector for a plain-CSS rule
+	braceLine    int    // 1-based source line of the rule's `{` (0 = unknown), for trailing-comment placement
 }
 
 func (r *cssStyleRule) cssNode()             {}
@@ -63,6 +65,7 @@ type cssDeclaration struct {
 	raw     string // raw text for custom properties
 	custom  bool
 	nameCol int // source column of the name (custom properties), for re-indentation
+	endLine int // 1-based source line where the value/body ends (0 = unknown), for trailing-comment placement
 }
 
 func (d *cssDeclaration) cssNode() {}
@@ -71,6 +74,7 @@ type cssComment struct {
 	text        string
 	col         int // 0-based source column of the opening `/*`, for re-indentation
 	blankBefore bool
+	line        int // 1-based source line of the opening `/*` (0 = unknown), for trailing-comment placement
 }
 
 func (c *cssComment) cssNode() {}
@@ -91,7 +95,18 @@ func (a *cssAtRule) children() []cssNode  { return a.nodes }
 
 type serializer struct {
 	compressed bool
-	sb         strings.Builder
+	// sb is a bytes.Buffer (not strings.Builder) so a just-written trailing
+	// newline can be truncated when a loud comment attaches to the previous line.
+	sb bytes.Buffer
+}
+
+// trimTrailingNewline removes a single trailing "\n" from the output buffer, so
+// a trailing loud comment can be re-attached to the previous line with a space.
+func (s *serializer) trimTrailingNewline() {
+	b := s.sb.Bytes()
+	if n := len(b); n > 0 && b[n-1] == '\n' {
+		s.sb.Truncate(n - 1)
+	}
 }
 
 func serialize(root *cssRoot, compressed bool) string {
@@ -240,16 +255,16 @@ func (s *serializer) emitNode(n cssNode, depth int) {
 	switch v := n.(type) {
 	case *cssStyleRule:
 		if v.raw {
-			s.emitRule(v.rawSel, v.nodes, depth)
+			s.emitRule(v.rawSel, v.nodes, depth, v.braceLine)
 		} else {
-			s.emitRule(v.selector.serialize(s.compressed), v.nodes, depth)
+			s.emitRule(v.selector.serialize(s.compressed), v.nodes, depth, v.braceLine)
 		}
 	case *cssAtRule:
 		s.emitAtRule(v, depth)
 	case *cssDeclaration:
 		s.emitDecl(v, depth)
 	case *cssComment:
-		s.emitComment(v, depth)
+		s.emitComment(v, depth, false)
 	}
 }
 
@@ -257,12 +272,16 @@ func (s *serializer) emitNode(n cssNode, depth int) {
 // Serializer.visitCssComment: sourceMappingURL/sourceURL comments are dropped,
 // and a multi-line comment's continuation lines are re-indented to the current
 // output depth (bounded by the comment's own source column).
-func (s *serializer) emitComment(v *cssComment, depth int) {
+func (s *serializer) emitComment(v *cssComment, depth int, trailing bool) {
 	// Ignore sourceMappingURL and sourceURL comments (dart-sass drops these).
 	if isSourceURLComment(v.text) {
 		return
 	}
-	s.indent(depth)
+	// A trailing comment is attached to the previous line: the caller has already
+	// written the separating space in place of this comment's leading indent.
+	if !trailing {
+		s.indent(depth)
+	}
 	// In compressed output there is no indentation to re-base against, so the
 	// comment is emitted verbatim; only expanded output re-indents continuation
 	// lines to the current depth.
@@ -378,7 +397,7 @@ func (s *serializer) writeCommentReindented(text string, minIndent, depth int) {
 	}
 }
 
-func (s *serializer) emitRule(selector string, nodes []cssNode, depth int) {
+func (s *serializer) emitRule(selector string, nodes []cssNode, depth, braceLine int) {
 	s.indent(depth)
 	// A multi-line selector (comma list split across lines) indents each of its
 	// continuation lines to the rule's depth, matching dart-sass.
@@ -388,11 +407,11 @@ func (s *serializer) emitRule(selector string, nodes []cssNode, depth int) {
 	s.sb.WriteString(selector)
 	if s.compressed {
 		s.sb.WriteString("{")
-		s.emitDeclList(nodes, depth+1)
+		s.emitDeclList(nodes, depth+1, 0)
 		s.sb.WriteString("}")
 	} else {
 		s.sb.WriteString(" {\n")
-		s.emitDeclList(nodes, depth+1)
+		s.emitDeclList(nodes, depth+1, braceLine)
 		s.indent(depth)
 		s.sb.WriteString("}\n")
 	}
@@ -429,19 +448,21 @@ func (s *serializer) emitAtRule(a *cssAtRule, depth int) {
 	}
 	if s.compressed {
 		s.sb.WriteString("{")
-		s.emitDeclList(a.nodes, depth+1)
+		s.emitDeclList(a.nodes, depth+1, 0)
 		s.sb.WriteString("}")
 	} else {
 		s.sb.WriteString(" {\n")
-		s.emitDeclList(a.nodes, depth+1)
+		s.emitDeclList(a.nodes, depth+1, 0)
 		s.indent(depth)
 		s.sb.WriteString("}\n")
 	}
 }
 
 // emitDeclList emits the children of a block, handling declaration separators
-// and nested rules/at-rules within.
-func (s *serializer) emitDeclList(nodes []cssNode, depth int) {
+// and nested rules/at-rules within. braceLine is the 1-based source line of the
+// block's opening `{` (0 = unknown), used to attach a first-child loud comment
+// that trails the brace.
+func (s *serializer) emitDeclList(nodes []cssNode, depth, braceLine int) {
 	visible := make([]cssNode, 0, len(nodes))
 	for _, n := range nodes {
 		if isEmptyContainer(n) {
@@ -460,11 +481,42 @@ func (s *serializer) emitDeclList(nodes []cssNode, depth int) {
 		}
 		return
 	}
+	// dart-sass does not insert blank lines between nodes inside a block; blank-
+	// line separation only applies at the top level of the stylesheet. A loud
+	// comment on the same source line as the node it follows (or as the opening
+	// brace, when it is the first child) is written on that line rather than its
+	// own, reproducing dart's _isTrailingComment.
+	var prev cssNode
 	for _, n := range visible {
-		// dart-sass does not insert blank lines between nodes inside a block;
-		// blank-line separation only applies at the top level of the stylesheet.
-		s.emitNode(n, depth)
+		if c, ok := n.(*cssComment); ok && !isSourceURLComment(c.text) &&
+			trailingCommentAttaches(c, prev, braceLine) {
+			s.trimTrailingNewline()
+			s.sb.WriteString(" ")
+			s.emitComment(c, depth, true)
+		} else {
+			s.emitNode(n, depth)
+		}
+		prev = n
 	}
+}
+
+// trailingCommentAttaches reports whether loud comment c should be written on
+// the same output line as the node it follows, reproducing dart-sass's
+// _isTrailingComment for the cases go-scss models: a comment following a
+// declaration on the same source line, or a first-child comment on the block's
+// opening-brace line. A comment following a nested block, or one with no line
+// information (compressed output, indented syntax), stays on its own line.
+func trailingCommentAttaches(c *cssComment, prev cssNode, braceLine int) bool {
+	if c.line == 0 {
+		return false
+	}
+	if prev == nil {
+		return braceLine != 0 && c.line == braceLine
+	}
+	if d, ok := prev.(*cssDeclaration); ok {
+		return d.endLine != 0 && c.line == d.endLine
+	}
+	return false
 }
 
 func (s *serializer) emitDecl(d *cssDeclaration, depth int) {
