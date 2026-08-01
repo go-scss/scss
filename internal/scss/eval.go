@@ -1086,14 +1086,18 @@ func (e *evaluator) evalGenericAtRule(n *AtRule, fr *frame) {
 	// Inside a style rule, an unknown at-rule with a block re-materialises the
 	// enclosing selector around its declarations (dart: `div { @foo { a: b } }`
 	// -> `@foo { div { a: b } }`), so it carries the parent selector. At the top
-	// level (no enclosing selector) its declarations stay direct.
+	// level (no enclosing selector) its declarations stay direct. Under an
+	// enclosing @at-root the parent style rule is suppressed, so the at-rule's
+	// declarations also stay direct and the suppression carries through (dart:
+	// `p { @at-root { @foo { a: b } } }` -> `@foo { a: b }`, not `@foo { p { a: b } }`).
 	child := &frame{
 		container:     at,
 		rootContainer: at,
 		mediaParent:   at,
 		parentSel:     fr.parentSel,
 		hasParent:     fr.hasParent,
-		directDecls:   direct || !fr.hasParent,
+		directDecls:   direct || !fr.hasParent || fr.atRoot,
+		atRoot:        fr.atRoot,
 		atContainer:   true,
 		inKeyframes:   keyframes,
 		group:         &groupInfo{},
