@@ -29,6 +29,15 @@ type parser struct {
 	// nested grouping (parens, brackets, function args, interpolation) so a
 	// comparison written there (e.g. `(width < (1 < 2))`) still parses.
 	mediaFeatureStop bool
+	// lastWasUnicodeRange records whether the most recently parsed value element
+	// was a unicode-range token (`U+A?`). A unicode range forms a token boundary,
+	// so a following identifier starts a fresh space-list element even without
+	// intervening whitespace (`U+A?BCDE` -> `U+A? BCDE`).
+	lastWasUnicodeRange bool
+	// cssFuncDepth is the nesting depth inside a plain-CSS custom function
+	// (`@function --a() { … }`), where a `result:` declaration takes a verbatim
+	// custom-property-style token-stream value rather than a SassScript value.
+	cssFuncDepth int
 }
 
 func newParser(src string) *parser {
@@ -452,13 +461,25 @@ func (p *parser) tryDeclaration() (stmt Stmt, ok bool) {
 			stmt, ok = nil, false
 		}
 	}()
+	nameCol := p.columnAt(p.pos)
 	name := p.parseInterpolatedText(func(pp *parser) bool {
 		c := pp.peek()
 		return c == ':' || c == '{' || c == '}' || c == ';' || c == 0
 	})
 	plain, isPlain := name.isPlain()
 	trimmedPlain := strings.TrimSpace(plain)
-	custom := isPlain && strings.HasPrefix(trimmedPlain, "--")
+	// A declaration is a custom property when the *plain prefix* of its name
+	// (the leading text before any interpolation) starts with "--", exactly as
+	// dart-sass keys on `name.initialPlain`. This is decided at parse time, so a
+	// fully-interpolated name (`#{--x}: 1 + 2`) is a normal declaration whose
+	// value is SassScript, while `--#{x}: 1 + 2` is a custom property whose value
+	// is a literal token stream.
+	custom := strings.HasPrefix(initialPlain(name), "--")
+	// Inside a plain-CSS custom function, a plain `result:` declaration (any
+	// case) carries a verbatim token-stream value, like a custom property.
+	if !custom && p.cssFuncDepth > 0 && isPlain && strings.EqualFold(trimmedPlain, "result") {
+		custom = true
+	}
 	// A plain name that is empty (leading `:`/`::` pseudo) or that starts with a
 	// character that can't begin a CSS property is actually a selector.
 	if isPlain && !custom {
@@ -473,7 +494,7 @@ func (p *parser) tryDeclaration() (stmt Stmt, ok bool) {
 	if custom {
 		raw := p.parseCustomPropertyValue()
 		p.consumeStatementEnd()
-		return &Declaration{Name: trimInterp(name), Custom: true, RawValue: raw}, true
+		return &Declaration{Name: trimInterp(name), Custom: true, RawValue: raw, NameCol: nameCol}, true
 	}
 	p.ws()
 	if p.peek() == '{' {
@@ -529,11 +550,125 @@ func selectorLike(e Expr) bool {
 	}
 }
 
+// initialPlain returns the leading plain (non-interpolated) text of an Interp,
+// which is the empty string when the name begins with interpolation.
+func initialPlain(i *Interp) string {
+	if len(i.Parts) > 0 {
+		if s, ok := i.Parts[0].(string); ok {
+			return strings.TrimLeft(s, " \t\n\r\f")
+		}
+	}
+	return ""
+}
+
+// columnAt returns the 0-based column (in bytes, counting a tab as one column,
+// matching dart-sass's SourceSpan columns) of a source position.
+func (p *parser) columnAt(pos int) int {
+	col := 0
+	for i := pos - 1; i >= 0 && p.src[i] != '\n'; i-- {
+		col++
+	}
+	return col
+}
+
+func isCustomWS(c byte) bool {
+	return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f'
+}
+
+// parseCustomPropertyValue scans a custom-property (`--*`) value as a verbatim
+// token stream, evaluating SassScript only inside `#{...}`. Unlike a normal
+// declaration value, `//` is NOT a line comment (it is literal text) while
+// `/* */` loud comments are preserved verbatim. Whitespace is folded exactly as
+// dart-sass folds it in `_interpolatedDeclarationValue`: a whitespace character
+// is only emitted when it is the last of a run (immediately before a
+// non-whitespace character) or when it directly follows a newline, and runs of
+// newlines collapse to a single line feed. Re-indentation of the collapsed
+// value is performed at serialization time.
 func (p *parser) parseCustomPropertyValue() *Interp {
-	return p.parseInterpolatedText(func(pp *parser) bool {
-		c := pp.peek()
-		return c == ';' || c == '}' || c == 0
-	})
+	var parts []any
+	var sb strings.Builder
+	var brackets []byte // stack of expected closers
+	wroteNewline := false
+	flush := func() {
+		if sb.Len() > 0 {
+			parts = append(parts, sb.String())
+			sb.Reset()
+		}
+	}
+	for !p.eof() {
+		c := p.peek()
+		if len(brackets) == 0 && (c == ';' || c == '}') {
+			break
+		}
+		switch {
+		case c == '\\':
+			// An escape is copied verbatim (with its escaped character) so that,
+			// e.g., "\;" does not terminate the value.
+			sb.WriteByte(p.next())
+			if !p.eof() {
+				sb.WriteByte(p.next())
+			}
+			wroteNewline = false
+		case c == '"' || c == '\'':
+			flush()
+			parts = append(parts, p.quotedStringToInterp()...)
+			wroteNewline = false
+		case c == '/' && p.peekAt(1) == '*':
+			sb.WriteByte(p.next()) // /
+			sb.WriteByte(p.next()) // *
+			for !p.eof() && !(p.peek() == '*' && p.peekAt(1) == '/') {
+				sb.WriteByte(p.next())
+			}
+			if !p.eof() {
+				sb.WriteByte(p.next()) // *
+				sb.WriteByte(p.next()) // /
+			}
+			wroteNewline = false
+		case c == '#' && p.peekAt(1) == '{':
+			flush()
+			p.pos += 2
+			p.ws()
+			e := p.parseExpression()
+			p.ws()
+			if p.peek() != '}' {
+				p.fail("Expected \"}\".")
+			}
+			p.next()
+			parts = append(parts, &InterpExpr{Expr: e})
+			wroteNewline = false
+		case c == ' ' || c == '\t':
+			if wroteNewline || !isCustomWS(p.peekAt(1)) {
+				sb.WriteByte(c)
+			}
+			p.next()
+		case c == '\n' || c == '\r' || c == '\f':
+			if p.pos == 0 || !(p.src[p.pos-1] == '\n' || p.src[p.pos-1] == '\r' || p.src[p.pos-1] == '\f') {
+				sb.WriteByte('\n')
+			}
+			p.next()
+			wroteNewline = true
+		case c == '(' || c == '[' || c == '{':
+			sb.WriteByte(p.next())
+			brackets = append(brackets, closeBracket(c))
+			wroteNewline = false
+		case c == ')' || c == ']' || c == '}':
+			// A depth-0 '}' is already handled by the stop check above; ')'/']'
+			// reaching here at depth 0 are stray but tolerated verbatim.
+			if len(brackets) > 0 {
+				brackets = brackets[:len(brackets)-1]
+			}
+			sb.WriteByte(p.next())
+			wroteNewline = false
+		default:
+			sb.WriteByte(p.next())
+			wroteNewline = false
+		}
+	}
+	flush()
+	if len(parts) == 0 {
+		parts = []any{""}
+	}
+	return &Interp{Parts: parts}
 }
 
 func (p *parser) parseStyleRule() Stmt {
@@ -587,6 +722,65 @@ func trimInterp(i *Interp) *Interp {
 	}
 	out.Parts = parts
 	return out
+}
+
+// parseAtRulePrelude reads an unknown at-rule's prelude up to the top-level
+// "{", ";", "}" or EOF. It behaves like parseInterpolatedText but preserves
+// loud comments (`/* … */`) verbatim, matching dart-sass, which keeps loud
+// comments that appear within an unknown directive's value.
+func (p *parser) parseAtRulePrelude() *Interp {
+	var parts []any
+	var sb strings.Builder
+	depth := 0
+	flush := func() {
+		if sb.Len() > 0 {
+			parts = append(parts, sb.String())
+			sb.Reset()
+		}
+	}
+	for !p.eof() {
+		c := p.peek()
+		if depth == 0 && (c == '{' || c == ';' || c == '}') {
+			break
+		}
+		switch {
+		case c == '#' && p.peekAt(1) == '{':
+			flush()
+			p.pos += 2
+			p.ws()
+			e := p.parseExpression()
+			p.ws()
+			if p.peek() != '}' {
+				p.fail("Expected \"}\".")
+			}
+			p.next()
+			parts = append(parts, &InterpExpr{Expr: e})
+		case c == '"' || c == '\'':
+			flush()
+			parts = append(parts, p.quotedStringToInterp()...)
+		case c == '(' || c == '[':
+			depth++
+			sb.WriteByte(p.next())
+		case c == ')' || c == ']':
+			if depth > 0 {
+				depth--
+			}
+			sb.WriteByte(p.next())
+		case c == '/' && p.peekAt(1) == '/' && depth == 0:
+			for !p.eof() && p.peek() != '\n' {
+				p.pos++
+			}
+		case c == '/' && p.peekAt(1) == '*':
+			sb.WriteString(p.scanLoudComment())
+		default:
+			sb.WriteByte(p.next())
+		}
+	}
+	flush()
+	if len(parts) == 0 {
+		parts = []any{""}
+	}
+	return &Interp{Parts: parts}
 }
 
 // parseInterpolatedText reads text (as an Interp) up to a stop predicate,

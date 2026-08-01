@@ -125,6 +125,13 @@ func (e *evaluator) evalCall(x *FuncCall) Value {
 	if x.Namespace == "" && x.Name == "if" {
 		return e.evalIfFunction(x)
 	}
+	// A function name beginning with "--" (e.g. `--a()`) is a custom-property-
+	// style plain-CSS function: dart-sass never resolves it to a Sass function
+	// (hyphen/underscore normalisation would otherwise alias it to a user
+	// function like `__a`), so it always passes through verbatim.
+	if x.Namespace == "" && strings.HasPrefix(x.Name, "--") {
+		return e.plainCSSFunction(x)
+	}
 	// user-defined function?
 	if fn := e.lookupFunc(x.Namespace, x.Name); fn != nil {
 		return e.callUserFunc(fn, x.Args)

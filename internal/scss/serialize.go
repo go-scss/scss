@@ -58,10 +58,11 @@ func (r *cssStyleRule) appendNode(n cssNode) { r.nodes = append(r.nodes, n) }
 func (r *cssStyleRule) children() []cssNode  { return r.nodes }
 
 type cssDeclaration struct {
-	name   string
-	value  Value  // evaluated value (nil for custom properties)
-	raw    string // raw text for custom properties
-	custom bool
+	name    string
+	value   Value  // evaluated value (nil for custom properties)
+	raw     string // raw text for custom properties
+	custom  bool
+	nameCol int // source column of the name (custom properties), for re-indentation
 }
 
 func (d *cssDeclaration) cssNode() {}
@@ -349,12 +350,15 @@ func (s *serializer) emitDecl(d *cssDeclaration, depth int) {
 	s.sb.WriteString(d.name)
 	if d.custom {
 		// Custom-property values are reproduced verbatim (including the space
-		// after the colon) in both output styles.
+		// after the colon). Multiline values are re-indented to the current
+		// nesting level exactly as dart-sass does.
 		s.sb.WriteString(":")
-		s.sb.WriteString(d.raw)
-		if !s.compressed {
-			s.sb.WriteString(";\n")
+		if s.compressed {
+			s.sb.WriteString(d.raw)
+			return
 		}
+		s.writeCustomValue(d.raw, d.nameCol, depth)
+		s.sb.WriteString(";\n")
 		return
 	}
 	val := serializeValue(d.value, s.compressed)
@@ -365,6 +369,104 @@ func (s *serializer) emitDecl(d *cssDeclaration, depth int) {
 		s.sb.WriteString(": ")
 		s.sb.WriteString(val)
 		s.sb.WriteString(";\n")
+	}
+}
+
+// writeCustomValue emits a custom-property value, re-indenting continuation
+// lines of a multiline value to the current output depth, reproducing
+// dart-sass's Serializer._writeCustomProperty / _minimumIndentation logic.
+func (s *serializer) writeCustomValue(value string, nameCol, depth int) {
+	minIndent, kind := customMinIndentation(value)
+	switch kind {
+	case customIndentNone:
+		// No newline: emit verbatim.
+		s.sb.WriteString(value)
+	case customIndentTrailing:
+		// Value ends in a newline with no following content: trim trailing
+		// whitespace and add a single space.
+		s.sb.WriteString(strings.TrimRight(value, " \t\n\r\f"))
+		s.sb.WriteByte(' ')
+	default:
+		if nameCol < minIndent {
+			minIndent = nameCol
+		}
+		s.writeReindented(value, minIndent, depth)
+	}
+}
+
+type customIndentKind int
+
+const (
+	customIndentNone customIndentKind = iota
+	customIndentValue
+	customIndentTrailing
+)
+
+// customMinIndentation returns the least indentation (in leading space/tab
+// characters) of any non-blank line after the first newline of value. kind
+// distinguishes "no newline", "trailing newline only", and "has continuation".
+func customMinIndentation(value string) (int, customIndentKind) {
+	nl := strings.IndexByte(value, '\n')
+	if nl < 0 {
+		return 0, customIndentNone
+	}
+	// A value that ends with a newline (ignoring trailing spaces/tabs) is a
+	// trailing-whitespace value: dart-sass trims it and appends a single space
+	// rather than re-indenting. Because the value contains a newline, trimming
+	// trailing spaces/tabs always stops at a non-whitespace byte (at worst that
+	// newline), so end >= 1.
+	end := len(value)
+	for value[end-1] == ' ' || value[end-1] == '\t' {
+		end--
+	}
+	if value[end-1] == '\n' || value[end-1] == '\r' || value[end-1] == '\f' {
+		return 0, customIndentTrailing
+	}
+	// The value ends with content, so every continuation line begins before the
+	// end of the string; the least leading indentation is the re-indent base.
+	min := len(value)
+	pos := nl + 1
+	for pos < len(value) {
+		j := pos
+		for value[j] == ' ' || value[j] == '\t' {
+			j++
+		}
+		if ind := j - pos; ind < min {
+			min = ind
+		}
+		k := strings.IndexByte(value[pos:], '\n')
+		if k < 0 {
+			break
+		}
+		pos += k + 1
+	}
+	return min, customIndentValue
+}
+
+// writeReindented writes value with each continuation line re-indented: it
+// strips up to minIndent leading whitespace characters and prepends the current
+// output indentation (depth levels of two spaces).
+func (s *serializer) writeReindented(value string, minIndent, depth int) {
+	i := 0
+	// First line, up to the first newline, verbatim.
+	for i < len(value) && value[i] != '\n' {
+		s.sb.WriteByte(value[i])
+		i++
+	}
+	for i < len(value) {
+		// value[i] == '\n'
+		s.sb.WriteByte('\n')
+		i++
+		s.indent(depth)
+		stripped := 0
+		for i < len(value) && stripped < minIndent && (value[i] == ' ' || value[i] == '\t') {
+			i++
+			stripped++
+		}
+		for i < len(value) && value[i] != '\n' {
+			s.sb.WriteByte(value[i])
+			i++
+		}
 	}
 }
 

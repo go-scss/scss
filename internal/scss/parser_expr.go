@@ -47,6 +47,7 @@ func (p *parser) parseSpaceList(stop func(*parser) bool) Expr {
 	first := p.parseValue(stop)
 	elements := []Expr{first}
 	for {
+		prevUnicodeRange := p.lastWasUnicodeRange
 		save := p.pos
 		had := p.ws()
 		// dart-sass separates space-list elements at token boundaries even without
@@ -58,7 +59,7 @@ func (p *parser) parseSpaceList(stop func(*parser) bool) Expr {
 		if save > 0 {
 			prev = p.src[save-1]
 		}
-		adjacentBoundary := prev == '"' || prev == '\'' ||
+		adjacentBoundary := prevUnicodeRange || prev == '"' || prev == '\'' ||
 			p.peek() == '"' || p.peek() == '\'' || p.peek() == '$' ||
 			(p.peek() == '#' && p.peekAt(1) == '{')
 		if (!had && !adjacentBoundary) || stop(p) || p.stopChar() || p.peek() == ',' || !p.canStartValue() {
@@ -93,6 +94,8 @@ func (p *parser) canStartValue() bool {
 		return true
 	case c == '-' || c == '+':
 		return true
+	case c == '%':
+		return true
 	case c == '/':
 		return false
 	case isNameStart(c) || c == '\\':
@@ -102,7 +105,10 @@ func (p *parser) canStartValue() bool {
 }
 
 // parseValue parses a full operator expression (one list element).
-func (p *parser) parseValue(stop func(*parser) bool) Expr { return p.parseOr() }
+func (p *parser) parseValue(stop func(*parser) bool) Expr {
+	p.lastWasUnicodeRange = false
+	return p.parseOr()
+}
 
 func (p *parser) parseOr() Expr {
 	left := p.parseAnd()
@@ -254,13 +260,27 @@ func (p *parser) parseMultiplicative() Expr {
 		save := p.pos
 		p.ws()
 		c := p.peek()
-		if c == '*' || c == '%' {
+		if c == '%' {
+			// A "%" is the modulo operator only when a right-hand operand
+			// follows; a "%" with nothing (or a non-operand) after it is a
+			// literal token (e.g. `b: c %`), left for the space-list parser.
+			p.next()
+			p.ws()
+			if !p.canStartValue() {
+				p.pos = save
+				return left
+			}
+			p.arith++
+			right := p.parseUnary()
+			p.arith--
+			left = &Binary{Op: "%", Left: left, Right: right}
+		} else if c == '*' {
 			p.next()
 			p.ws()
 			p.arith++
 			right := p.parseUnary()
 			p.arith--
-			left = &Binary{Op: string(c), Left: left, Right: right}
+			left = &Binary{Op: "*", Left: left, Right: right}
 		} else if c == '/' {
 			p.next()
 			p.ws()
@@ -348,6 +368,12 @@ func (p *parser) parseUnary() Expr {
 			if isNameStart(n) || n == '\\' {
 				return p.parsePrimary()
 			}
+			// A second leading hyphen makes this a custom-property-style
+			// identifier (`--x`, `--`, `---`, `--1`), e.g. inside `var(--1)`,
+			// not repeated unary negation.
+			if n == '-' {
+				return p.parsePrimary()
+			}
 		}
 		p.next()
 		p.ws()
@@ -382,6 +408,10 @@ func (p *parser) parsePrimary() Expr {
 		return &Ident{Name: "!" + id}
 	case c == '#':
 		return p.parseHashValue()
+	case c == '%':
+		// A lone "%" (no operands) is a literal token, e.g. `b: %` or `b: % c`.
+		p.next()
+		return &Ident{Name: "%"}
 	case isNameStart(c) || c == '\\' || c == '-':
 		return p.parseIdentValue()
 	case c == '/':
@@ -633,6 +663,33 @@ func (p *parser) parseHashValue() Expr {
 	return &Ident{Name: hex}
 }
 
+// parseUnicodeRange parses a CSS unicode-range token (the cursor is on the
+// leading "u"/"U"). It is emitted verbatim, preserving case: `U+1`, `u+1a2b`,
+// `U+1A2B-F9E8`, `U+????`, `U+A?`. A "?" wildcard precludes a range end.
+func (p *parser) parseUnicodeRange() Expr {
+	var sb strings.Builder
+	sb.WriteByte(p.next()) // u/U
+	sb.WriteByte(p.next()) // +
+	digits := 0
+	for digits < 6 && isHexDigit(p.peek()) {
+		sb.WriteByte(p.next())
+		digits++
+	}
+	questions := 0
+	for digits+questions < 6 && p.peek() == '?' {
+		sb.WriteByte(p.next())
+		questions++
+	}
+	if questions == 0 && p.peek() == '-' && isHexDigit(p.peekAt(1)) {
+		sb.WriteByte(p.next()) // -
+		for n := 0; n < 6 && isHexDigit(p.peek()); n++ {
+			sb.WriteByte(p.next())
+		}
+	}
+	p.lastWasUnicodeRange = true
+	return &Ident{Name: sb.String()}
+}
+
 func isHexDigit(c byte) bool {
 	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
 }
@@ -680,6 +737,12 @@ func (p *parser) continueInterpIdent(parts []any) Expr {
 }
 
 func (p *parser) parseIdentValue() Expr {
+	// A unicode range (`U+1A2B`, `u+1a2b`, `U+1-B`, `U+A?`) begins with a lone
+	// "u"/"U" immediately followed by "+" and a hex digit or "?".
+	if (p.peek() == 'u' || p.peek() == 'U') && p.peekAt(1) == '+' &&
+		(isHexDigit(p.peekAt(2)) || p.peekAt(2) == '?') {
+		return p.parseUnicodeRange()
+	}
 	name := p.scanIdentifier()
 	// An identifier that embeds interpolation (`foo#{1}bar`) is an unquoted
 	// interpolated string, not a bare identifier / function / namespace access.

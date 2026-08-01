@@ -323,8 +323,10 @@ func (e *evaluator) assignNamespacedVar(n *VarDecl) {
 func (e *evaluator) evalDeclaration(n *Declaration, fr *frame) {
 	name := fr.declPrefix + e.resolveInterp(n.Name)
 	if n.Custom {
-		raw := strings.TrimRight(e.resolveInterp(n.RawValue), " \t\n\r\f")
-		e.addDecl(fr, &cssDeclaration{name: name, raw: raw, custom: true})
+		// The raw token stream is reproduced verbatim; whitespace was already
+		// folded at parse time and any re-indentation happens at serialization.
+		raw := e.resolveInterp(n.RawValue)
+		e.addDecl(fr, &cssDeclaration{name: name, raw: raw, custom: true, nameCol: n.NameCol})
 		return
 	}
 	if n.Value != nil {
@@ -915,11 +917,20 @@ func (e *evaluator) evalGenericAtRule(n *AtRule, fr *frame) {
 		params = e.resolveInterp(n.Value)
 	}
 	at := &cssAtRule{name: n.Name, params: params, hasBody: !n.NoBody}
-	at.blankBefore = e.consumeGroup(fr)
-	e.liveContainer(fr).appendNode(at)
 	if n.NoBody {
+		// A childless at-rule (`@b c;`) behaves like a declaration: inside a
+		// style rule it stays within the enclosing selector's block, interleaving
+		// with declarations rather than bubbling to the root.
+		if fr.hasParent {
+			e.ensureBlock(fr).appendNode(at)
+		} else {
+			at.blankBefore = e.consumeGroup(fr)
+			e.liveContainer(fr).appendNode(at)
+		}
 		return
 	}
+	at.blankBefore = e.consumeGroup(fr)
+	e.liveContainer(fr).appendNode(at)
 	keyframes := isKeyframesAtRule(n.Name)
 	// A @keyframes body holds keyframe blocks, but a stray declaration written
 	// directly in it (dart tolerates this) is emitted verbatim rather than being

@@ -4,6 +4,7 @@
 package scss
 
 import (
+	"strconv"
 	"strings"
 	"unicode/utf8"
 )
@@ -285,9 +286,11 @@ func (p *selParser) attributeSelector() *attrSel {
 	p.whitespace()
 
 	var value string
+	quoted := false
 	next := p.peek()
 	if next == '\'' || next == '"' {
 		value = p.string()
+		quoted = true
 	} else {
 		value = p.identifier()
 	}
@@ -300,7 +303,7 @@ func (p *selParser) attributeSelector() *attrSel {
 		modifier = &m
 	}
 	p.expectChar(']')
-	return &attrSel{name: name, op: op, value: value, modifier: modifier}
+	return &attrSel{name: name, op: op, value: value, modifier: modifier, quoted: quoted}
 }
 
 func (p *selParser) attributeName() qname {
@@ -626,11 +629,31 @@ func (p *selParser) string() string {
 			break
 		}
 		if c == '\\' {
-			if p.peekAt(1) == '\n' {
-				p.pos += 2
+			p.readChar() // consume backslash
+			if p.eof() {
+				break
+			}
+			if p.peek() == '\n' {
+				p.readChar()
 				continue
 			}
-			sb.WriteString(p.escapeValue())
+			if isHexDigit(p.peek()) {
+				hex := make([]byte, 0, 6)
+				for len(hex) < 6 && !p.eof() && isHexDigit(p.peek()) {
+					hex = append(hex, p.readChar())
+				}
+				if !p.eof() && isSpaceByte(p.peek()) {
+					p.readChar()
+				}
+				cp, _ := strconv.ParseInt(string(hex), 16, 32)
+				if cp == 0 || cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF) {
+					sb.WriteRune('�')
+				} else {
+					sb.WriteRune(rune(cp))
+				}
+				continue
+			}
+			sb.WriteByte(p.readChar()) // literal escaped character
 			continue
 		}
 		sb.WriteByte(p.readChar())
