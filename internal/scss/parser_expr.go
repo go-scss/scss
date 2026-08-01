@@ -61,9 +61,12 @@ func (p *parser) parseSpaceList(stop func(*parser) bool) Expr {
 		}
 		// A close paren/bracket also ends a token: dart-sass separates a following
 		// value into a fresh space-list element even with no whitespace
-		// (`(1 + 2)px` -> `3 px`, `url(x)no-repeat` -> `url(x) no-repeat`).
+		// (`(1 + 2)px` -> `3 px`, `url(x)no-repeat` -> `url(x) no-repeat`). A "%"
+		// likewise ends a percentage literal, so a value glued to it starts a
+		// fresh element (`2%3` -> `2% 3`, `50%foo` -> `50% foo`); a "%" that is
+		// the modulo operator is already consumed before reaching this loop.
 		adjacentBoundary := prevUnicodeRange || prev == '"' || prev == '\'' ||
-			prev == ')' || prev == ']' ||
+			prev == ')' || prev == ']' || prev == '%' ||
 			p.peek() == '"' || p.peek() == '\'' || p.peek() == '$' ||
 			(p.peek() == '#' && p.peekAt(1) == '{')
 		if (!had && !adjacentBoundary) || stop(p) || p.stopChar() || p.peek() == ',' || !p.canStartValue() {

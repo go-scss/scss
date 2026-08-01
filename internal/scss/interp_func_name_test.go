@@ -58,3 +58,24 @@ func TestSpaceListCloseParenAdjacency(t *testing.T) {
 		}
 	}
 }
+
+// TestSpaceListPercentAdjacency covers dart-sass ending a percentage literal at
+// its "%" so a glued-on value starts a fresh space-list element, while a "%"
+// preceded by whitespace stays the modulo operator. Outputs are byte-verified
+// against dart-sass 1.102.
+func TestSpaceListPercentAdjacency(t *testing.T) {
+	cases := []struct{ in, out string }{
+		{"a { b: 2%3; }\n", "a {\n  b: 2% 3;\n}\n"},
+		{"a { b: 50%foo; }\n", "a {\n  b: 50% foo;\n}\n"},
+		{"$x: 5;\na { b: 50%$x; }\n", "a {\n  b: 50% 5;\n}\n"},
+		// whitespace before "%" keeps modulo: 2 % 3 == 2.
+		{"a { b: 2  %3; }\n", "a {\n  b: 2;\n}\n"},
+		// subtraction still binds across "%": 50%-10% == 40%.
+		{"a { b: 50%-10%; }\n", "a {\n  b: 40%;\n}\n"},
+	}
+	for _, c := range cases {
+		if got := compile(t, c.in); got != c.out {
+			t.Errorf("for %q:\n want: %q\n  got: %q", c.in, c.out, got)
+		}
+	}
+}
