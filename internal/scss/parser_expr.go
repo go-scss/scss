@@ -129,7 +129,7 @@ func (p *parser) parseOr() Expr {
 	for {
 		save := p.pos
 		p.ws()
-		if p.matchKeyword("or") {
+		if p.matchOperator("or") {
 			p.ws()
 			right := p.parseAnd()
 			left = &Binary{Op: "or", Left: left, Right: right}
@@ -145,7 +145,7 @@ func (p *parser) parseAnd() Expr {
 	for {
 		save := p.pos
 		p.ws()
-		if p.matchKeyword("and") {
+		if p.matchOperator("and") {
 			p.ws()
 			right := p.parseNot()
 			left = &Binary{Op: "and", Left: left, Right: right}
@@ -158,7 +158,7 @@ func (p *parser) parseAnd() Expr {
 
 func (p *parser) parseNot() Expr {
 	save := p.pos
-	if p.matchKeyword("not") {
+	if p.matchOperator("not") {
 		p.ws()
 		return &Unary{Op: "not", Expr: p.parseNot()}
 	}
@@ -959,6 +959,22 @@ func (p *parser) parseCalc(name string) Expr {
 
 func (p *parser) matchKeyword(kw string) bool {
 	if strings.HasPrefix(strings.ToLower(p.src[p.pos:min(p.pos+len(kw)+1, len(p.src))]), kw) {
+		after := p.peekAt(len(kw))
+		if !isNameChar(after) {
+			p.pos += len(kw)
+			return true
+		}
+	}
+	return false
+}
+
+// matchOperator matches a SassScript operator keyword (`and`, `or`, `not`)
+// case-sensitively. Unlike the contextual keyword `using`, dart-sass treats
+// these as operators only in lowercase: `NOT`/`AND`/`OR` are ordinary
+// identifiers, so `NOT()` calls a function named NOT and `true AND false` is a
+// three-element space list.
+func (p *parser) matchOperator(kw string) bool {
+	if strings.HasPrefix(p.src[p.pos:], kw) {
 		after := p.peekAt(len(kw))
 		if !isNameChar(after) {
 			p.pos += len(kw)
