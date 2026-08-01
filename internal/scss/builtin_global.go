@@ -118,6 +118,8 @@ func registerGlobals() {
 		"function-exists":        fnFunctionExists,
 		"mixin-exists":           fnMixinExists,
 		"content-exists":         metaFns["content-exists"],
+		"get-function":           fnGetFunction,
+		"call":                   fnCall,
 	}
 	for k, v := range m {
 		globalFns[k] = v
