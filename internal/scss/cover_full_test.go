@@ -145,7 +145,7 @@ func TestBuiltinBranches(t *testing.T) {
 		".a{v: inspect((1, 2))}":                                              "1, 2",       // inspect comma list
 		".a{v: inspect(list.slash(1, 2))}":                                    "1 / 2",      // inspect slash list
 		"@mixin m($a...){ x: inspect(keywords($a)) } .a{ @include m($x: 1) }": "",           // keywords
-		".a{v: unique-id()}":                                                  "uid",        // unique-id
+		".a{v: unique-id()}":                                                  "v: u",       // unique-id (u-prefixed base36 id)
 		".a{v: str-insert(\"abc\", \"X\", -100)}":                             "",           // str-insert pos<0
 		".a{v: str-insert(\"abc\", \"X\", 100)}":                              "",           // str-insert pos>len
 		".a{v: str-slice(\"abc\", -100)}":                                     "",           // str-slice start<1

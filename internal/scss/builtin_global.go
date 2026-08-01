@@ -63,6 +63,7 @@ func registerGlobals() {
 		"unit":       mathFns["unit"],
 		"unitless":   mathFns["is-unitless"],
 		"comparable": mathFns["compatible"],
+		"random":     mathFns["random"],
 
 		// strings
 		"quote":         stringFns["quote"],

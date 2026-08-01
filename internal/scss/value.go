@@ -88,7 +88,15 @@ func (n *Number) equals(o Value) bool {
 	if !ok {
 		return false
 	}
-	a, aok := n.compatConvert(on)
+	// Equality is unit-strict, matching dart-sass's SassNumber ==: a unitless
+	// number equals only another unitless number, and a number with units
+	// equals another only when their units are mutually convertible. This is
+	// stricter than the arithmetic/comparison path (compatConvert), where a
+	// unitless operand is treated as compatible with any unit.
+	if n.hasUnits() != on.hasUnits() {
+		return false
+	}
+	a, aok := convertUnits(n.Val, n.Numer, n.Denom, on.Numer, on.Denom)
 	if !aok {
 		return false
 	}
@@ -105,12 +113,14 @@ func (n *Number) unitString() string {
 	if len(n.Denom) == 0 {
 		return num
 	}
-	if num == "" {
-		num = "1"
-	}
 	den := strings.Join(n.Denom, "*")
 	if len(n.Denom) > 1 {
 		den = "(" + den + ")"
+	}
+	// A pure-denominator unit (no numerators) serialises with a negative
+	// exponent, matching dart-sass: "px^-1", "(px*em*rad)^-1".
+	if num == "" {
+		return den + "^-1"
 	}
 	return num + "/" + den
 }
