@@ -112,6 +112,37 @@ func TestLoadCSSNestedAtRule(t *testing.T) {
 	}
 }
 
+// TestLoadCSSBubbleSplitsRule mirrors sass-spec css/font-face bubble/loaded/
+// meta-load-css: a @font-face loaded via meta.load-css inside a style rule
+// bubbles out ABOVE the enclosing rule, and the rule is split so a trailing
+// declaration lands in a fresh copy after the bubbled at-rule. Verified against
+// dart-sass 1.102.
+func TestLoadCSSBubbleSplitsRule(t *testing.T) {
+	got := renderRenest(t, map[string]string{
+		"input":       "c {@include meta.load-css(\"other\"); d: e}\n",
+		"_other.scss": "@font-face {a: b}\n",
+	})
+	want := "@font-face {\n  a: b;\n}\nc {\n  d: e;\n}\n"
+	if got != want {
+		t.Fatalf("got %q want %q", got, want)
+	}
+}
+
+// TestLoadCSSCsslessKeepsRuleOpen covers the CSS-less branch of placeLoadedCSS:
+// a loaded module that emits no CSS contributes nothing to bubble, so the
+// enclosing style rule is NOT split and the surrounding declarations stay in one
+// rule. Verified against dart-sass 1.102.
+func TestLoadCSSCsslessKeepsRuleOpen(t *testing.T) {
+	got := renderRenest(t, map[string]string{
+		"input":       "c {p: q; @include meta.load-css(\"empty\"); d: e}\n",
+		"_empty.scss": "$x: 1;\n",
+	})
+	want := "c {\n  p: q;\n  d: e;\n}\n"
+	if got != want {
+		t.Fatalf("got %q want %q", got, want)
+	}
+}
+
 // TestLoadCSSPlainParseError covers the error branch of loadCSSInto's plain-CSS
 // path: a malformed .css file loaded through meta.load-css surfaces a Sass error.
 func TestLoadCSSPlainParseError(t *testing.T) {
