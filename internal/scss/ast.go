@@ -244,10 +244,16 @@ type LoudComment struct {
 
 // AtRule is a generic unknown at-rule (@font-face, @keyframes, @page, ...).
 type AtRule struct {
-	Name   string
-	Value  *Interp // may be nil
-	Body   []Stmt  // nil = no block
-	NoBody bool
+	Name string
+	// NameInterp, when non-nil, is an interpolated at-rule name (`@#{expr}…`).
+	// dart-sass treats any interpolated at-rule as unknown/generic (its special
+	// parse-time behaviour, if any, is not triggered), except @keyframes whose
+	// behaviour is applied at eval time once the name resolves. The resolved
+	// string overrides Name during evaluation.
+	NameInterp *Interp
+	Value      *Interp // may be nil
+	Body       []Stmt  // nil = no block
+	NoBody     bool
 }
 
 func (*StyleRule) stmt()   {}

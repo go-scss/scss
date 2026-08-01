@@ -7,6 +7,17 @@ import "strings"
 
 func (p *parser) parseAtRule() Stmt {
 	p.next() // @
+	// An interpolated at-rule name (`@#{expr}…`) is always parsed as a generic
+	// (unknown) at-rule: none of the built-in at-rules' parse-time behaviour is
+	// triggered. Only take this path when interpolation is actually present;
+	// otherwise fall back to the canonical identifier scanner unchanged so the
+	// static-name dispatch below is byte-for-byte identical to before.
+	if save := p.pos; true {
+		if nameInterp, dynamic := p.scanInterpolatedIdentifier(); dynamic {
+			return p.parseGenericAtRuleInterp(nameInterp)
+		}
+		p.pos = save
+	}
 	name := p.scanIdentifier()
 	// `@function` (case-insensitively) followed by a custom-property-style name
 	// (`--a`) is the plain-CSS custom-function at-rule, not a Sass function
@@ -615,6 +626,62 @@ func (p *parser) parseConfig() []ConfigVar {
 		}
 	}
 	return cfg
+}
+
+// scanInterpolatedIdentifier reads an at-rule name that may embed `#{…}`
+// interpolations, returning the accumulated interpolation and whether any
+// dynamic `#{…}` part was present. It scans greedily; the caller restores the
+// cursor and uses the canonical scanIdentifier when no interpolation is found,
+// so a purely-static name is unaffected. It never fails: if nothing consumable
+// starts the name it returns (nil, false).
+func (p *parser) scanInterpolatedIdentifier() (*Interp, bool) {
+	b := &interpBuf{}
+	dynamic := false
+	started := false
+	unit := func() bool {
+		switch {
+		case p.peek() == '#' && p.peekAt(1) == '{':
+			b.addExpr(p.readInterpExpr())
+			dynamic = true
+			return true
+		case p.peek() == '\\':
+			b.writeString(p.scanEscape(!started))
+			return true
+		case isNameChar(p.peek()):
+			b.writeByte(p.next())
+			return true
+		}
+		return false
+	}
+	for p.peek() == '-' {
+		b.writeByte(p.next())
+		started = true
+	}
+	for unit() {
+		started = true
+	}
+	if !started {
+		return nil, false
+	}
+	return b.done(), dynamic
+}
+
+// parseGenericAtRuleInterp parses the prelude and optional body of a generic
+// at-rule whose name is interpolated, mirroring parseGenericAtRule but carrying
+// the interpolated name for eval-time resolution.
+func (p *parser) parseGenericAtRuleInterp(name *Interp) Stmt {
+	p.ws()
+	value := p.parseAtRulePrelude()
+	v := trimInterp(value)
+	if plain, ok := v.isPlain(); ok && plain == "" {
+		v = nil
+	}
+	if p.peek() == '{' {
+		body := p.parseBlock()
+		return &AtRule{NameInterp: name, Value: v, Body: body}
+	}
+	p.consumeStatementEnd()
+	return &AtRule{NameInterp: name, Value: v, NoBody: true}
 }
 
 func (p *parser) parseGenericAtRule(name string) Stmt {
