@@ -533,6 +533,28 @@ func (e *evaluator) resolve(url string) (string, string, bool) {
 	return e.importer(url)
 }
 
+// evalImportBody inlines a legacy @import's statements into the current frame.
+// At a container (stylesheet root or an at-rule body) the imported statements
+// are ordinary top-level nodes and take part in the container's blank-line
+// grouping. Inlined into a style rule, they are rule-body content: nested rules
+// are blank-separated from nothing (dart never blanks rule-body siblings), so
+// only the block is reset before each nested block statement (dart splits the
+// enclosing rule) without opening a blank-line group or a new variable scope —
+// the import shares the importing scope.
+func (e *evaluator) evalImportBody(stmts []Stmt, fr *frame) {
+	if fr.atContainer {
+		e.evalBody(stmts, fr, true)
+		return
+	}
+	for _, s := range stmts {
+		switch s.(type) {
+		case *StyleRule, *Media, *Supports, *AtRoot, *AtRule:
+			fr.block = nil
+		}
+		e.evalStmt(s, fr)
+	}
+}
+
 func (e *evaluator) evalImport(n *Import, fr *frame) {
 	for _, item := range n.Imports {
 		if item.Plain {
@@ -599,10 +621,10 @@ func (e *evaluator) evalImport(n *Import, fr *frame) {
 		if stmtsHaveForward(stmts) {
 			saved := e.incomingConfig
 			e.incomingConfig = e.implicitConfigSnapshot()
-			e.evalBody(stmts, fr, true)
+			e.evalImportBody(stmts, fr)
 			e.incomingConfig = saved
 		} else {
-			e.evalBody(stmts, fr, true)
+			e.evalImportBody(stmts, fr)
 		}
 		e.env.globalModules = savedGlobals
 		e.importDepth--
