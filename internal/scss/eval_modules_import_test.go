@@ -11,7 +11,7 @@ import (
 // mapImporter resolves @use/@forward/@import URLs against an in-memory file map,
 // applying the usual partial/extension candidate rules (_name.scss, name.scss).
 func mapImporter(files map[string]string) Importer {
-	return func(url, _ string) (string, string, bool) {
+	return func(url, _ string, _ bool) (string, string, bool) {
 		if strings.HasPrefix(url, "sass:") {
 			return "", "", false
 		}

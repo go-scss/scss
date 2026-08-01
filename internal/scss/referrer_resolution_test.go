@@ -34,7 +34,7 @@ func referrerImporter(files map[string]string) Importer {
 		}
 		return "", "", false
 	}
-	return func(url, referrer string) (string, string, bool) {
+	return func(url, referrer string, _ bool) (string, string, bool) {
 		if strings.HasPrefix(url, "sass:") {
 			return "", "", false
 		}

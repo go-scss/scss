@@ -13,7 +13,7 @@ import (
 // keys exercises the plain-CSS loading path.
 func pcssImp(t *testing.T, src string, files map[string]string) string {
 	t.Helper()
-	imp := func(url, _ string) (string, string, bool) {
+	imp := func(url, _ string, _ bool) (string, string, bool) {
 		if s, ok := files[url]; ok {
 			return s, url + ".css", true
 		}
@@ -144,7 +144,7 @@ func TestPlainCSSImportPaths(t *testing.T) {
 		t.Errorf("diamond @use css: %q", got)
 	}
 	// A malformed plain-CSS file surfaces its parse error through @use and @import.
-	badImp := func(url, _ string) (string, string, bool) { return "}", url + ".css", true }
+	badImp := func(url, _ string, _ bool) (string, string, bool) { return "}", url + ".css", true }
 	if _, err := Render(`@use "p";`, false, false, badImp); err == nil {
 		t.Error("@use of malformed .css: want error")
 	}

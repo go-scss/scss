@@ -429,7 +429,8 @@ func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *
 		e.reEmitImportedCSS(m, fr)
 		return m
 	}
-	src, resolved, ok := e.resolve(url)
+	// @use/@forward/meta.load-css resolve a real module, never an import-only file.
+	src, resolved, ok := e.resolve(url, false)
 	if !ok {
 		e.fail("Can't find stylesheet to import: %s", url)
 	}
@@ -691,7 +692,9 @@ func (e *evaluator) hoistImportedGlobalVarSlots(n *Import, env *environment, see
 		if item.Plain {
 			continue
 		}
-		src, resolved, ok := e.resolve(item.URL)
+		// Pre-hoisting a legacy @import's global var slots: resolve exactly as the
+		// real import will, honouring import-only precedence.
+		src, resolved, ok := e.resolve(item.URL, true)
 		if !ok || seen[resolved] || strings.HasSuffix(resolved, ".css") {
 			continue
 		}
@@ -704,11 +707,11 @@ func (e *evaluator) hoistImportedGlobalVarSlots(n *Import, env *environment, see
 	}
 }
 
-func (e *evaluator) resolve(url string) (string, string, bool) {
+func (e *evaluator) resolve(url string, forImport bool) (string, string, bool) {
 	if e.importer == nil {
 		return "", "", false
 	}
-	return e.importer(url, e.currentURL)
+	return e.importer(url, e.currentURL, forImport)
 }
 
 // evalImportBody inlines a legacy @import's statements into the current frame.
@@ -758,7 +761,9 @@ func (e *evaluator) evalImport(n *Import, fr *frame) {
 			fr.container.appendNode(at)
 			continue
 		}
-		src, resolved, ok := e.resolve(item.URL)
+		// A legacy @import prefers an import-only file (x.import.scss) of the same
+		// name over the ordinary file, so ask the importer with forImport = true.
+		src, resolved, ok := e.resolve(item.URL, true)
 		if !ok {
 			// treat as plain CSS import passthrough
 			at := &cssAtRule{name: "import", params: "\"" + item.URL + "\"", hasBody: false}

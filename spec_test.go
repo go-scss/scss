@@ -227,18 +227,36 @@ type specCase struct {
 // math.random assert via @error and expect empty output.css).
 func (c specCase) applicable() bool { return c.mode == "" && !c.errCase }
 
-// importCandidateNames returns partial/extension/index candidates for url.
-func importCandidateNames(joined, url string) []string {
+// importCandidateNames returns partial/extension/index candidates for url. When
+// forImport is set (a legacy @import), import-only files (x.import.scss and a
+// directory's index.import.scss) take precedence, mirroring Dart Sass.
+func importCandidateNames(joined, url string, forImport bool) []string {
 	name := path.Base(joined)
 	parent := path.Dir(joined)
 	exts := []string{".scss", ".sass", ".css"}
 	hasExt := strings.HasSuffix(url, ".scss") || strings.HasSuffix(url, ".sass") || strings.HasSuffix(url, ".css")
 	var cands []string
 	if hasExt {
+		if forImport {
+			ext := path.Ext(joined)
+			stem := strings.TrimSuffix(joined, ext)
+			stemName := strings.TrimSuffix(name, ext)
+			cands = append(cands, stem+".import"+ext, path.Join(parent, "_"+stemName+".import"+ext))
+		}
 		cands = append(cands, joined, path.Join(parent, "_"+name))
 	} else {
+		if forImport {
+			for _, e := range exts {
+				cands = append(cands, joined+".import"+e, path.Join(parent, "_"+name+".import"+e))
+			}
+		}
 		for _, e := range exts {
 			cands = append(cands, joined+e, path.Join(parent, "_"+name+e))
+		}
+		if forImport {
+			for _, e := range exts {
+				cands = append(cands, path.Join(joined, "index.import"+e), path.Join(joined, "_index.import"+e))
+			}
 		}
 		for _, e := range exts {
 			cands = append(cands, path.Join(joined, "index"+e), path.Join(joined, "_index"+e))
@@ -257,7 +275,7 @@ func importCandidateNames(joined, url string) []string {
 // hrxPrefix. A final on-disk fallback covers the handful of shared partials that
 // live beside an archive on disk.
 func hrxImporter(files map[string]string, baseDir, specDir, hrxPrefix string) ReferrerImporter {
-	return func(url, referrer string) (string, string, bool) {
+	return func(url, referrer string, forImport bool) (string, string, bool) {
 		if strings.HasPrefix(url, "sass:") {
 			return "", "", false
 		}
@@ -267,14 +285,14 @@ func hrxImporter(files map[string]string, baseDir, specDir, hrxPrefix string) Re
 		// on-disk path — so try both flavours of its parent directory.
 		if referrer != "" {
 			relJoined := path.Clean(path.Join(path.Dir(filepath.ToSlash(referrer)), url))
-			for _, c := range importCandidateNames(relJoined, url) {
+			for _, c := range importCandidateNames(relJoined, url, forImport) {
 				c = strings.TrimPrefix(c, "./")
 				if src, ok := files[c]; ok {
 					return src, c, true
 				}
 			}
 			diskRel := filepath.Clean(filepath.Join(filepath.Dir(referrer), filepath.FromSlash(url)))
-			for _, c := range importCandidateNames(diskRel, url) {
+			for _, c := range importCandidateNames(diskRel, url, forImport) {
 				if data, err := os.ReadFile(c); err == nil {
 					return string(data), c, true
 				}
@@ -282,7 +300,7 @@ func hrxImporter(files map[string]string, baseDir, specDir, hrxPrefix string) Re
 		}
 		// 1) virtual FS, relative to the case dir.
 		joined := path.Clean(path.Join(baseDir, url))
-		for _, c := range importCandidateNames(joined, url) {
+		for _, c := range importCandidateNames(joined, url, forImport) {
 			c = strings.TrimPrefix(c, "./")
 			if src, ok := files[c]; ok {
 				return src, c, true
@@ -292,7 +310,7 @@ func hrxImporter(files map[string]string, baseDir, specDir, hrxPrefix string) Re
 		// under hrxPrefix, so strip that prefix to get the virtual key.
 		if hrxPrefix != "" && strings.HasPrefix(url, hrxPrefix+"/") {
 			rel := strings.TrimPrefix(url, hrxPrefix+"/")
-			for _, c := range importCandidateNames(rel, url) {
+			for _, c := range importCandidateNames(rel, url, forImport) {
 				c = strings.TrimPrefix(c, "./")
 				if src, ok := files[c]; ok {
 					return src, c, true
@@ -305,7 +323,7 @@ func hrxImporter(files map[string]string, baseDir, specDir, hrxPrefix string) Re
 		if specDir != "" && hrxPrefix != "" {
 			caseOnDisk := filepath.Join(specDir, filepath.FromSlash(hrxPrefix), filepath.FromSlash(baseDir))
 			diskJoined := filepath.Clean(filepath.Join(caseOnDisk, filepath.FromSlash(url)))
-			for _, c := range importCandidateNames(diskJoined, url) {
+			for _, c := range importCandidateNames(diskJoined, url, forImport) {
 				if data, err := os.ReadFile(c); err == nil {
 					return string(data), c, true
 				}
@@ -314,7 +332,7 @@ func hrxImporter(files map[string]string, baseDir, specDir, hrxPrefix string) Re
 		// 4) disk, rooted at the spec load path (url is spec-root relative).
 		if specDir != "" {
 			diskJoined := filepath.Clean(filepath.Join(specDir, filepath.FromSlash(url)))
-			for _, c := range importCandidateNames(diskJoined, url) {
+			for _, c := range importCandidateNames(diskJoined, url, forImport) {
 				if data, err := os.ReadFile(c); err == nil {
 					return string(data), c, true
 				}
@@ -422,11 +440,11 @@ func runCaseWith(c specCase, imp ReferrerImporter) (got string, err error) {
 // sass-spec checkout and no partials to carry along.
 func selfContained(c specCase) bool {
 	loadedFile := false
-	imp := func(url, referrer string) (string, string, bool) {
+	imp := func(url, referrer string, forImport bool) (string, string, bool) {
 		if !strings.HasPrefix(url, "sass:") {
 			loadedFile = true
 		}
-		return hrxImporter(c.files, c.caseDir, c.specDir, c.hrxPrefix)(url, referrer)
+		return hrxImporter(c.files, c.caseDir, c.specDir, c.hrxPrefix)(url, referrer, forImport)
 	}
 	got, err := runCaseWith(c, imp)
 	return err == nil && !loadedFile && normalizeCSS(got) == normalizeCSS(c.expected)
