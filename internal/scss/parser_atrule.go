@@ -280,15 +280,23 @@ func (p *parser) parseMedia() Stmt {
 }
 
 func (p *parser) parseExtend() Stmt {
+	// The extendee is read up to a top-level `!` (the `!optional` flag) or the
+	// statement end. Stopping at `!` — rather than string-searching the plain
+	// text afterwards — is what lets an interpolated extendee such as
+	// `@extend #{'%test'} !optional` strip its flag; a `#{…}` is scanned
+	// atomically so its own `!` is never mistaken for the flag, and a selector
+	// never contains a top-level `!`.
 	sel := p.parseInterpolatedText(func(pp *parser) bool {
 		c := pp.peek()
-		return c == ';' || c == '}' || c == 0
+		return c == '!' || c == ';' || c == '}' || c == 0
 	})
 	optional := false
-	plain, ok := sel.isPlain()
-	if ok && strings.Contains(plain, "!optional") {
-		plain = strings.Replace(plain, "!optional", "", 1)
-		sel = literalInterp(plain)
+	if p.peek() == '!' {
+		p.next() // !
+		p.ws()
+		if id := p.scanIdentifier(); !strings.EqualFold(id, "optional") {
+			p.fail("Expected \"optional\".")
+		}
 		optional = true
 	}
 	p.consumeStatementEnd()
