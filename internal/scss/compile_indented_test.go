@@ -50,6 +50,9 @@ func TestConvertIndentedContinuation(t *testing.T) {
 		{"tab_indent", "a\n\tb: c", "a {\n  b: c;\n}"},
 		{"selector_comma_trailing_loud", "a, /* comment */\nb\n  x: y", "a,  \nb {\n  x: y;\n}"},
 		{"selector_inline_loud", "a /* c */ b\n  x: y", "a   b {\n  x: y;\n}"},
+		{"escaped_selector_with_children", "\\:hover\n  color: red", ":hover {\n  color: red;\n}"},
+		{"escaped_selector_childless", "\\:hover\na\n  b: c", ":hover {}\na {\n  b: c;\n}"},
+		{"escaped_selector_trailing_loud", "\\.foo /* c */\n  x: y", ".foo {\n  x: y;\n}"},
 	}
 	for _, c := range cases {
 		if got := convertIndented(c.in); got != c.want {
