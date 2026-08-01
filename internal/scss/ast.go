@@ -19,6 +19,10 @@ type StyleRule struct {
 	// serialization time to decide whether a loud comment that is the first
 	// child of the rule's block trails the opening brace (`sel { /* c */`).
 	BraceLine int
+	// CloseBraceLine is the 1-based source line of the rule's closing `}`, used
+	// to attach a following loud comment written on that line as a trailing
+	// comment (`} /* c */`).
+	CloseBraceLine int
 }
 
 // Declaration is a CSS property declaration, optionally with a nested body
@@ -273,6 +277,10 @@ type AtRule struct {
 	// block or unknown), so the serializer can print a block whose sole child is
 	// a loud comment on that line as `@rule { /**/ }` on one line, as dart does.
 	BraceLine int
+	// CloseBraceLine is the 1-based source line of the body's closing `}`, used
+	// to attach a following loud comment written on that line as a trailing
+	// comment (`} /* c */`).
+	CloseBraceLine int
 }
 
 func (*StyleRule) stmt()   {}

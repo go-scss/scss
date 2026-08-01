@@ -54,6 +54,7 @@ type cssStyleRule struct {
 	raw          bool   // plain-CSS rule: emit rawSel verbatim, never extend/resolve
 	rawSel       string // verbatim selector for a plain-CSS rule
 	braceLine    int    // 1-based source line of the rule's `{` (0 = unknown), for trailing-comment placement
+	closeLine    int    // 1-based source line of the rule's `}` (0 = unknown), for trailing-comment placement
 }
 
 func (r *cssStyleRule) cssNode()             {}
@@ -88,6 +89,7 @@ type cssAtRule struct {
 	blankBefore bool
 	isGroupEnd  bool
 	braceLine   int // 1-based source line of the `{` (0 = unknown), for trailing-comment placement
+	closeLine   int // 1-based source line of the `}` (0 = unknown), for trailing-comment placement
 }
 
 func (a *cssAtRule) cssNode()             {}
@@ -175,11 +177,24 @@ func (s *serializer) emitChildren(nodes []cssNode, depth int) {
 	// visible node — otherwise sibling rules hoisted from separate parents (e.g.
 	// `a b { c & {} }` `d { e & {} }`) would fuse without the blank dart emits.
 	pendingBlank := false
+	var prev cssNode
 	for _, n := range nodes {
 		if isEmptyContainer(n) {
 			if blankBeforeOf(n) {
 				pendingBlank = true
 			}
+			continue
+		}
+		// A loud comment written on the same source line as the closing brace of
+		// the preceding top-level rule/at-rule trails that brace on one line
+		// (`} /* c */`), reproducing dart's _isTrailingComment across siblings.
+		if c, ok := n.(*cssComment); ok && !s.compressed && emittedAny &&
+			!isSourceURLComment(c.text) && trailingCommentAttaches(c, prev, 0) {
+			s.trimTrailingNewline()
+			s.sb.WriteString(" ")
+			s.emitComment(c, depth, true)
+			prev = n
+			pendingBlank = false
 			continue
 		}
 		if !s.compressed && emittedAny && (pendingBlank || blankBeforeOf(n)) {
@@ -188,6 +203,7 @@ func (s *serializer) emitChildren(nodes []cssNode, depth int) {
 		s.emitNode(n, depth)
 		emittedAny = true
 		pendingBlank = false
+		prev = n
 	}
 }
 
@@ -660,8 +676,13 @@ func trailingCommentAttaches(c *cssComment, prev cssNode, braceLine int) bool {
 	if prev == nil {
 		return braceLine != 0 && c.line == braceLine
 	}
-	if d, ok := prev.(*cssDeclaration); ok {
-		return d.endLine != 0 && c.line == d.endLine
+	switch p := prev.(type) {
+	case *cssDeclaration:
+		return p.endLine != 0 && c.line == p.endLine
+	case *cssStyleRule:
+		return p.closeLine != 0 && c.line == p.closeLine
+	case *cssAtRule:
+		return p.closeLine != 0 && c.line == p.closeLine
 	}
 	return false
 }
