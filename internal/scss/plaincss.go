@@ -726,7 +726,17 @@ func bubblePlainTop(nodes []cssNode) []cssNode {
 	var out []cssNode
 	for _, n := range nodes {
 		if sr, ok := n.(*cssStyleRule); ok {
-			out = append(out, bubbleRule(sr)...)
+			frags := bubbleRule(sr)
+			// dart-sass evaluates a plain-CSS file through the normal evaluator, so
+			// after each top-level style-rule statement its last emitted node is
+			// marked a group end (isGroupEnd) — the last bubble fragment here, be it
+			// a trailing rule fragment or the at-rule the rule bubbled into. This
+			// lets a plain-CSS module's rules take part in the deferred cross-module
+			// blank-line separation without over-marking the intermediate fragments.
+			if len(frags) > 0 {
+				setGroupEnd(frags[len(frags)-1])
+			}
+			out = append(out, frags...)
 		} else {
 			out = append(out, n)
 		}
