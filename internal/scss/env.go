@@ -20,6 +20,13 @@ func normIdent(s string) string {
 type mixinEntry struct {
 	def *MixinDef
 	env *environment
+	// defDepth is the number of scopes open in env when the mixin was defined —
+	// the length of its lexical scope chain. Like a function, a mixin runs in
+	// exactly these scopes (plus a fresh one for its parameters), so its body sees
+	// only its params and whatever was visible where it was declared, never the
+	// dynamic caller's inner scopes. This isolates each invocation (including
+	// recursion) instead of mutating the shared definition environment.
+	defDepth int
 }
 
 type funcEntry struct {
