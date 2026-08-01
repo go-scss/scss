@@ -59,6 +59,26 @@ func TestSpaceListCloseParenAdjacency(t *testing.T) {
 	}
 }
 
+// TestSpaceListParentAdjacency covers dart-sass treating a "&" parent reference
+// as its own token on both sides in value context, so glued neighbours split
+// into fresh space-list elements. Outputs are byte-verified against dart-sass
+// 1.102 (with the parent selector ".p" substituted for "&").
+func TestSpaceListParentAdjacency(t *testing.T) {
+	cases := []struct{ in, out string }{
+		{".p { a: true && false; }\n", ".p {\n  a: true .p .p false;\n}\n"},
+		{".p { a: &&; }\n", ".p {\n  a: .p .p;\n}\n"},
+		{".p { a: --&; }\n", ".p {\n  a: -- .p;\n}\n"},
+		{".p { a: foo&bar; }\n", ".p {\n  a: foo .p bar;\n}\n"},
+		{".p { a: 10&; }\n", ".p {\n  a: 10 .p;\n}\n"},
+		{".p { a: &1; }\n", ".p {\n  a: .p 1;\n}\n"},
+	}
+	for _, c := range cases {
+		if got := compile(t, c.in); got != c.out {
+			t.Errorf("for %q:\n want: %q\n  got: %q", c.in, c.out, got)
+		}
+	}
+}
+
 // TestSpaceListPercentAdjacency covers dart-sass ending a percentage literal at
 // its "%" so a glued-on value starts a fresh space-list element, while a "%"
 // preceded by whitespace stays the modulo operator. Outputs are byte-verified

@@ -64,10 +64,13 @@ func (p *parser) parseSpaceList(stop func(*parser) bool) Expr {
 		// (`(1 + 2)px` -> `3 px`, `url(x)no-repeat` -> `url(x) no-repeat`). A "%"
 		// likewise ends a percentage literal, so a value glued to it starts a
 		// fresh element (`2%3` -> `2% 3`, `50%foo` -> `50% foo`); a "%" that is
-		// the modulo operator is already consumed before reaching this loop.
+		// the modulo operator is already consumed before reaching this loop. A
+		// "&" parent reference is always its own token on both sides, so it too
+		// separates glued neighbours (`&&` -> `& &`, `--&` -> `-- &`,
+		// `foo&bar` -> `foo & bar`).
 		adjacentBoundary := prevUnicodeRange || prev == '"' || prev == '\'' ||
-			prev == ')' || prev == ']' || prev == '%' ||
-			p.peek() == '"' || p.peek() == '\'' || p.peek() == '$' ||
+			prev == ')' || prev == ']' || prev == '%' || prev == '&' ||
+			p.peek() == '"' || p.peek() == '\'' || p.peek() == '$' || p.peek() == '&' ||
 			(p.peek() == '#' && p.peekAt(1) == '{')
 		if (!had && !adjacentBoundary) || stop(p) || p.stopChar() || p.peek() == ',' || !p.canStartValue() {
 			p.pos = save
