@@ -52,7 +52,12 @@ type Importer func(url string) (source string, canonicalURL string, ok bool)
 // Importer.canonicalize(url, baseUrl:), an importer should resolve url relative to
 // referrer first, then against its configured load paths. referrer is empty for a
 // load issued by the entry stylesheet, which has no canonical URL.
-type ReferrerImporter func(url, referrer string) (source string, canonicalURL string, ok bool)
+//
+// forImport is true only for a legacy @import (Dart Sass's canonicalize(url,
+// forImport:)); an importer should then prefer an import-only file — x.import.scss
+// / _x.import.scss, or index.import.scss inside a directory — over the ordinary
+// file of the same name. @use, @forward and meta.load-css pass false.
+type ReferrerImporter func(url, referrer string, forImport bool) (source string, canonicalURL string, ok bool)
 
 // Options configures a compilation.
 type Options struct {
@@ -96,7 +101,7 @@ func CompileString(source string, opts *Options) (*CompileResult, error) {
 		// A legacy url-only importer ignores the referrer and resolves against its
 		// own configured paths, preserving the pre-referrer public contract.
 		legacy := opts.Importer
-		imp = func(url, _ string) (string, string, bool) { return legacy(url) }
+		imp = func(url, _ string, _ bool) (string, string, bool) { return legacy(url) }
 	default:
 		imp = fileImporter(opts.BaseDir, opts.LoadPaths)
 	}
@@ -142,21 +147,21 @@ func fileImporter(baseDir string, loadPaths []string) engine.Importer {
 		dirs = append(dirs, ".")
 	}
 	dirs = append(dirs, loadPaths...)
-	return func(url, referrer string) (string, string, bool) {
+	return func(url, referrer string, forImport bool) (string, string, bool) {
 		if strings.HasPrefix(url, "sass:") {
 			return "", "", false
 		}
 		// Relative-to-referrer first: a load resolves against the directory of the
 		// file that issued it before falling back to the configured load paths.
 		if referrer != "" {
-			for _, cand := range importCandidates(filepath.Dir(referrer), url) {
+			for _, cand := range importCandidates(filepath.Dir(referrer), url, forImport) {
 				if data, err := os.ReadFile(cand); err == nil {
 					return string(data), cand, true
 				}
 			}
 		}
 		for _, dir := range dirs {
-			for _, cand := range importCandidates(dir, url) {
+			for _, cand := range importCandidates(dir, url, forImport) {
 				if data, err := os.ReadFile(cand); err == nil {
 					return string(data), cand, true
 				}
@@ -166,22 +171,49 @@ func fileImporter(baseDir string, loadPaths []string) engine.Importer {
 	}
 }
 
-func importCandidates(dir, url string) []string {
+// importCandidates lists, in precedence order, the on-disk files a load URL may
+// resolve to within a single directory. When forImport is set (a legacy @import),
+// an import-only file is preferred over the ordinary file of the same name, and a
+// directory's index.import file over its plain index — matching Dart Sass's
+// resolveImportPath under forImport.
+func importCandidates(dir, url string, forImport bool) []string {
 	base := filepath.Join(dir, url)
 	name := filepath.Base(base)
 	parent := filepath.Dir(base)
-	var out []string
 	exts := []string{".scss", ".sass", ".css"}
 	if hasSassExt(url) {
+		// An explicit-extension import prefers name.import.ext over name.ext.
+		ext := filepath.Ext(base)
+		stem := strings.TrimSuffix(base, ext)
+		stemName := strings.TrimSuffix(name, ext)
+		var out []string
+		if forImport {
+			out = append(out, stem+".import"+ext)
+			out = append(out, filepath.Join(parent, "_"+stemName+".import"+ext))
+		}
 		out = append(out, base)
 		out = append(out, filepath.Join(parent, "_"+name))
 		return out
+	}
+	var out []string
+	if forImport {
+		// Direct import-only file (x.import.scss / _x.import.scss), highest priority.
+		for _, ext := range exts {
+			out = append(out, base+".import"+ext)
+			out = append(out, filepath.Join(parent, "_"+name+".import"+ext))
+		}
 	}
 	for _, ext := range exts {
 		out = append(out, base+ext)
 		out = append(out, filepath.Join(parent, "_"+name+ext))
 	}
-	// index files
+	// index files: an import-only index (index.import.ext) precedes the plain index.
+	if forImport {
+		for _, ext := range exts {
+			out = append(out, filepath.Join(base, "index.import"+ext))
+			out = append(out, filepath.Join(base, "_index.import"+ext))
+		}
+	}
 	for _, ext := range exts {
 		out = append(out, filepath.Join(base, "index"+ext))
 		out = append(out, filepath.Join(base, "_index"+ext))

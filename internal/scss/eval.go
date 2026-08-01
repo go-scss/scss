@@ -15,7 +15,13 @@ import (
 // Mirroring dart-sass's Importer.canonicalize(url, baseUrl:), an importer resolves
 // url relative to referrer first, then against its configured load paths. referrer
 // is empty for a load issued by the entry stylesheet (which has no canonical URL).
-type Importer func(url, referrer string) (source string, resolvedURL string, ok bool)
+//
+// forImport is true only for a legacy @import; it mirrors dart-sass's
+// canonicalize(url, forImport:) and asks the importer to prefer an import-only
+// file (x.import.scss / _x.import.scss, or index.import.scss inside a directory)
+// over the ordinary candidate of the same name. @use, @forward and meta.load-css
+// pass false.
+type Importer func(url, referrer string, forImport bool) (source string, resolvedURL string, ok bool)
 
 type evaluator struct {
 	env      *environment

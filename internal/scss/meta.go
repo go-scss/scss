@@ -564,7 +564,7 @@ func (e *evaluator) loadCSSInto(url string, config []ConfigVar, fr *frame) {
 		}
 		return
 	}
-	src, resolved, ok := e.resolve(url)
+	src, resolved, ok := e.resolve(url, false)
 	if !ok {
 		e.fail("Can't find stylesheet to import: %s", url)
 	}

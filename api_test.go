@@ -150,7 +150,7 @@ func TestImporterWithReferrer(t *testing.T) {
 		return "", "", false
 	}
 	var sawReferrer bool
-	imp := func(url, referrer string) (string, string, bool) {
+	imp := func(url, referrer string, _ bool) (string, string, bool) {
 		if referrer != "" {
 			sawReferrer = true
 			if s, key, ok := try(path.Dir(referrer), url); ok {
@@ -175,7 +175,7 @@ func TestImporterWithReferrer(t *testing.T) {
 // TestImporterWithReferrerPrecedence confirms ImporterWithReferrer takes
 // precedence over a simultaneously-set legacy Importer.
 func TestImporterWithReferrerPrecedence(t *testing.T) {
-	ref := func(url, _ string) (string, string, bool) {
+	ref := func(url, _ string, _ bool) (string, string, bool) {
 		if url == "v" {
 			return "$x: 9px;", "v", true
 		}
