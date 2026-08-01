@@ -551,6 +551,17 @@ func (e *evaluator) loadCSSInto(url string, config []ConfigVar, fr *frame) {
 	if !ok {
 		e.fail("Can't find stylesheet to import: %s", url)
 	}
+	// A .css file is parsed as plain CSS, preserving its native nesting, and is
+	// re-nested under any enclosing selector rather than re-parsed as Sass.
+	if strings.HasSuffix(resolved, ".css") {
+		nodes, err := parsePlainCSS(src)
+		if err != nil {
+			panic(err)
+		}
+		e.loadedURLs = append(e.loadedURLs, resolved)
+		e.placeLoadedCSS(nodes, fr)
+		return
+	}
 	for _, s := range e.loadStack {
 		if s == resolved {
 			e.fail("Module loop: %s", resolved)
@@ -577,9 +588,73 @@ func (e *evaluator) loadCSSInto(url string, config []ConfigVar, fr *frame) {
 	sub.runModule(stmts)
 	e.warnings = append(e.warnings, sub.warnings...)
 	e.loadedURLs = append(e.loadedURLs, resolved)
-	for _, node := range sub.root.children() {
-		fr.container.appendNode(node)
+	e.placeLoadedCSS(sub.root.children(), fr)
+}
+
+// placeLoadedCSS splices a loaded module's already-resolved top-level CSS into
+// the current output. At the top level the nodes are appended verbatim, exactly
+// as before. Inside an enclosing style rule, dart-sass re-nests the loaded CSS
+// under that rule's selector — the CSS is resolved in a clean context, so its
+// own `&` refers to its own parents, and only its outermost rules pick up the
+// including selector. This mirrors dart's context-dependent placement of
+// meta.load-css output (async_evaluate.dart `_visitStyleRule` re-parenting).
+func (e *evaluator) placeLoadedCSS(nodes []cssNode, fr *frame) {
+	if !fr.hasParent {
+		e.emitModuleCSS(nodes, fr)
+		return
 	}
+	for _, n := range nodes {
+		e.renestLoadedNode(n, fr)
+	}
+}
+
+// renestLoadedNode re-nests one top-level node of loaded CSS under the enclosing
+// selector fr.parentSel. A Sass-resolved style rule (no `&` — it was flattened
+// in its own context) gains the parent as a leading descendant selector. A
+// plain-CSS rule keeps its verbatim selector: if that selector references the
+// parent (`&`, native CSS nesting) the whole rule is wrapped in a copy of the
+// enclosing selector; otherwise the enclosing selector is prepended as a
+// descendant. Non-style-rule nodes are placed unchanged.
+func (e *evaluator) renestLoadedNode(n cssNode, fr *frame) {
+	parent := fr.parentSel
+	r, ok := n.(*cssStyleRule)
+	if !ok {
+		if c, isComment := n.(*cssComment); isComment {
+			// A loud comment carries no selector, so dart keeps it nested inside a
+			// copy of the enclosing rule (e.g. `a { /* … */ }`) rather than lifting
+			// it to the top level.
+			fr.container.appendNode(&cssStyleRule{
+				raw:         true,
+				rawSel:      parent.serialize(false),
+				nodes:       []cssNode{c},
+				blankBefore: c.blankBefore,
+			})
+			return
+		}
+		fr.container.appendNode(n)
+		return
+	}
+	if r.raw {
+		child, err := parseSelectorListStrErr(r.rawSel, true, true)
+		if err == nil && selListContainsParent(child) {
+			// Native-CSS `&`: keep the rule literal, wrapped under the parent.
+			fr.container.appendNode(&cssStyleRule{
+				raw:         true,
+				rawSel:      parent.serialize(false),
+				nodes:       []cssNode{r},
+				blankBefore: r.blankBefore,
+			})
+			return
+		}
+		combined := resolveNestingImpl(selectorList{list: child}, parent, true)
+		r.rawSel = combined.serialize(false)
+		fr.container.appendNode(r)
+		return
+	}
+	resolved := resolveNestingImpl(r.selector, parent, true)
+	r.selector = resolved
+	r.original = resolved
+	fr.container.appendNode(r)
 }
 
 // sortedKeys returns the keys of a string-keyed map in sorted order.
