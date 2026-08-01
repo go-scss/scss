@@ -425,6 +425,7 @@ func (e *evaluator) reEmitImportedCSS(m *module, fr *frame) {
 
 func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *module {
 	if m, ok := e.loaded[url]; ok {
+		e.noteLoadedCombine(m, false)
 		e.reEmitImportedCSS(m, fr)
 		return m
 	}
@@ -440,6 +441,7 @@ func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *
 		// A diamond dependency: this module is reused, but the current module
 		// still depends on it, so downstream extends here must reach its rules.
 		e.dependsOn(m.scope)
+		e.noteLoadedCombine(m, false)
 		e.reEmitImportedCSS(m, fr)
 		return m
 	}
@@ -463,8 +465,12 @@ func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *
 		e.registerPlainCSSExtendScope(nodes)
 		mod := emptyModule()
 		mod.cssNodes = nodes
+		// A plain-CSS module's own CSS is its parsed nodes; it uses no modules,
+		// so its combine node has those nodes as own CSS and no edges.
+		mod.combine = &combineNode{own: nodes}
 		e.loaded[url] = mod
 		e.sharedLoaded[resolved] = mod
+		e.noteLoadedCombine(mod, true)
 		return mod
 	}
 	stmts, err := parseModuleSource(resolved, src)
@@ -508,10 +514,22 @@ func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *
 		scope:    sub.scope,
 		forwards: sub.forwarded,
 		cssNodes: moduleNodes,
+		combine:  sub.combine,
 	}
 	e.loaded[url] = mod
 	e.sharedLoaded[resolved] = mod
+	e.noteLoadedCombine(mod, true)
 	return mod
+}
+
+// noteLoadedCombine records, for the top-level evalBody hook, the combine node
+// of the module a @use/@forward just loaded and whether this was its first load
+// in the whole compilation (dart's firstLoad, which gates the pre-module-comment
+// sweep). A module whose combine node is nil (a built-in never reaches here)
+// records a nil node, so the hook treats the load as contributing no CSS.
+func (e *evaluator) noteLoadedCombine(m *module, firstLoad bool) {
+	e.lastLoadedCombine = m.combine
+	e.lastLoadFirst = firstLoad
 }
 
 // registerPlainCSSExtendScope gives a loaded plain-CSS module its own @extend
@@ -612,6 +630,7 @@ func emptyModule() *module {
 // scope is finalised together at the end of the compilation (applyAllExtends).
 func (e *evaluator) runModule(stmts []Stmt) {
 	fr := &frame{container: e.root, rootContainer: e.root, mediaParent: e.root, atContainer: true, group: &groupInfo{}}
+	e.combineActive = true
 	e.evalBody(stmts, fr, true)
 }
 

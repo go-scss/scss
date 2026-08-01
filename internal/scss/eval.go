@@ -52,6 +52,22 @@ type evaluator struct {
 	// re-exported members into the importing scope (dart's import-forward
 	// behaviour); at depth 0 a @forward only records an export.
 	importDepth int
+	// combine is this evaluator's module node in the deferred combine tree: its
+	// own top-level CSS and, in @use/@forward order, the modules it loads (each
+	// carrying the pre-module comments captured before it). See combine.go.
+	combine *combineNode
+	// lastLoadedCombine / lastLoadFirst carry, from loadModule back to the
+	// top-level evalBody hook, the combine node of the module a @use/@forward
+	// statement just loaded and whether that was its first load in the whole
+	// compilation (dart's firstLoad). Reset before each top-level statement.
+	lastLoadedCombine *combineNode
+	lastLoadFirst     bool
+	// combineActive is true only for a module's OUTERMOST top-level statement
+	// loop (set by run/runModule). Nested evalBody re-entries — a mixin body, a
+	// control-flow body or an inlined @import that happens to target the root
+	// container — must not re-record combine nodes, or the same CSS would be
+	// counted at both the inner statement and the outer @include/@import.
+	combineActive bool
 }
 
 // maxCallDepth bounds mixin/content/function recursion. Dart Sass terminates on
@@ -155,6 +171,7 @@ func newEvaluator(importer Importer) *evaluator {
 		sharedLoaded: map[string]*module{},
 	}
 	e.scope = &moduleScope{ev: e}
+	e.combine = &combineNode{}
 	scopes := []*moduleScope{e.scope}
 	e.allScopes = &scopes
 	return e
@@ -204,49 +221,16 @@ func (e *evaluator) run(stmts []Stmt) {
 		atContainer:   true,
 		group:         &groupInfo{},
 	}
+	e.combineActive = true
 	e.evalBody(stmts, fr, true)
 	e.applyAllExtends()
-	hoistCSSImports(e.root)
+	// Reassemble the top-level output from the deferred combine tree (dart's
+	// _combineCss): per-module @import regions and pre-@use comments are
+	// interleaved across the module graph — an ordering the inline-emitted flat
+	// tree cannot express. The extends applied above mutate the same rule nodes
+	// the combine tree references, so their results carry through.
+	e.root.nodes = combineCss(e.combine)
 	combineTopLevelGroups(e.root)
-}
-
-// hoistCSSImports reorders the stylesheet's top-level nodes so that plain-CSS
-// @import rules precede style rules, matching dart-sass. dart keeps a contiguous
-// "import region" at the top of the output — the leading run of CSS @import
-// rules and the comments interleaved among them. Once a non-import, non-comment
-// node is emitted the region is frozen; any later top-level @import is spliced
-// back to the end of that region (dart's _endOfImports / _outOfOrderImports).
-func hoistCSSImports(root *cssRoot) {
-	nodes := root.nodes
-	b := 0
-	for b < len(nodes) && isImportRegionNode(nodes[b]) {
-		b++
-	}
-	var out, rest []cssNode
-	for _, n := range nodes[b:] {
-		if isCSSImport(n) {
-			out = append(out, n)
-		} else {
-			rest = append(rest, n)
-		}
-	}
-	if len(out) == 0 {
-		return
-	}
-	// A hoisted @import joins the import region, so it never keeps the blank line
-	// it may have carried after a style rule; the first node left behind starts
-	// the post-import body and likewise sits flush against the imports.
-	for _, n := range out {
-		setBlankBefore(n, false)
-	}
-	if len(rest) > 0 {
-		setBlankBefore(rest[0], false)
-	}
-	newNodes := make([]cssNode, 0, len(nodes))
-	newNodes = append(newNodes, nodes[:b]...)
-	newNodes = append(newNodes, out...)
-	newNodes = append(newNodes, rest...)
-	root.nodes = newNodes
 }
 
 // isCSSImport reports whether a node is a plain-CSS @import at-rule.
@@ -266,6 +250,14 @@ func isImportRegionNode(n cssNode) bool {
 }
 
 func (e *evaluator) evalBody(stmts []Stmt, fr *frame, containerBody bool) {
+	// A module's OWN top level is the OUTERMOST statement loop whose container is
+	// this evaluator's root (not a nested @media/@at-root/mixin/@import body).
+	// Only there do statements contribute to the deferred combine tree: their
+	// emitted nodes are this module's own CSS, and a @use/@forward is a combine
+	// edge to a used module. combineActive is cleared for the duration of this
+	// call so nested re-entries don't re-record the same nodes.
+	topLevel := e.combineActive && containerBody && fr.container == e.root
+	e.combineActive = false
 	for _, s := range stmts {
 		if containerBody {
 			fr.group.pending = true
@@ -280,7 +272,15 @@ func (e *evaluator) evalBody(stmts []Stmt, fr *frame, containerBody bool) {
 			// nested rule is written inline or emitted from an @include.
 			fr.block = nil
 		}
+		var before int
+		if topLevel {
+			before = len(e.root.nodes)
+			e.lastLoadedCombine = nil
+		}
 		e.evalStmt(s, fr)
+		if topLevel {
+			e.recordCombineStmt(s, before)
+		}
 		if containerBody && isStyleRuleStmt(s) {
 			// dart marks _parent.children.last isGroupEnd after a top-level style
 			// rule completes (when not lexically inside a style rule). Recording it
@@ -289,6 +289,27 @@ func (e *evaluator) evalBody(stmts []Stmt, fr *frame, containerBody bool) {
 			// over the final combined module tree.
 			markGroupEnd(fr.container)
 		}
+	}
+}
+
+// recordCombineStmt folds one top-level statement's effect into this module's
+// combine node. A @use/@forward that loaded a real (CSS-bearing) module becomes
+// an edge to that module — its inline-emitted CSS (root.nodes since before) is
+// deliberately dropped from this module's own CSS, since combineCss reproduces
+// it from the edge. Every other statement's emitted nodes are this module's own
+// top-level CSS. A @use of a built-in module (sass:math, …) loads no combine
+// node and emits nothing, so it is ignored.
+func (e *evaluator) recordCombineStmt(s Stmt, before int) {
+	switch s.(type) {
+	case *Use, *Forward:
+		if e.lastLoadedCombine != nil {
+			e.combine.recordUse(e.lastLoadedCombine, e.lastLoadFirst)
+			return
+		}
+	}
+	added := e.root.nodes[before:]
+	if len(added) > 0 {
+		e.combine.recordOwn(append([]cssNode(nil), added...))
 	}
 }
 

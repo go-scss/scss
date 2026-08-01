@@ -74,6 +74,10 @@ func TestScssLoudCommentSerialization(t *testing.T) {
 		// line the dropped comment leaves behind is trimmed by CSS comparison).
 		{"a { b: c }\n/*# sourceMappingURL=whatever */\n", "a {\n  b: c;\n}\n\n"},
 		{"a { b: c }\n/*# sourceURL=x */\n", "a {\n  b: c;\n}\n\n"},
+		// A LEADING dropped sourcemap comment still leaves its blank line: dart
+		// counts the stripped comment as a serialised node, so the following rule
+		// gets its ordinary inter-node linefeed (a leading blank line).
+		{"/*# sourceMappingURL=x */\na { b: c }\n", "\na {\n  b: c;\n}\n"},
 		// A plain single-line comment with no special characters is unchanged.
 		{"/* plain */\n", "/* plain */\n"},
 	}
@@ -85,6 +89,40 @@ func TestScssLoudCommentSerialization(t *testing.T) {
 		if res.CSS != c.want {
 			t.Errorf("for %q:\n want: %q\n  got: %q", c.src, c.want, res.CSS)
 		}
+	}
+}
+
+// TestTrailingCommentAttaches drives every branch of trailingCommentAttaches
+// (dart's _isTrailingComment for the modelled cases): no line info, a first
+// child on/off the brace line, a comment on/off a preceding declaration's end
+// line, and a comment after a non-declaration node.
+func TestTrailingCommentAttaches(t *testing.T) {
+	// No source line: never attaches.
+	if trailingCommentAttaches(&cssComment{line: 0}, nil, 5) {
+		t.Fatal("line 0 should not attach")
+	}
+	// First child (prev nil) on the opening-brace line: attaches.
+	if !trailingCommentAttaches(&cssComment{line: 5}, nil, 5) {
+		t.Fatal("first child on brace line should attach")
+	}
+	// First child not on the brace line (and no brace line): does not attach.
+	if trailingCommentAttaches(&cssComment{line: 6}, nil, 5) {
+		t.Fatal("first child off brace line should not attach")
+	}
+	if trailingCommentAttaches(&cssComment{line: 6}, nil, 0) {
+		t.Fatal("first child with no brace line should not attach")
+	}
+	// Following a declaration on that declaration's end line: attaches.
+	if !trailingCommentAttaches(&cssComment{line: 7}, &cssDeclaration{endLine: 7}, 0) {
+		t.Fatal("comment on decl end line should attach")
+	}
+	// Following a declaration but on a different line: does not attach.
+	if trailingCommentAttaches(&cssComment{line: 8}, &cssDeclaration{endLine: 7}, 0) {
+		t.Fatal("comment off decl end line should not attach")
+	}
+	// Following a non-declaration node: does not attach.
+	if trailingCommentAttaches(&cssComment{line: 7}, &cssStyleRule{}, 0) {
+		t.Fatal("comment after a rule should not attach")
 	}
 }
 
