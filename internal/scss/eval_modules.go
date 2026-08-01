@@ -180,9 +180,13 @@ func (e *evaluator) namespaceFor(url, explicit string) string {
 		return strings.TrimPrefix(base, "sass:")
 	}
 	base = path.Base(base)
-	base = strings.TrimSuffix(base, ".scss")
-	base = strings.TrimSuffix(base, ".sass")
 	base = strings.TrimPrefix(base, "_")
+	// The default namespace is the basename up to its first ".", which discards
+	// every file extension at once (dart-sass _defaultNamespace), so
+	// `@use "other.foo.bar.baz.scss"` namespaces as `other`.
+	if i := strings.IndexByte(base, '.'); i >= 0 {
+		base = base[:i]
+	}
 	return base
 }
 
@@ -344,6 +348,21 @@ func (e *evaluator) importForwardedModule(mod *module, prefix string) {
 	}
 	for k, v := range mod.allFuncs() {
 		e.env.defineFunc(prefix+k, v)
+	}
+	// A @forward reached through an @import nested inside a style rule (or other
+	// local scope) makes its variables resolve to the source module's live slots
+	// at that scope, exactly as dart-sass does: the import shadows a same-scope
+	// variable set BEFORE it, yet a write AFTER it still reaches the source slot
+	// (so the source's own functions observe it). The importedModules reference
+	// added below already provides those live reads and write-through, but it is
+	// consulted only AFTER the inner scopes; so a local of the same name set before
+	// the import is cleared from the inner scopes to let the live slot win. At the
+	// global scope there are no shadowing inner scopes, so nothing is cleared.
+	for k := range mod.allVars() {
+		name := normIdent(prefix + k)
+		for i := len(e.env.scopes) - 1; i >= 1; i-- {
+			delete(e.env.scopes[i], name)
+		}
 	}
 	e.env.importedModules = append(e.env.importedModules, importedMod{mod: mod, prefix: normIdent(prefix)})
 }
