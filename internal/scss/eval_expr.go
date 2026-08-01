@@ -228,8 +228,13 @@ func (e *evaluator) evalBinary(x *Binary) Value {
 		// division (e.g. the "/ none" or "/ calc(…)" alpha in a color function).
 		return &List{Elements: []Value{l, r}, Sep: SepSlash, SlashLit: true}
 	}
-	l := e.evalExpr(x.Left)
-	r := e.evalExpr(x.Right)
+	// Every binary operation other than "/" consumes its operands, so a scalar
+	// slash number loses its provenance (dart-sass's withoutSlash on each
+	// operand): `3/4 + (4/5 6/7)` serializes the left as `0.75`, not `3/4`. A
+	// list operand is unaffected (withoutSlash is a no-op on it), so its inner
+	// slashes survive.
+	l := numWithoutSlash(e.evalExpr(x.Left))
+	r := numWithoutSlash(e.evalExpr(x.Right))
 	switch x.Op {
 	case "=":
 		// Microsoft-filter singleEquals: joins the serialised operands with "="

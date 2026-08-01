@@ -728,12 +728,16 @@ func (e *evaluator) evalEach(n *Each, fr *frame) {
 	e.env.pushControlScope()
 	defer e.env.popScope()
 	for _, item := range items {
+		// Binding an @each variable clears a scalar slash number's provenance,
+		// exactly as a variable declaration does (dart-sass applies withoutSlash
+		// when it resolves the loop variable): iterating `a 3/4 b` yields `0.75`
+		// for the middle element, while a nested list keeps its inner slash.
 		if len(n.Vars) == 1 {
-			e.env.defineVar(n.Vars[0], item)
+			e.env.defineVar(n.Vars[0], numWithoutSlash(item))
 		} else {
 			parts := destructure(item, len(n.Vars))
 			for i, v := range n.Vars {
-				e.env.defineVar(v, parts[i])
+				e.env.defineVar(v, numWithoutSlash(parts[i]))
 			}
 		}
 		e.evalBody(n.Body, fr, fr.atContainer)
