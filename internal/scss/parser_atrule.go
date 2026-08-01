@@ -326,6 +326,15 @@ func (p *parser) parseImport() Stmt {
 			item.URL = p.src[pfx:p.pos]
 			item.Plain = true
 			urlForm = true
+			// When the url() wrapper carries interpolation, re-parse it as an
+			// Interp so `url("...#{$x}...")` evaluates rather than emitting the
+			// literal `#{...}`. dart-sass evaluates plain-CSS import URLs.
+			if strings.Contains(item.URL, "#{") {
+				end := p.pos
+				p.pos = pfx
+				item.URLInterp = p.parseInterpolatedText(func(pp *parser) bool { return pp.pos >= end })
+				p.pos = end
+			}
 		} else {
 			p.fail("Expected string.")
 		}

@@ -433,7 +433,11 @@ func (e *evaluator) evalImport(n *Import, fr *frame) {
 	for _, item := range n.Imports {
 		if item.Plain {
 			params := "\"" + item.URL + "\""
-			if len(item.URL) >= 4 && strings.EqualFold(item.URL[:4], "url(") {
+			if item.URLInterp != nil {
+				// A url() prelude carrying interpolation: evaluate it so
+				// `url("...#{$x}...")` resolves at compile time.
+				params = e.resolveInterp(item.URLInterp)
+			} else if len(item.URL) >= 4 && strings.EqualFold(item.URL[:4], "url(") {
 				params = item.URL
 			}
 			if item.Mods != nil {

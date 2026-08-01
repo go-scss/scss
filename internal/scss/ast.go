@@ -177,6 +177,11 @@ type Import struct{ Imports []ImportItem }
 type ImportItem struct {
 	URL   string
 	Plain bool
+	// URLInterp holds the plain-CSS import prelude (the `url(...)` wrapper or a
+	// quoted URL) as an interpolation when it contains `#{...}`, so the
+	// interpolation is evaluated at compile time. It is nil for the common
+	// non-interpolated case, which keeps URL's verbatim round-trip untouched.
+	URLInterp *Interp
 	// Mods holds the parsed import modifiers (media/supports queries) following a
 	// plain-CSS import URL, or nil when there are none. Its Parts may contain the
 	// usual literal strings and *InterpExpr interpolations plus *supportsPart and

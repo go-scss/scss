@@ -177,3 +177,24 @@ func TestStmtsHaveForward(t *testing.T) {
 		t.Error("did not expect a @forward")
 	}
 }
+
+// TestImportURLInterpolation covers interpolation inside a plain-CSS `url(...)`
+// @import prelude: dart-sass evaluates the interpolation at compile time rather
+// than emitting the literal `#{...}`. A url() without interpolation still
+// round-trips verbatim. Byte-exact against dart-sass 1.102.
+func TestImportURLInterpolation(t *testing.T) {
+	cases := []struct{ in, out string }{
+		{`@import url("a#{1 + 1}b.css");`, "@import url(\"a2b.css\");\n"},
+		{"$p: \"https\";\n@import url(\"#{$p}://ex.com/x\");", "@import url(\"https://ex.com/x\");\n"},
+		{"@use \"sass:string\";\n$f: string.unquote(\"Droid+Sans\");\n@import url(\"http://x/css?family=#{$f}\");",
+			"@import url(\"http://x/css?family=Droid+Sans\");\n"},
+		// No interpolation: verbatim round-trip is preserved.
+		{`@import url(foo.css);`, "@import url(foo.css);\n"},
+		{`@import url("x.css");`, "@import url(\"x.css\");\n"},
+	}
+	for _, c := range cases {
+		if got := compile(t, c.in); got != c.out {
+			t.Errorf("for %q:\n want: %q\n  got: %q", c.in, c.out, got)
+		}
+	}
+}
