@@ -39,6 +39,13 @@ func (p *parser) stopChar() bool {
 	switch p.peek() {
 	case ')', ']', '}', ';', 0:
 		return true
+	case '{':
+		// A block-opening brace terminates an expression (a control at-rule
+		// prelude such as `@each $a in b, {`). Reached only for a literal `{`;
+		// `#{…}` interpolation is consumed as a unit by the value parser before
+		// the cursor can rest on its brace. This lets a trailing comma before the
+		// brace close a one-element comma list, as dart-sass permits.
+		return true
 	}
 	return false
 }

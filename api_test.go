@@ -145,6 +145,28 @@ func TestSassTrailingCommaContinuation(t *testing.T) {
 	}
 }
 
+// TestExprTrailingCommaBeforeBrace verifies that a trailing comma ending a
+// control at-rule's expression closes a one-element comma list rather than
+// erroring, both in SCSS (`@each $a in b, { … }`) and the indented syntax.
+// Byte-verified against dart-sass 1.102.0 (sass-spec
+// directives/each::sass/multiline/in_expression).
+func TestExprTrailingCommaBeforeBrace(t *testing.T) {
+	res, err := scss.CompileString("@each $a in b, { c { .#{$a} { d: $a } } }", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "c .b {\n  d: b;\n}\n"; res.CSS != want {
+		t.Errorf("scss: got %q want %q", res.CSS, want)
+	}
+	res, err = scss.CompileString("@each $a in b,\n c\n  .#{$a}\n    d: $a\n", &scss.Options{Syntax: scss.SyntaxIndented})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "c .b {\n  d: b;\n}\n"; res.CSS != want {
+		t.Errorf("sass: got %q want %q", res.CSS, want)
+	}
+}
+
 func TestCompileStringCompressed(t *testing.T) {
 	res, err := scss.CompileString(".a{x:1}", &scss.Options{Style: scss.Compressed})
 	if err != nil {
