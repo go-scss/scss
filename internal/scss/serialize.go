@@ -50,6 +50,7 @@ type cssStyleRule struct {
 	mediaContext []string     // enclosing media-query context for @extend
 	box          *box         // extension box; selector is set from it post-extend
 	blankBefore  bool
+	isGroupEnd   bool   // dart's isGroupEnd: this node ends a top-level style-rule group
 	raw          bool   // plain-CSS rule: emit rawSel verbatim, never extend/resolve
 	rawSel       string // verbatim selector for a plain-CSS rule
 	braceLine    int    // 1-based source line of the rule's `{` (0 = unknown), for trailing-comment placement
@@ -85,6 +86,7 @@ type cssAtRule struct {
 	nodes       []cssNode
 	hasBody     bool
 	blankBefore bool
+	isGroupEnd  bool
 }
 
 func (a *cssAtRule) cssNode()             {}
@@ -217,6 +219,82 @@ func lastVisibleIsStyleRule(c cssContainer) bool {
 		return ok
 	}
 	return false
+}
+
+// combineTopLevelGroups recomputes the blank-line separators between the root
+// stylesheet's direct children to match dart-sass's deferred combine-then-
+// serialize model. dart marks every completed top-level style rule as a group
+// end (isGroupEnd) and, when serialising, emits a blank line before whatever
+// visible node follows a group-end node — and only after a style rule, never
+// after a comment, declaration, @media or other at-rule. Computing this over the
+// FINAL, fully-combined top-level node list — after every module's CSS has been
+// emitted, cross-module @extend applied and CSS @imports hoisted — reproduces the
+// separation dart derives from its combined module tree, which the eager
+// per-load-site grouping could not see across a module or @import boundary (a
+// rule ending one module and a rule opening the next were grouped independently
+// and fused without the blank dart emits).
+//
+// Invisible nodes (empty parents whose rules were hoisted out) are skipped for
+// both the preceding-group test and their own separator, exactly as dart's
+// serializer skips invisible children before choosing the separator; the next
+// visible node derives its blank from the last visible node instead.
+func combineTopLevelGroups(root *cssRoot) {
+	prevGroupEnd := false
+	first := true
+	for _, n := range root.nodes {
+		// An invisible node is dropped, but it still carries the group-end credit of
+		// the last visible node through to the next visible one (emitChildren applies
+		// this as pendingBlank), exactly as dart's serializer keeps `previous` on the
+		// last visible node across invisible children. It never becomes a group end
+		// itself and does not advance prevGroupEnd.
+		blank := !first && prevGroupEnd
+		setBlankBefore(n, blank)
+		if isEmptyContainer(n) {
+			continue
+		}
+		first = false
+		prevGroupEnd = groupEndOf(n)
+	}
+}
+
+// groupEndOf reports dart-sass's isGroupEnd flag for a top-level node: set on the
+// last node emitted for a top-level style-rule statement (see markGroupEnd). Only
+// a style rule or a bubbled at-rule can carry the flag; every other node (comment,
+// declaration) is never a group end.
+func groupEndOf(n cssNode) bool {
+	switch v := n.(type) {
+	case *cssStyleRule:
+		return v.isGroupEnd
+	case *cssAtRule:
+		return v.isGroupEnd
+	}
+	return false
+}
+
+// setGroupEnd flags n as ending a top-level style-rule group. It is only ever
+// called on the last child produced by a top-level style-rule statement — a
+// style rule or the at-rule a nested rule bubbled into — so those are the only
+// node kinds it needs to handle.
+func setGroupEnd(n cssNode) {
+	switch v := n.(type) {
+	case *cssStyleRule:
+		v.isGroupEnd = true
+	case *cssAtRule:
+		v.isGroupEnd = true
+	}
+}
+
+// markGroupEnd flags the last child of a container as a group end, mirroring
+// dart-sass's `_parent.children.last.isGroupEnd = true` after a top-level style
+// rule completes. The flag persists on the node, so when modules' CSS trees are
+// later combined (and cloned per @import site) the deferred serializer can
+// reconstruct the exact blank-line separation across module and @import
+// boundaries — which the eager per-chunk grouping cannot see across.
+func markGroupEnd(c cssContainer) {
+	ch := c.children()
+	if len(ch) > 0 {
+		setGroupEnd(ch[len(ch)-1])
+	}
 }
 
 func hasVisible(nodes []cssNode) bool {

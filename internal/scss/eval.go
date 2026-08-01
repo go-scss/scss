@@ -207,6 +207,7 @@ func (e *evaluator) run(stmts []Stmt) {
 	e.evalBody(stmts, fr, true)
 	e.applyAllExtends()
 	hoistCSSImports(e.root)
+	combineTopLevelGroups(e.root)
 }
 
 // hoistCSSImports reorders the stylesheet's top-level nodes so that plain-CSS
@@ -280,6 +281,14 @@ func (e *evaluator) evalBody(stmts []Stmt, fr *frame, containerBody bool) {
 			fr.block = nil
 		}
 		e.evalStmt(s, fr)
+		if containerBody && isStyleRuleStmt(s) {
+			// dart marks _parent.children.last isGroupEnd after a top-level style
+			// rule completes (when not lexically inside a style rule). Recording it
+			// here — at the single container-body chokepoint, in every evaluator —
+			// lets combineTopLevelGroups reconstruct dart's blank-line separation
+			// over the final combined module tree.
+			markGroupEnd(fr.container)
+		}
 	}
 }
 
