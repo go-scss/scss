@@ -78,8 +78,14 @@ func (e *evaluator) evalInterpPart(expr Expr) string {
 }
 
 func (e *evaluator) evalString(x *StringLit) Value {
+	return &SassString{Text: e.evalInterp(x.Parts), Quoted: x.Quoted}
+}
+
+// evalInterp flattens an interpolation (a sequence of literal text and #{}
+// expressions) to its plain-string value.
+func (e *evaluator) evalInterp(in *Interp) string {
 	var sb strings.Builder
-	for _, part := range x.Parts.Parts {
+	for _, part := range in.Parts {
 		switch p := part.(type) {
 		case string:
 			sb.WriteString(p)
@@ -87,7 +93,7 @@ func (e *evaluator) evalString(x *StringLit) Value {
 			sb.WriteString(e.evalInterpPart(p.Expr))
 		}
 	}
-	return &SassString{Text: sb.String(), Quoted: x.Quoted}
+	return sb.String()
 }
 
 func (e *evaluator) evalVarRef(x *VarRef) Value {

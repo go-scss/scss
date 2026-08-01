@@ -59,7 +59,11 @@ func (p *parser) parseSpaceList(stop func(*parser) bool) Expr {
 		if save > 0 {
 			prev = p.src[save-1]
 		}
+		// A close paren/bracket also ends a token: dart-sass separates a following
+		// value into a fresh space-list element even with no whitespace
+		// (`(1 + 2)px` -> `3 px`, `url(x)no-repeat` -> `url(x) no-repeat`).
 		adjacentBoundary := prevUnicodeRange || prev == '"' || prev == '\'' ||
+			prev == ')' || prev == ']' ||
 			p.peek() == '"' || p.peek() == '\'' || p.peek() == '$' ||
 			(p.peek() == '#' && p.peekAt(1) == '{')
 		if (!had && !adjacentBoundary) || stop(p) || p.stopChar() || p.peek() == ',' || !p.canStartValue() {
@@ -629,7 +633,12 @@ func (p *parser) parseHashValue() Expr {
 		// `#{1}bar` / `#{1}#{2}`: interpolation immediately followed by more
 		// identifier text is a single interpolated identifier.
 		if isNameChar(p.peek()) || p.peek() == '\\' || (p.peek() == '#' && p.peekAt(1) == '{') {
-			return p.continueInterpIdent([]any{&InterpExpr{Expr: e}})
+			return p.maybeInterpCall(p.continueInterpIdent([]any{&InterpExpr{Expr: e}}))
+		}
+		// `#{$f}(a, b)`: an interpolation directly followed by "(" names a plain
+		// CSS function call whose name is the interpolation.
+		if p.peek() == '(' {
+			return &FuncCall{NameInterp: &Interp{Parts: []any{&InterpExpr{Expr: e}}}, Args: p.parseArgList()}
 		}
 		return &InterpExpr{Expr: e}
 	}
@@ -699,7 +708,7 @@ func isHexDigit(c byte) bool {
 // escapes, and `#{}` interpolations — with no intervening whitespace — into a
 // single unquoted string expression, matching how dart-sass lexes an identifier
 // that embeds interpolation (e.g. `foo#{1}bar` -> the unquoted string `foo1bar`).
-func (p *parser) continueInterpIdent(parts []any) Expr {
+func (p *parser) continueInterpIdent(parts []any) *StringLit {
 	var sb strings.Builder
 	flush := func() {
 		if sb.Len() > 0 {
@@ -736,6 +745,16 @@ func (p *parser) continueInterpIdent(parts []any) Expr {
 	return &StringLit{Parts: &Interp{Parts: parts}, Quoted: false}
 }
 
+// maybeInterpCall turns an interpolated identifier that is directly followed by
+// "(" into a plain CSS function call whose name is the interpolation
+// (`foo#{1}bar(arg)`, `#{$f}(arg)`). Anything else passes through unchanged.
+func (p *parser) maybeInterpCall(sl *StringLit) Expr {
+	if p.peek() == '(' {
+		return &FuncCall{NameInterp: sl.Parts, Args: p.parseArgList()}
+	}
+	return sl
+}
+
 func (p *parser) parseIdentValue() Expr {
 	// A unicode range (`U+1A2B`, `u+1a2b`, `U+1-B`, `U+A?`) begins with a lone
 	// "u"/"U" immediately followed by "+" and a hex digit or "?".
@@ -745,9 +764,11 @@ func (p *parser) parseIdentValue() Expr {
 	}
 	name := p.scanIdentifier()
 	// An identifier that embeds interpolation (`foo#{1}bar`) is an unquoted
-	// interpolated string, not a bare identifier / function / namespace access.
+	// interpolated string, not a bare identifier / function / namespace access —
+	// unless it is directly followed by "(", which makes it a plain CSS function
+	// call whose name is the interpolation (`foo#{1}bar(arg)`).
 	if p.peek() == '#' && p.peekAt(1) == '{' {
-		return p.continueInterpIdent([]any{name})
+		return p.maybeInterpCall(p.continueInterpIdent([]any{name}))
 	}
 	// IE progid:...() special function (uses ":" rather than "("); the name may
 	// be vendor-prefixed (e.g. -c-progid).
