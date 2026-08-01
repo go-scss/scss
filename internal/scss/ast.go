@@ -347,10 +347,16 @@ type Unary struct {
 }
 
 // FuncCall is a function call, optionally namespaced.
+//
+// When NameInterp is non-nil the callee's name embeds interpolation
+// (`#{$f}(a)`, `foo#{1}bar(a)`); dart-sass never resolves such a call to a Sass
+// function or built-in — it always passes through as a plain CSS function whose
+// name is the evaluated interpolation.
 type FuncCall struct {
-	Namespace string
-	Name      string
-	Args      *ArgList
+	Namespace  string
+	Name       string
+	NameInterp *Interp
+	Args       *ArgList
 }
 
 // ListExpr is a list literal.

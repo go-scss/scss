@@ -133,6 +133,12 @@ func (e *evaluator) evalArgs(args *ArgList) ([]Value, map[string]Value, Separato
 }
 
 func (e *evaluator) evalCall(x *FuncCall) Value {
+	// An interpolated callee name (`#{$f}(a)`, `foo#{1}bar(a)`) is never resolved
+	// to a Sass function or built-in: dart-sass emits it verbatim as a plain CSS
+	// function whose name is the evaluated interpolation.
+	if x.NameInterp != nil {
+		return e.plainCSSFunctionNamed(e.evalInterp(x.NameInterp), x.Args)
+	}
 	// if() is special: lazy evaluation of branches.
 	if x.Namespace == "" && x.Name == "if" {
 		return e.evalIfFunction(x)
@@ -223,8 +229,12 @@ func (e *evaluator) evalIfFunction(x *FuncCall) Value {
 }
 
 func (e *evaluator) plainCSSFunction(x *FuncCall) Value {
+	return e.plainCSSFunctionNamed(x.Name, x.Args)
+}
+
+func (e *evaluator) plainCSSFunctionNamed(name string, args *ArgList) Value {
 	var parts []string
-	for _, a := range x.Args.Args {
+	for _, a := range args.Args {
 		// A spread argument (`$list...`) is expanded in place: dart-sass serialises
 		// the underlying value with its own separator (so a comma list becomes
 		// `a, b` and a space list `a b`) rather than keeping a literal `...`.
@@ -234,7 +244,7 @@ func (e *evaluator) plainCSSFunction(x *FuncCall) Value {
 		}
 		parts = append(parts, s)
 	}
-	return &SassString{Text: x.Name + "(" + strings.Join(parts, ", ") + ")", Quoted: false}
+	return &SassString{Text: name + "(" + strings.Join(parts, ", ") + ")", Quoted: false}
 }
 
 func (e *evaluator) lookupFunc(ns, name string) *funcEntry {
