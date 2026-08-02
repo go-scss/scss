@@ -209,9 +209,26 @@ func newEvaluator(importer Importer) *evaluator {
 // with the source module scope whose CSS was duplicated. Step 1 of the per-clone
 // extend rebuild records these; composing downstream extends onto `store` is a
 // later wave.
+//
+// mirror, when non-empty, pairs each duplicated style rule with the source rule
+// it was cloned from. Step 3 (combine-tree box separation) uses it to copy the
+// source rule's FINAL selector onto the duplicate after all extends land, so a
+// duplicate that previously shared the source's box — two combine-tree references
+// to one node — still serialises byte-identically once the boxes are separated.
+// This is a behaviour-preserving stand-in: step 4 replaces it with real per-clone
+// composition on `store`, which will make each duplicate carry only the extends
+// downstream of ITS own load site.
 type importClone struct {
 	store  *extensionStore
 	source *moduleScope
+	mirror []ruleMirror
+}
+
+// ruleMirror pairs a duplicated style rule with the original rule whose final
+// (post-extend) selector it copies. See importClone.mirror.
+type ruleMirror struct {
+	clone *cssStyleRule
+	orig  *cssStyleRule
 }
 
 // moduleScope is one @extend module boundary. Its evaluator supplies the ordered
@@ -1322,6 +1339,24 @@ func (e *evaluator) applyAllExtends() {
 		m.ev.writeBackSelectors()
 		for _, up := range m.upstream {
 			up.downstreamStores = append(up.downstreamStores, m.store)
+		}
+	}
+	// Pass 3 (combine-tree box separation, step 3): every duplicate produced by a
+	// legacy @import now owns a separate style rule + box + store (registered
+	// above), so two combine-tree references no longer mutate a single node. Until
+	// step 4 composes each duplicate's own store, a duplicate that was separated
+	// from a source it previously SHARED must still serialise exactly as before —
+	// so mirror the source's final (post-extend) selector onto it. Duplicates with
+	// no mirror (the pre-existing re-emit path, whose copy was already an
+	// independent pre-extend clone) are left untouched, preserving their output.
+	for _, ic := range *e.importClones {
+		for _, mp := range ic.mirror {
+			mp.clone.selector = mp.orig.selector
+			mp.clone.original = mp.orig.original
+			mp.clone.raw = mp.orig.raw
+			if mp.clone.box != nil {
+				mp.clone.box.value = mp.orig.selector.list
+			}
 		}
 	}
 }

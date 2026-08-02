@@ -451,6 +451,53 @@ func (e *evaluator) reEmitImportedCSS(m *module, fr *frame) {
 	e.emitModuleCSS(clones, fr)
 }
 
+// emitFreshImportClone emits a legacy-@import CSS duplicate for a module loaded
+// FRESH inside an @import — the combine-tree box-separation half of the per-clone
+// extend rebuild (step 3). A module first loaded while an @import is inlining
+// (e.importDepth > 0) is duplicated by dart's _combineCss(clone: true): its CSS
+// appears once at the @import site AND again wherever the module is @used
+// canonically. go-scss previously emitted the SAME nodes at both places, so the
+// two combine-tree references shared one style rule + box and a downstream
+// @extend written at one site leaked into the other. This emits an independent
+// deep clone (its own rules, boxes and store) for the @import copy while the
+// canonical module keeps the originals, and registers the clone so step 4 can
+// compose the @import site's own downstream extends onto it. The whole loaded
+// subtree is cloned in one pass, so a module TRANSITIVELY @used by the fresh
+// module (its CSS is inlined into `orig`) is separated too.
+//
+// A mirror pairing is recorded so, until step 4 composes the clone's store, the
+// duplicate copies the source rules' final selectors — keeping today's output
+// byte-for-byte, since the two references previously shared exactly those nodes.
+func (e *evaluator) emitFreshImportClone(orig []cssNode, source *moduleScope, fr *frame) {
+	clones := cloneCSSNodes(orig)
+	store := e.cloneStoreForScope(source)
+	registerCloneBoxes(clones, store)
+	mirror := collectRuleMirror(clones, orig)
+	*e.importClones = append(*e.importClones, &importClone{store: store, source: source, mirror: mirror})
+	e.emitModuleCSS(clones, fr)
+}
+
+// collectRuleMirror walks a cloned CSS tree in lockstep with the original it was
+// cloned from and pairs every style rule with its source. cloneCSSNodes produces
+// a structurally identical tree (same node kinds in the same order), so the walk
+// stays aligned. Only style rules carry a selector an @extend can change, so only
+// they are paired; declarations and comments are copied verbatim and need none.
+func collectRuleMirror(clones, orig []cssNode) []ruleMirror {
+	var out []ruleMirror
+	for i := range clones {
+		switch c := clones[i].(type) {
+		case *cssStyleRule:
+			o := orig[i].(*cssStyleRule)
+			out = append(out, ruleMirror{clone: c, orig: o})
+			out = append(out, collectRuleMirror(c.nodes, o.nodes)...)
+		case *cssAtRule:
+			o := orig[i].(*cssAtRule)
+			out = append(out, collectRuleMirror(c.nodes, o.nodes)...)
+		}
+	}
+	return out
+}
+
 func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *module {
 	if m, ok := e.loaded[url]; ok {
 		e.noteLoadedCombine(m, false)
@@ -530,7 +577,22 @@ func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *
 	// include used module CSS in our output, as a chunk that participates in
 	// the importing stylesheet's top-level blank-line grouping.
 	moduleNodes := sub.root.children()
-	e.emitModuleCSS(moduleNodes, fr)
+	if e.importDepth > 0 && !fr.hasParent {
+		// Loaded fresh while an @import is inlining at the container level: emit a
+		// separated clone (its own rules/boxes/store) so this @import copy no longer
+		// shares nodes with the module's canonical CSS. The canonical module keeps
+		// `moduleNodes`.
+		//
+		// A fresh load inside an ENCLOSING style rule (fr.hasParent) is left on the
+		// shared-node path: emitModuleCSS re-nests it under the enclosing selector,
+		// mutating the node's own selector in a way the plain source-selector mirror
+		// cannot reproduce. Such a nested @import never duplicates the module against
+		// a canonical copy in today's corpus, so it has no shared-box hazard to
+		// separate; step 4 revisits it once composition (not a mirror) drives clones.
+		e.emitFreshImportClone(moduleNodes, sub.scope, fr)
+	} else {
+		e.emitModuleCSS(moduleNodes, fr)
+	}
 	// The module's exported API is its OWN public members (its global scope plus
 	// its own function/mixin tables); anything it @forwards is reached through the
 	// forwards chain by the read/write/enumeration accessors. A `@use ... as *`
@@ -651,13 +713,20 @@ func cloneCSSNode(n cssNode) cssNode {
 // cached on its scope, then reused by applyAllExtends pass 1. A module with no
 // extend scope (a plain-CSS file) gets a fresh empty store.
 func (e *evaluator) cloneStoreFor(m *module) *extensionStore {
-	if m.scope == nil {
+	return e.cloneStoreForScope(m.scope)
+}
+
+// cloneStoreForScope is cloneStoreFor keyed on a module scope directly, so the
+// fresh-during-import path (which holds the loading sub-evaluator's scope but has
+// not yet built its module wrapper) can reuse the same own-store cloning.
+func (e *evaluator) cloneStoreForScope(sc *moduleScope) *extensionStore {
+	if sc == nil {
 		return newExtensionStore(extendNormal)
 	}
-	if m.scope.ownStore == nil {
-		m.scope.ownStore = m.scope.ev.buildOwnStore()
+	if sc.ownStore == nil {
+		sc.ownStore = sc.ev.buildOwnStore()
 	}
-	return m.scope.ownStore.clone()
+	return sc.ownStore.clone()
 }
 
 // registerCloneBoxes walks a cloned CSS tree and registers every style rule
