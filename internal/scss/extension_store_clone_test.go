@@ -147,31 +147,26 @@ func TestExtensionStoreCloneExtendsIdentically(t *testing.T) {
 	}
 }
 
-// TestRegisterCloneBoxes covers registerCloneBoxes across a style rule with a
-// parsed selector (gets a box + registration), a raw plain-CSS rule with no
-// parsed selector (no box), an at-rule whose nested style rule is registered,
-// and inert leaf nodes (declaration/comment) that are skipped.
-func TestRegisterCloneBoxes(t *testing.T) {
+// TestRegisterCloneRule covers registerCloneRule: a visible selector is wrapped in
+// a fresh box, registered, and marked as an original; an invisible placeholder is
+// registered (so a downstream extend can still target it) but not marked original.
+func TestRegisterCloneRule(t *testing.T) {
 	store := newExtensionStore(extendNormal)
 	rule := &cssStyleRule{selector: parseSelectorList(".x")}
-	raw := &cssStyleRule{raw: true} // selector.list is nil
-	nested := &cssStyleRule{selector: parseSelectorList(".y")}
-	atr := &cssAtRule{name: "media", nodes: []cssNode{nested}}
-	registerCloneBoxes([]cssNode{rule, raw, atr, &cssDeclaration{}, &cssComment{}}, store)
+	invisible := &cssStyleRule{selector: selectorList{list: mustParseSelectorList("%p")}}
+	registerCloneRule(rule, store)
+	registerCloneRule(invisible, store)
 
 	if rule.box == nil || rule.box.value != rule.selector.list {
 		t.Fatal("style rule got no box wrapping its selector")
 	}
-	if raw.box != nil {
-		t.Fatal("raw rule must not get a box")
-	}
-	if nested.box == nil {
-		t.Fatal("nested style rule under at-rule not registered")
-	}
 	if _, ok := store.selectors[simpleKey(simpleOf(t, ".x"))]; !ok {
 		t.Fatal(".x not registered in store")
 	}
-	if _, ok := store.selectors[simpleKey(simpleOf(t, ".y"))]; !ok {
-		t.Fatal(".y not registered in store")
+	if !store.originals[complexKey(rule.selector.list.components[0])] {
+		t.Fatal(".x should be marked as an original")
+	}
+	if store.originals[complexKey(invisible.selector.list.components[0])] {
+		t.Fatal("invisible placeholder must not be marked as an original")
 	}
 }
