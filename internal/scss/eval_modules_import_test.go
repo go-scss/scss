@@ -148,10 +148,10 @@ func TestImplicitConfigSnapshot(t *testing.T) {
 	if snap := e.implicitConfigSnapshot(); snap != nil {
 		t.Errorf("empty env snapshot should be nil, got %v", snap)
 	}
-	e.env.scopes[0]["a"] = newNumber(1)
+	e.env.defineVar("a", newNumber(1)) // scope 0
 	e.env.pushScope()
-	e.env.scopes[1]["a"] = newNumber(2) // inner scope wins
-	e.env.scopes[1]["b"] = newNumber(3)
+	e.env.defineVar("a", newNumber(2)) // inner scope wins
+	e.env.defineVar("b", newNumber(3))
 	snap := e.implicitConfigSnapshot()
 	if n, ok := snap["a"].(*Number); !ok || n.Val != 2 {
 		t.Errorf("inner scope should win for a, got %v", snap["a"])

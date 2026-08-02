@@ -126,10 +126,17 @@ func newEnvironment() *environment {
 // pushScope opens an opaque scope: a @function/@mixin/style-rule boundary that
 // blocks implicit write-through to the global scope.
 func (e *environment) pushScope() {
-	e.scopes = append(e.scopes, map[string]Value{})
+	// The three per-scope tables are allocated lazily on first write (see
+	// topVars/topMixinScope/topFuncScope): the overwhelming majority of opened
+	// scopes — a style rule with only property declarations, a loop body, an
+	// argument-less block — never define a variable, mixin, or function, so a nil
+	// placeholder avoids three map allocations per scope. Reads walk the chain and
+	// treat nil as empty; closureAt materialises any captured nil scope to keep
+	// the eager sharing semantics exactly.
+	e.scopes = append(e.scopes, nil)
 	e.semiGlobal = append(e.semiGlobal, false)
-	e.mixins = append(e.mixins, map[string]*mixinEntry{})
-	e.funcs = append(e.funcs, map[string]*funcEntry{})
+	e.mixins = append(e.mixins, nil)
+	e.funcs = append(e.funcs, nil)
 }
 
 // pushControlScope opens a control-flow (@if/@each/@for/@while) scope. It stays
@@ -137,10 +144,10 @@ func (e *environment) pushScope() {
 // implicit writes to a global variable propagate to global at the stylesheet
 // root but are trapped once a rule/function/mixin boundary intervenes.
 func (e *environment) pushControlScope() {
-	e.scopes = append(e.scopes, map[string]Value{})
+	e.scopes = append(e.scopes, nil)
 	e.semiGlobal = append(e.semiGlobal, e.semiGlobal[len(e.semiGlobal)-1])
-	e.mixins = append(e.mixins, map[string]*mixinEntry{})
-	e.funcs = append(e.funcs, map[string]*funcEntry{})
+	e.mixins = append(e.mixins, nil)
+	e.funcs = append(e.funcs, nil)
 }
 
 func (e *environment) popScope() {
@@ -150,15 +157,43 @@ func (e *environment) popScope() {
 	e.funcs = e.funcs[:len(e.funcs)-1]
 }
 
+// topVars returns the innermost variable table, allocating it on first use so a
+// scope that never declares a variable costs no map.
+func (e *environment) topVars() map[string]Value {
+	i := len(e.scopes) - 1
+	if e.scopes[i] == nil {
+		e.scopes[i] = map[string]Value{}
+	}
+	return e.scopes[i]
+}
+
+// topMixinScope returns the innermost mixin table, allocating it on first use.
+func (e *environment) topMixinScope() map[string]*mixinEntry {
+	i := len(e.mixins) - 1
+	if e.mixins[i] == nil {
+		e.mixins[i] = map[string]*mixinEntry{}
+	}
+	return e.mixins[i]
+}
+
+// topFuncScope returns the innermost function table, allocating it on first use.
+func (e *environment) topFuncScope() map[string]*funcEntry {
+	i := len(e.funcs) - 1
+	if e.funcs[i] == nil {
+		e.funcs[i] = map[string]*funcEntry{}
+	}
+	return e.funcs[i]
+}
+
 // defineMixin declares a mixin in the innermost scope, shadowing any enclosing
 // definition of the same name for the lifetime of that scope.
 func (e *environment) defineMixin(name string, m *mixinEntry) {
-	e.mixins[len(e.mixins)-1][normIdent(name)] = m
+	e.topMixinScope()[normIdent(name)] = m
 }
 
 // defineFunc declares a function in the innermost scope.
 func (e *environment) defineFunc(name string, f *funcEntry) {
-	e.funcs[len(e.funcs)-1][normIdent(name)] = f
+	e.topFuncScope()[normIdent(name)] = f
 }
 
 // getMixin resolves a mixin by walking the scope chain innermost-first.
@@ -196,6 +231,26 @@ func (e *environment) closureAt(n int) *environment {
 	c.semiGlobal = append([]bool(nil), e.semiGlobal[:n]...)
 	c.mixins = append([]map[string]*mixinEntry(nil), e.mixins[:n]...)
 	c.funcs = append([]map[string]*funcEntry(nil), e.funcs[:n]...)
+	// The closure and the defining environment must share each captured scope's
+	// tables so a later definition in an enclosing frame stays visible to the
+	// closure, as it did when scopes were eagerly allocated. Materialise any that
+	// are still nil (lazily unallocated) into the same map on both sides. Scope 0
+	// is always real, and callables defined at the top level capture only it, so
+	// this loop typically allocates nothing.
+	for i := 0; i < n; i++ {
+		if c.scopes[i] == nil {
+			m := map[string]Value{}
+			c.scopes[i], e.scopes[i] = m, m
+		}
+		if c.mixins[i] == nil {
+			m := map[string]*mixinEntry{}
+			c.mixins[i], e.mixins[i] = m, m
+		}
+		if c.funcs[i] == nil {
+			m := map[string]*funcEntry{}
+			c.funcs[i], e.funcs[i] = m, m
+		}
+	}
 	return &c
 }
 
@@ -208,7 +263,7 @@ func (e *environment) globalFuncs() map[string]*funcEntry { return e.funcs[0] }
 // defineVar declares a variable in the innermost scope (parameter binding and
 // loop variables), unconditionally shadowing any enclosing variable.
 func (e *environment) defineVar(name string, val Value) {
-	e.scopes[len(e.scopes)-1][normIdent(name)] = val
+	e.topVars()[normIdent(name)] = val
 }
 
 func (e *environment) getVar(name string) (Value, bool) {
@@ -347,7 +402,7 @@ func (e *environment) setVar(name string, val Value, global bool) {
 		// name a `@use as *` module exposes writes through to that module.
 		return
 	}
-	e.scopes[len(e.scopes)-1][name] = val
+	e.topVars()[name] = val
 }
 
 // setGlobalIfAbsent assigns at global scope only if absent (for @use with defaults).

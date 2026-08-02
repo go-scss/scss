@@ -44,6 +44,14 @@ type parser struct {
 	// written on that line can be serialized as a trailing comment attached to
 	// the brace rather than dropped to its own line.
 	closeBraceLine int
+	// nlPos holds the ascending byte offsets of every '\n' in src. It is
+	// computed once, on the first lineAt call, and binary-searched thereafter.
+	// This turns line-number resolution from an O(n) scan-from-start per call
+	// (O(n²) across a whole parse — historically the dominant cost on large
+	// inputs) into a one-time O(n) build plus O(log n) per lookup. nlReady
+	// guards the (possibly empty) slice so a newline-free source is built once.
+	nlPos   []int
+	nlReady bool
 }
 
 func newParser(src string) *parser {
@@ -628,14 +636,30 @@ func (p *parser) declEndLine() int {
 
 // lineAt returns the 1-based source line of a byte position (counting the
 // newlines that precede it), matching dart-sass's SourceSpan line numbering.
+// The newline offsets are indexed once and binary-searched, so repeated calls
+// across a large parse stay near-linear rather than quadratic.
 func (p *parser) lineAt(pos int) int {
-	line := 1
-	for i := 0; i < pos; i++ {
-		if p.src[i] == '\n' {
-			line++
+	if !p.nlReady {
+		p.nlReady = true
+		p.nlPos = make([]int, 0, strings.Count(p.src, "\n"))
+		for i := 0; i < len(p.src); i++ {
+			if p.src[i] == '\n' {
+				p.nlPos = append(p.nlPos, i)
+			}
 		}
 	}
-	return line
+	// The 1-based line is one more than the count of newline offsets strictly
+	// less than pos; find that count by binary search over the sorted offsets.
+	lo, hi := 0, len(p.nlPos)
+	for lo < hi {
+		mid := int(uint(lo+hi) >> 1)
+		if p.nlPos[mid] < pos {
+			lo = mid + 1
+		} else {
+			hi = mid
+		}
+	}
+	return 1 + lo
 }
 
 func isCustomWS(c byte) bool {
