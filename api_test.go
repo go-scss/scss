@@ -271,6 +271,21 @@ func TestNotPrecedence(t *testing.T) {
 	}
 }
 
+// TestNestedPropAfterNestedRule verifies that a declaration following a nested
+// property block (itself following a hoisted nested rule) stays in the same
+// trailing parent block rather than opening a new one. Byte-verified against
+// dart-sass 1.102.0 (sass-spec libsass/at-stuff.hrx).
+func TestNestedPropAfterNestedRule(t *testing.T) {
+	res, err := scss.CompileString("div {\n  span { font: x; }\n  border: { left: 1px; right: 2px; }\n  background: gray;\n}\n", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "div span {\n  font: x;\n}\ndiv {\n  border-left: 1px;\n  border-right: 2px;\n  background: gray;\n}\n"
+	if res.CSS != want {
+		t.Errorf("got %q want %q", res.CSS, want)
+	}
+}
+
 func TestCompileStringCompressed(t *testing.T) {
 	res, err := scss.CompileString(".a{x:1}", &scss.Options{Style: scss.Compressed})
 	if err != nil {

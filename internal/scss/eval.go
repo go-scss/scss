@@ -525,12 +525,17 @@ func (e *evaluator) evalDeclaration(n *Declaration, fr *frame) {
 	}
 	// Nested properties use a "name-" prefix that applies to every declaration
 	// emitted in the block, including those produced by @include or @content.
+	// The body evaluates against this same frame (only the prefix is swapped, then
+	// restored) so a trailing style-rule block it opens is reused by the following
+	// sibling declarations — otherwise a copy of the frame would hold that block
+	// and each later declaration would open a fresh, redundant parent block.
 	if len(n.Body) > 0 {
-		child := *fr
-		child.declPrefix = name + "-"
+		saved := fr.declPrefix
+		fr.declPrefix = name + "-"
 		for _, sub := range n.Body {
-			e.evalStmt(sub, &child)
+			e.evalStmt(sub, fr)
 		}
+		fr.declPrefix = saved
 	}
 }
 
