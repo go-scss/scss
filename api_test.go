@@ -235,6 +235,20 @@ func TestBlankListElement(t *testing.T) {
 	}
 }
 
+// TestCallStringUnknownFunction verifies that the deprecated string form of
+// call() falls back to a plain-CSS function when the named function is
+// undefined, rather than erroring. Byte-verified against dart-sass 1.102.0
+// (sass-spec libsass-closed-issues/issue_1417).
+func TestCallStringUnknownFunction(t *testing.T) {
+	res, err := scss.CompileString("@use \"sass:meta\";\na { b: meta.call(missing, 1, 2px) }\n", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "a {\n  b: missing(1, 2px);\n}\n"; res.CSS != want {
+		t.Errorf("got %q want %q", res.CSS, want)
+	}
+}
+
 func TestCompileStringCompressed(t *testing.T) {
 	res, err := scss.CompileString(".a{x:1}", &scss.Options{Style: scss.Compressed})
 	if err != nil {
