@@ -167,6 +167,21 @@ func TestExprTrailingCommaBeforeBrace(t *testing.T) {
 	}
 }
 
+// TestEscapedColonSelector verifies that a backslash-escaped colon at the end
+// of a type selector (`something\:`) is identifier text, so the statement is a
+// style rule rather than being misread as a `something\` declaration terminated
+// by the colon. Byte-verified against dart-sass 1.102.0 (sass-spec
+// libsass-closed-issues/issue_2625).
+func TestEscapedColonSelector(t *testing.T) {
+	res, err := scss.CompileString("something\\:{ padding: 2px; }", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "something\\: {\n  padding: 2px;\n}\n"; res.CSS != want {
+		t.Errorf("got %q want %q", res.CSS, want)
+	}
+}
+
 func TestCompileStringCompressed(t *testing.T) {
 	res, err := scss.CompileString(".a{x:1}", &scss.Options{Style: scss.Compressed})
 	if err != nil {
