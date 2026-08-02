@@ -797,7 +797,16 @@ func trimInterp(i *Interp) *Interp {
 // "{", ";", "}" or EOF. It behaves like parseInterpolatedText but preserves
 // loud comments (`/* … */`) verbatim, matching dart-sass, which keeps loud
 // comments that appear within an unknown directive's value.
-func (p *parser) parseAtRulePrelude() *Interp {
+//
+// When collapse is set (a truly-unknown at-rule such as `@apply`), interior
+// whitespace is folded the way dart-sass's almostAnyValue reader folds it: a
+// newline-free run of space/tab characters collapses to its final whitespace
+// character (so `a  b` becomes `a b`, `a \tb` keeps the tab, `a\t b` keeps the
+// space), while any run that contains a newline — line breaks and the source
+// indentation that follows them — is preserved verbatim. Quoted-string bodies
+// and loud comments enter via their own scanners and are never touched. Leading
+// and trailing whitespace is stripped later by trimInterp.
+func (p *parser) parseAtRulePrelude(collapse bool) *Interp {
 	var parts []any
 	var sb strings.Builder
 	depth := 0
@@ -813,6 +822,47 @@ func (p *parser) parseAtRulePrelude() *Interp {
 			break
 		}
 		switch {
+		case collapse && (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f'):
+			// Consume the whole whitespace run. A run carrying a newline (a line
+			// break plus its trailing indentation) is emitted verbatim; a run of
+			// only spaces/tabs collapses to the run's final whitespace character.
+			var run []byte
+			hasNL := false
+			for !p.eof() {
+				d := p.peek()
+				if d == ' ' || d == '\t' {
+					run = append(run, p.next())
+				} else if d == '\n' || d == '\r' || d == '\f' {
+					hasNL = true
+					run = append(run, p.next())
+				} else {
+					break
+				}
+			}
+			if !hasNL {
+				sb.WriteByte(run[len(run)-1])
+			} else {
+				// Keep line breaks and the indentation that follows them, but drop
+				// each line's trailing space/tab, matching dart-sass which strips a
+				// prelude line's trailing whitespace while preserving leading indent.
+				for i := 0; i < len(run); {
+					if b := run[i]; b == ' ' || b == '\t' {
+						j := i
+						for j < len(run) && (run[j] == ' ' || run[j] == '\t') {
+							j++
+						}
+						if j < len(run) && (run[j] == '\n' || run[j] == '\r' || run[j] == '\f') {
+							i = j // drop the space/tab run before a line break
+							continue
+						}
+						sb.Write(run[i:j])
+						i = j
+						continue
+					}
+					sb.WriteByte(run[i])
+					i++
+				}
+			}
 		case c == '#' && p.peekAt(1) == '{':
 			flush()
 			p.pos += 2
