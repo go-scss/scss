@@ -182,6 +182,36 @@ func TestEscapedColonSelector(t *testing.T) {
 	}
 }
 
+// TestBangFlagBoundary verifies that a `!` glued to the preceding value opens a
+// fresh token, so `c!important` (and the indented `c!` continued by `important`
+// on the next line) serializes as `c !important`, while a Sass `!default` flag
+// still terminates the value. Byte-verified against dart-sass 1.102.0 (sass-spec
+// css/important::syntax/sass/multiline/after_bang).
+func TestBangFlagBoundary(t *testing.T) {
+	res, err := scss.CompileString("a { b: c!important; }", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "a {\n  b: c !important;\n}\n"; res.CSS != want {
+		t.Errorf("!important: got %q want %q", res.CSS, want)
+	}
+	res, err = scss.CompileString("a\n  b: c!\n    important\n", &scss.Options{Syntax: scss.SyntaxIndented})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "a {\n  b: c !important;\n}\n"; res.CSS != want {
+		t.Errorf("sass: got %q want %q", res.CSS, want)
+	}
+	// A Sass !default flag still ends the value list (not treated as a value).
+	res, err = scss.CompileString("$x: c!default;\na { b: $x }", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "a {\n  b: c;\n}\n"; res.CSS != want {
+		t.Errorf("!default: got %q want %q", res.CSS, want)
+	}
+}
+
 func TestCompileStringCompressed(t *testing.T) {
 	res, err := scss.CompileString(".a{x:1}", &scss.Options{Style: scss.Compressed})
 	if err != nil {
