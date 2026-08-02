@@ -444,14 +444,12 @@ func (e *evaluator) reEmitImportedCSS(m *module, fr *frame) {
 		return
 	}
 	clones := cloneCSSNodes(m.cssNodes)
-	// Give the duplicate its own fresh extension store with every duplicated style
-	// rule registered under a fresh box; composeImportClones later applies the
-	// import subtree's @extends to those boxes. The subtree collector, shared with
-	// every other duplicate this @import produces, records which modules' extends
-	// belong to this clone.
-	store := newExtensionStore(extendNormal)
-	rules := registerCloneBoxes(clones, store)
-	*e.importClones = append(*e.importClones, &importClone{store: store, rules: rules, source: m.scope, subtree: e.importSubtree})
+	// Pair every duplicated style rule with the original it was cloned from, so
+	// composeImportClones can attribute each clone rule to its owning module and
+	// build the per-module clone stores. The subtree collector, shared with every
+	// other duplicate this @import produces, ties them into one cloned module graph.
+	origins, rules := pairCloneRules(m.cssNodes, clones)
+	*e.importClones = append(*e.importClones, &importClone{rules: rules, origins: origins, source: m.scope, subtree: e.importSubtree})
 	e.emitModuleCSS(clones, fr)
 }
 
@@ -474,14 +472,21 @@ func (e *evaluator) reEmitImportedCSS(m *module, fr *frame) {
 // which modules' @extends compose onto it in composeImportClones.
 func (e *evaluator) emitFreshImportClone(orig []cssNode, source *moduleScope, fr *frame) {
 	clones := cloneCSSNodes(orig)
-	store := newExtensionStore(extendNormal)
-	rules := registerCloneBoxes(clones, store)
-	*e.importClones = append(*e.importClones, &importClone{store: store, rules: rules, source: source, subtree: e.importSubtree})
+	origins, rules := pairCloneRules(orig, clones)
+	*e.importClones = append(*e.importClones, &importClone{rules: rules, origins: origins, source: source, subtree: e.importSubtree})
 	e.emitModuleCSS(clones, fr)
 }
 
 func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *module {
 	if m, ok := e.loaded[url]; ok {
+		// While a legacy @import inlines, re-@using an already-loaded module still
+		// duplicates its CSS AND records the import-site dependency, so the clone's
+		// module graph reaches it (its extends compose onto the duplicate). Outside
+		// an @import this is a plain deduped @use whose edge was recorded on first
+		// load, so dependsOn is a no-op there.
+		if e.importSubtree != nil {
+			e.dependsOn(m.scope)
+		}
 		e.noteLoadedCombine(m, false)
 		e.reEmitImportedCSS(m, fr)
 		return m
@@ -688,37 +693,32 @@ func cloneCSSNode(n cssNode) cssNode {
 	}
 }
 
-// registerCloneBoxes walks a cloned CSS tree, registers every style rule under a
-// fresh extension box in store, marks the clone's selectors as originals (so the
-// extend engine's trimming preserves them exactly as a standalone stylesheet's
-// own selectors), and returns the duplicated rules so their composed selectors
-// can be written back. Raw plain-CSS rules (no parsed selector list) carry no box
-// and are simply not extendable, keeping their verbatim output.
-func registerCloneBoxes(nodes []cssNode, store *extensionStore) []*cssStyleRule {
-	var rules []*cssStyleRule
-	var walk func([]cssNode)
-	walk = func(nodes []cssNode) {
-		for _, n := range nodes {
-			switch v := n.(type) {
+// pairCloneRules walks an original CSS node list and its structural deep clone in
+// lockstep, returning the paired style rules that carry a parsed selector list —
+// exactly the rules the extend engine tracks (a raw plain-CSS rule with no parsed
+// selector list carries no box and stays verbatim). origins[i] is the original
+// rule that clones[i] was cloned from; composeImportClones uses it to attribute
+// each clone rule to its owning module. cloneCSSNodes preserves node count and
+// order, so the two trees are traversed by matching index.
+func pairCloneRules(orig, clone []cssNode) (origins, clones []*cssStyleRule) {
+	var walk func(o, c []cssNode)
+	walk = func(o, c []cssNode) {
+		for i := range o {
+			switch ov := o[i].(type) {
 			case *cssStyleRule:
-				if v.selector.list != nil {
-					v.box = &box{value: v.selector.list}
-					store.registerSelector(v.selector.list, v.box)
-					if !v.selector.list.isInvisible() {
-						for _, c := range v.selector.list.components {
-							store.originals[complexKey(c)] = true
-						}
-					}
-					rules = append(rules, v)
+				cv := c[i].(*cssStyleRule)
+				if ov.selector.list != nil {
+					origins = append(origins, ov)
+					clones = append(clones, cv)
 				}
-				walk(v.nodes)
+				walk(ov.nodes, cv.nodes)
 			case *cssAtRule:
-				walk(v.nodes)
+				walk(ov.nodes, c[i].(*cssAtRule).nodes)
 			}
 		}
 	}
-	walk(nodes)
-	return rules
+	walk(orig, clone)
+	return origins, clones
 }
 
 // emptyModule builds a module with no members, used for plain-CSS files loaded

@@ -84,6 +84,54 @@ func TestReEmitCloneComposition(t *testing.T) {
 	}
 }
 
+// TestUseAndImportIntoDiamondExtend covers the sass-spec case of the same name:
+// a module @used AND @imported that itself @uses two sibling modules which both
+// extend a shared module. The @import (and a second @import of a file that @uses
+// the module) each duplicate the whole subtree; every copy must be sibling-isolated
+// — the shared rule is extended by both siblings' extendees, but neither sibling's
+// cross-extender (`@extend the-other-sibling !optional`) leaks across the diamond.
+// dart-sass 1.102 prints three identical copies. This is the per-module clone store
+// case: an aggregate clone store would leak `right-extender` into the shared rule.
+func TestUseAndImportIntoDiamondExtend(t *testing.T) {
+	imp := cssMapImporter(map[string]string{
+		"_downstream.scss": "@use \"left\";\n@use \"right\";\n",
+		"_left.scss":       "@use \"shared\";\nleft-extendee {@extend in-shared}\nleft-extender {@extend right-extendee !optional}\n",
+		"_right.scss":      "@use \"shared\";\nright-extendee {@extend in-shared}\nright-extender {@extend left-extendee !optional}\n",
+		"_shared.scss":     "in-shared {x: y}\n",
+		"_imported.scss":   "@use \"downstream\";\n",
+	})
+	css, _ := runProgram(t, "@use \"downstream\";\n@import \"downstream\";\n@import \"imported\";\n", imp)
+
+	one := "in-shared, right-extendee, left-extendee {\n  x: y;\n}\n"
+	want := one + "\n" + one + "\n" + one
+	if css != want {
+		t.Fatalf("diamond @use+@import not sibling-isolated per clone:\ngot:\n%q\nwant:\n%q", css, want)
+	}
+}
+
+// TestUseIntoUseAndUseIntoImportIntoUse covers a clone whose composition order is
+// driven by the IMPORT-site edge, not the canonical module rank: `importer`
+// @imports `imported`, which @uses+extends `shared`; the import copy of `shared`
+// must be extended by `in-imported` even though, canonically, `importer` is not
+// downstream of `shared`. Composing in canonical-rank order would visit `shared`
+// before `importer` and miss the extend; the subtree-local downstream-first order
+// fixes it. dart-sass 1.102 prints the import copy as `shared, in-imported` and the
+// canonical copy (via `used`) as `shared, in-used`.
+func TestUseIntoUseAndUseIntoImportIntoUse(t *testing.T) {
+	imp := cssMapImporter(map[string]string{
+		"_importer.scss": "@import \"imported\";\n",
+		"_imported.scss": "@use \"shared\";\nin-imported {@extend shared}\n",
+		"_used.scss":     "@use \"shared\";\nin-used {@extend shared}\n",
+		"_shared.scss":   "shared {x: y}\n",
+	})
+	css, _ := runProgram(t, "@use \"importer\";\n@use \"used\";\n", imp)
+
+	want := "shared, in-imported {\n  x: y;\n}\n\nshared, in-used {\n  x: y;\n}\n"
+	if css != want {
+		t.Fatalf("import-edge composition order lost the clone's own extend:\ngot:\n%q\nwant:\n%q", css, want)
+	}
+}
+
 // TestImportCloneThroughDeepUse covers that "reached through an @import" is driven
 // by the import subtree, not importDepth: `shared` is re-emitted even though it is
 // @used two @use levels deep inside the imported file, where importDepth has reset
@@ -148,44 +196,33 @@ func TestReEmitOutsideImportIsNoOp(t *testing.T) {
 	}
 }
 
-// TestRegisterCloneBoxesNew covers registerCloneBoxes: a style rule with a parsed
-// selector (box + registration + marked original + returned), a raw plain-CSS rule
-// with no parsed selector (no box, not returned), an at-rule whose nested style
-// rule is reached by recursion, an invisible-selector rule (registered but not
-// marked original), and inert declaration/comment leaves that are skipped.
-func TestRegisterCloneBoxesNew(t *testing.T) {
-	store := newExtensionStore(extendNormal)
+// TestPairCloneRules covers pairCloneRules: a style rule with a parsed selector is
+// paired (origin+clone returned), a raw plain-CSS rule with no parsed selector is
+// skipped, an at-rule's nested style rule is reached by recursion, and inert
+// declaration/comment leaves are skipped. The pairing is by matching index into
+// the structurally identical clone tree.
+func TestPairCloneRules(t *testing.T) {
 	rule := &cssStyleRule{selector: parseSelectorList(".x")}
 	raw := &cssStyleRule{raw: true} // selector.list is nil
 	nested := &cssStyleRule{selector: parseSelectorList(".y")}
 	atr := &cssAtRule{name: "media", nodes: []cssNode{nested}}
-	invisible := &cssStyleRule{selector: selectorList{list: mustParseSelectorList("%p")}}
-	rules := registerCloneBoxes([]cssNode{rule, raw, atr, invisible, &cssDeclaration{}, &cssComment{}}, store)
+	orig := []cssNode{rule, raw, atr, &cssDeclaration{}, &cssComment{}}
+	clone := cloneCSSNodes(orig)
 
-	if len(rules) != 3 {
-		t.Fatalf("returned rules = %d, want 3 (.x, .y, placeholder)", len(rules))
+	origins, clones := pairCloneRules(orig, clone)
+	if len(origins) != 2 || len(clones) != 2 {
+		t.Fatalf("paired %d rules, want 2 (.x and nested .y)", len(origins))
 	}
-	if rule.box == nil || rule.box.value != rule.selector.list {
-		t.Fatal("style rule got no box wrapping its selector")
+	if origins[0] != rule {
+		t.Fatal("first origin should be the .x rule")
 	}
-	if raw.box != nil {
-		t.Fatal("raw rule must not get a box")
+	// The clone must be a distinct object carrying the same selector list.
+	if clones[0] == rule || clones[0].selector.list != rule.selector.list {
+		t.Fatal("clone of .x is not a distinct rule over the same selector")
 	}
-	if nested.box == nil {
-		t.Fatal("nested style rule under at-rule not registered")
-	}
-	if _, ok := store.selectors[simpleKey(simpleOf(t, ".x"))]; !ok {
-		t.Fatal(".x not registered in store")
-	}
-	if _, ok := store.selectors[simpleKey(simpleOf(t, ".y"))]; !ok {
-		t.Fatal(".y not registered in store")
-	}
-	// A visible selector is marked as an original; an invisible one is not.
-	if !store.originals[complexKey(rule.selector.list.components[0])] {
-		t.Fatal(".x should be marked as an original")
-	}
-	if store.originals[complexKey(invisible.selector.list.components[0])] {
-		t.Fatal("invisible placeholder must not be marked as an original")
+	clonedAt := clone[2].(*cssAtRule)
+	if origins[1] != nested || clones[1] != clonedAt.nodes[0] {
+		t.Fatal("nested style rule under at-rule not paired via recursion")
 	}
 }
 
@@ -221,40 +258,54 @@ func TestWriteBackCloneSelectors(t *testing.T) {
 	}
 }
 
-// TestComposeImportClonesSubtreeNil covers composeImportClones' skip of a clone
-// with no subtree collector (defensive; ordinary clones always carry one).
+// TestComposeImportClonesSubtreeNil covers composeImportClones' handling of a clone
+// with no subtree collector (defensive; ordinary clones always carry one): it is
+// written back verbatim, never composed.
 func TestComposeImportClonesSubtreeNil(t *testing.T) {
 	e := newEvaluator(nil)
 	rule := &cssStyleRule{selector: selectorList{list: mustParseSelectorList(".r")}}
 	rule.box = &box{value: rule.selector.list}
 	*e.importClones = append(*e.importClones, &importClone{
-		store: newExtensionStore(extendNormal),
-		rules: []*cssStyleRule{rule},
+		rules:   []*cssStyleRule{rule},
+		origins: []*cssStyleRule{rule},
 	})
-	// No panic and the rule is untouched (subtree nil -> continue).
+	// No panic and the rule is untouched (subtree nil -> writeback only).
 	e.composeImportClones(map[*moduleScope]*extensionStore{}, nil)
 	if rule.selector.String() != ".r" {
 		t.Fatalf("subtree-less clone was composed: %q", rule.selector.String())
 	}
 }
 
-// TestComposeImportClonesEmptyStores covers the arm where a clone's subtree has no
-// pristine stores to merge (every subtree scope missing from the map), so
-// addExtensions is skipped but the selectors are still written back.
-func TestComposeImportClonesEmptyStores(t *testing.T) {
+// TestComposeImportClonesOwnExtendOnly covers a clone whose subtree module has an
+// own extend but no downstream edges: the module's own pristine extends are seeded
+// onto its clone rules, and the extended selector is written back.
+func TestComposeImportClonesOwnExtendOnly(t *testing.T) {
 	e := newEvaluator(nil)
-	sc := &moduleScope{ev: newEvaluator(nil)}
-	rule := &cssStyleRule{selector: selectorList{list: mustParseSelectorList(".r")}}
-	rule.box = &box{value: rule.selector.list}
+	sub := newEvaluator(nil)
+	sc := &moduleScope{ev: sub}
+	// The module owns two rules: `.r {a: b}` and `.e {@extend .r}`.
+	target := &cssStyleRule{selector: selectorList{list: mustParseSelectorList(".r")}}
+	extender := &cssStyleRule{selector: selectorList{list: mustParseSelectorList(".e")}}
+	sub.extendEvents = []extendEvent{{rule: target}, {rule: extender}}
+
+	// Pristine own-store for the module: `.e` extends `.r`.
+	own := newExtensionStore(extendNormal)
+	own.addExtension(mustParseSelectorList(".e"), simpleOf(t, ".r"), false, nil)
+
+	// A single duplicate carrying clones of both rules.
+	cloneTarget := &cssStyleRule{selector: selectorList{list: mustParseSelectorList(".r")}}
+	cloneExtender := &cssStyleRule{selector: selectorList{list: mustParseSelectorList(".e")}}
+	st := &importSubtreeCtx{seen: map[*moduleScope]bool{}}
+	st.add(sc)
 	*e.importClones = append(*e.importClones, &importClone{
-		store:   newExtensionStore(extendNormal),
-		rules:   []*cssStyleRule{rule},
-		subtree: &importSubtreeCtx{scopes: []*moduleScope{sc}, seen: map[*moduleScope]bool{sc: true}},
+		rules:   []*cssStyleRule{cloneTarget, cloneExtender},
+		origins: []*cssStyleRule{target, extender},
+		source:  sc,
+		subtree: st,
 	})
-	// pristine map is empty, so no stores -> addExtensions skipped, writeback runs.
-	e.composeImportClones(map[*moduleScope]*extensionStore{}, []*moduleScope{sc})
-	if rule.selector.String() != ".r" {
-		t.Fatalf("empty-subtree clone changed: %q", rule.selector.String())
+	e.composeImportClones(map[*moduleScope]*extensionStore{sc: own}, []*moduleScope{sc})
+	if got := cloneTarget.selector.String(); got != ".r, .e" {
+		t.Fatalf("own extend not composed onto clone: %q, want %q", got, ".r, .e")
 	}
 }
 

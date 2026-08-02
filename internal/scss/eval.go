@@ -212,33 +212,45 @@ func newEvaluator(importer Importer) *evaluator {
 	return e
 }
 
-// importClone is a legacy-@import CSS duplicate: its own extension store (a fresh
-// store carrying the duplicated rules' boxes), the duplicated style rules (for
-// writing extended selectors back after composition), the source module scope
-// whose CSS was duplicated, and the import subtree whose @extends compose onto it.
+// importClone is a legacy-@import CSS duplicate: the duplicated style rules (for
+// writing extended selectors back after composition), each paired with the
+// ORIGINAL rule it was cloned from (origins) so composition can attribute it to
+// its owning module, the source module scope whose CSS was duplicated, and the
+// import subtree whose @extends compose onto it.
 //
 // dart-sass's _combineCss(clone: true) clones the whole transitively-loaded
-// subtree of a legacy @import and resolves @extend among the clones, isolated
-// from the canonical modules. go-scss reproduces that here: the clone's store
-// receives exactly the @extends registered in the modules reached WHILE the
-// @import inlined (subtree), applied against those modules' pristine own-stores,
-// so the duplicate carries only its own load site's extends — never the canonical
-// module's cross-module extends. See composeImportClones.
+// subtree of a legacy @import and resolves @extend among the clones with dart's
+// _extendModules — each cloned module keeps its OWN ExtensionStore, isolated from
+// the canonical modules AND from its sibling clone modules. go-scss reproduces
+// that in composeImportClones: the clone rules are partitioned per owning module
+// into per-module clone stores, seeded with each module's own extends, then
+// composed downstream-first over the subtree's module graph, so a sibling's
+// @extend never leaks across a diamond. The origins pairing (rules[i] cloned from
+// origins[i]) is what lets composition recover each clone rule's module.
 type importClone struct {
-	store   *extensionStore
 	rules   []*cssStyleRule
+	origins []*cssStyleRule
 	source  *moduleScope
 	subtree *importSubtreeCtx
 }
 
 // importSubtreeCtx collects, for one outermost legacy @import, every module scope
 // reached while it inlines (the site scope plus every module @used/@imported
-// transitively during the inlining). All CSS duplicates produced by that @import
-// share it, and each composes exactly these scopes' @extends onto its own store.
+// transitively during the inlining) and the dependency edges recorded among them.
+// All CSS duplicates produced by that @import share it, and composition resolves
+// @extend across every clone of the subtree together, over this module graph.
 type importSubtreeCtx struct {
 	scopes []*moduleScope
 	seen   map[*moduleScope]bool
+	edges  []subtreeEdge
 }
+
+// subtreeEdge records that, while a legacy @import inlined, module `down`
+// depended on module `up` (a @use/@forward/load reached during the import).
+// Composition treats `down` as downstream of `up`, so `down`'s clone extends
+// propagate onto `up`'s clone rules — the import-site half of the clone module
+// graph that a module's canonical upstream edges do not carry.
+type subtreeEdge struct{ down, up *moduleScope }
 
 func (c *importSubtreeCtx) add(m *moduleScope) {
 	if m == nil || c.seen[m] {
@@ -291,6 +303,7 @@ func (e *evaluator) dependsOn(up *moduleScope) {
 	if e.importSubtree != nil {
 		e.importSubtree.add(e.scope)
 		e.importSubtree.add(up)
+		e.importSubtree.edges = append(e.importSubtree.edges, subtreeEdge{down: e.scope, up: up})
 		return
 	}
 	for _, u := range e.scope.upstream {
@@ -1391,35 +1404,183 @@ func (e *evaluator) applyAllExtends() {
 	}
 }
 
-// composeImportClones applies, to each legacy-@import CSS duplicate, exactly the
-// @extends of the modules reached while that @import inlined (its clone subtree),
-// each taken from the module's PRISTINE own-store so no canonical cross-module
-// extend leaks in. This mirrors dart-sass _combineCss(clone: true): an @import
-// clones its whole transitive subtree and resolves @extend among the clones,
-// isolated from the canonically-reached modules. The subtree stores are merged in
-// the same downstream-first order pass 2 uses, so a diamond stays sibling-isolated
-// and transitive extends resolve, then the extended selectors are written back.
+// composeImportClones resolves @extend across every legacy-@import CSS duplicate,
+// reproducing dart-sass _combineCss(clone: true) + _extendModules over the cloned
+// subgraph. All duplicates produced by one @import share an import subtree; they
+// are composed together, PER MODULE: each clone rule is attributed to its owning
+// module (via the origins pairing) and registered in a per-(subtree, module) clone
+// store, then those stores are composed downstream-first over the subtree's module
+// graph exactly as the canonical pass 2 composes the real per-module stores. A
+// module's own extends are seeded from its PRISTINE own-store, and a downstream
+// module's extends propagate only onto the modules it depends on — so a sibling in
+// a diamond never leaks its extender across, matching the canonical isolation.
 func (e *evaluator) composeImportClones(pristine map[*moduleScope]*extensionStore, order []*moduleScope) {
 	rank := make(map[*moduleScope]int, len(order))
 	for i, m := range order {
 		rank[m] = i
 	}
-	for _, ic := range *e.importClones {
-		if ic.subtree == nil {
-			continue
-		}
-		scopes := append([]*moduleScope(nil), ic.subtree.scopes...)
-		sortScopesByRank(scopes, rank)
-		var stores []*extensionStore
-		for _, m := range scopes {
-			if ps := pristine[m]; ps != nil {
-				stores = append(stores, ps)
+	// Attribute every tracked rule to its owning module (a module's own rules are
+	// its evaluator's rule events; a rule inlined from a used module stays with
+	// THAT module, never the one whose CSS re-emitted it).
+	ruleModule := map[*cssStyleRule]*moduleScope{}
+	for _, m := range *e.allScopes {
+		for _, ev := range m.ev.extendEvents {
+			if ev.rule != nil {
+				ruleModule[ev.rule] = m
 			}
 		}
-		if len(stores) != 0 {
-			ic.store.addExtensions(stores)
+	}
+	// Group the duplicates by their shared @import subtree, preserving first-seen
+	// order for determinism, then compose each subtree's clones together.
+	bySubtree := map[*importSubtreeCtx][]*importClone{}
+	var subtrees []*importSubtreeCtx
+	for _, ic := range *e.importClones {
+		if ic.subtree == nil {
+			writeBackCloneSelectors(ic.rules)
+			continue
 		}
+		if _, ok := bySubtree[ic.subtree]; !ok {
+			subtrees = append(subtrees, ic.subtree)
+		}
+		bySubtree[ic.subtree] = append(bySubtree[ic.subtree], ic)
+	}
+	for _, st := range subtrees {
+		composeCloneSubtree(bySubtree[st], st, ruleModule, pristine, rank)
+	}
+}
+
+// composeCloneSubtree composes one @import's CSS duplicates as a cloned module
+// graph. It builds a per-module clone store from the duplicated rules, seeds each
+// with the module's own pristine extends, and propagates downstream-first over the
+// combined edge set (the modules' canonical upstream edges plus the import-site
+// dependency edges recorded in the subtree). This is the clone-side mirror of the
+// canonical applyAllExtends pass 2.
+func composeCloneSubtree(clones []*importClone, st *importSubtreeCtx, ruleModule map[*cssStyleRule]*moduleScope, pristine map[*moduleScope]*extensionStore, rank map[*moduleScope]int) {
+	// Per-module clone stores: register each duplicated rule under the module that
+	// owns its original. Modules with rules in several duplicates of this subtree
+	// (a diamond re-emitted more than once) share one store, so their extends
+	// resolve together exactly as dart's single cloned module does.
+	stores := map[*moduleScope]*extensionStore{}
+	var mods []*moduleScope
+	store := func(m *moduleScope) *extensionStore {
+		s := stores[m]
+		if s == nil {
+			s = newExtensionStore(extendNormal)
+			stores[m] = s
+			mods = append(mods, m)
+		}
+		return s
+	}
+	for _, ic := range clones {
+		for i, r := range ic.rules {
+			m := ruleModule[ic.origins[i]]
+			if m == nil {
+				m = ic.source
+			}
+			registerCloneRule(r, store(m))
+		}
+	}
+	// A module reached during the import that contributed extends but no cloned
+	// rule (e.g. the importing stylesheet's own @extend written mid-@import) still
+	// takes part: give it an empty store so its extends propagate onto the clones.
+	for _, m := range st.scopes {
+		store(m)
+	}
+	// Seed each module's own extends from its pristine own-store, mirroring the
+	// canonical pass 1 (own selectors extended by own extends) on the clones.
+	for _, m := range mods {
+		if ps := pristine[m]; ps != nil {
+			stores[m].addExtensions([]*extensionStore{ps})
+		}
+	}
+	// Combined upstream edges: a module's canonical upstream plus the import-site
+	// dependency edges recorded while inlining. ups[m] lists the modules m depends
+	// on (its clone store propagates onto each), restricted to this subtree.
+	ups := map[*moduleScope][]*moduleScope{}
+	seenEdge := map[[2]*moduleScope]bool{}
+	// down is always a subtree module (an edge source is either a module with a
+	// clone store or an st.scopes member, both given a store above); up may point
+	// outside the subtree (a module's canonical upstream not reached here), so only
+	// up is filtered against the store set.
+	addEdge := func(down, up *moduleScope) {
+		if _, ok := stores[up]; !ok {
+			return
+		}
+		if down == up || seenEdge[[2]*moduleScope{down, up}] {
+			return
+		}
+		seenEdge[[2]*moduleScope{down, up}] = true
+		ups[down] = append(ups[down], up)
+	}
+	for _, m := range mods {
+		for _, up := range m.upstream {
+			addEdge(m, up)
+		}
+	}
+	for _, ed := range st.edges {
+		addEdge(ed.down, ed.up)
+	}
+	// Downstream-first order over the COMBINED edges (not the canonical rank, which
+	// omits the import-site edges): a post-order DFS over ups yields upstream-first,
+	// reversed to downstream-first. The subtree is a DAG (Sass forbids loops), and
+	// modules are visited in canonical-rank order first so the result is stable.
+	mods = subtreeFinalizeOrder(mods, ups, rank)
+	// Propagate downstream-first: by the time an upstream module is processed,
+	// every downstream module's clone store (own + its own downstream extends) has
+	// been merged in, so transitive extends resolve while siblings stay isolated.
+	merged := map[*moduleScope][]*extensionStore{}
+	for _, m := range mods {
+		if ds := merged[m]; len(ds) != 0 {
+			stores[m].addExtensions(ds)
+		}
+		for _, up := range ups[m] {
+			merged[up] = append(merged[up], stores[m])
+		}
+	}
+	for _, ic := range clones {
 		writeBackCloneSelectors(ic.rules)
+	}
+}
+
+// subtreeFinalizeOrder returns the subtree's modules in downstream-first order
+// over the combined edge set ups (a module before every module it depends on): a
+// post-order DFS over ups yields upstream-first, which is reversed. Roots are
+// visited in canonical-rank order so the result is deterministic.
+func subtreeFinalizeOrder(mods []*moduleScope, ups map[*moduleScope][]*moduleScope, rank map[*moduleScope]int) []*moduleScope {
+	roots := append([]*moduleScope(nil), mods...)
+	sortScopesByRank(roots, rank)
+	visited := map[*moduleScope]bool{}
+	var post []*moduleScope
+	var visit func(*moduleScope)
+	visit = func(m *moduleScope) {
+		if visited[m] {
+			return
+		}
+		visited[m] = true
+		for _, up := range ups[m] {
+			visit(up)
+		}
+		post = append(post, m)
+	}
+	for _, m := range roots {
+		visit(m)
+	}
+	for i, j := 0, len(post)-1; i < j; i, j = i+1, j-1 {
+		post[i], post[j] = post[j], post[i]
+	}
+	return post
+}
+
+// registerCloneRule registers one duplicated style rule under a fresh extension
+// box in store and marks its selectors as originals (so the extend engine's
+// trimming preserves them exactly as a standalone stylesheet's own selectors).
+func registerCloneRule(v *cssStyleRule, store *extensionStore) {
+	v.box = &box{value: v.selector.list}
+	store.registerSelector(v.selector.list, v.box)
+	if !v.selector.list.isInvisible() {
+		for _, c := range v.selector.list.components {
+			store.originals[complexKey(c)] = true
+		}
 	}
 }
 
