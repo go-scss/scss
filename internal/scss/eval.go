@@ -1719,5 +1719,10 @@ func (e *evaluator) stringify(v Value) string {
 // quotes, and dart-sass propagates that unquoting recursively into list and map
 // elements, so `#{"a" "b"}` yields `a b`.
 func (e *evaluator) stringifyInterp(v Value) string {
-	return serializeValueQ(v, false, false)
+	// final=false: a SassString interpolated directly contributes its raw text,
+	// so a newline survives to be re-escaped by an enclosing quoted string (dart
+	// writes the string's `.text` verbatim). A string reached through a list or
+	// map is instead collapsed by serializeList/serializeMap, which serialize
+	// their elements with final=true.
+	return serializeValueQ(v, false, false, false)
 }

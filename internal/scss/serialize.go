@@ -829,21 +829,31 @@ func (s *serializer) writeReindented(value string, minIndent, depth int) {
 // --- value serialization ---
 
 func serializeValue(v Value, compressed bool) string {
-	return serializeValueQ(v, compressed, true)
+	return serializeValueQ(v, compressed, true, true)
 }
 
 // serializeValueQ serializes v, threading a `quote` flag that controls whether
-// quoted strings keep their quotes. Interpolation (`#{}`) serializes with
-// quote=false, and dart-sass propagates that recursively through list and map
-// elements, so `#{"a" "b"}` becomes `a b` rather than `"a" "b"`.
-func serializeValueQ(v Value, compressed, quote bool) string {
+// quoted strings keep their quotes and a `final` flag that controls whether an
+// unquoted string is rendered as terminal CSS text (newline collapsed to a
+// space, Private Use Area characters hex-escaped) or kept raw.
+//
+// Interpolation (`#{}`) serializes with quote=false. dart-sass propagates the
+// unquoting recursively through list and map elements, so `#{"a" "b"}` becomes
+// `a b` rather than `"a" "b"`. But `final` is NOT propagated the same way: a
+// SassString interpolated *directly* contributes its raw text (dart writes the
+// string's `.text` verbatim, so a newline survives to be re-escaped by an
+// enclosing quoted string), whereas a string reached *through* a list or map is
+// run through dart's `_visitUnquotedString`, which always collapses its
+// newlines to spaces. Hence the top-level interpolation call passes final=false
+// while serializeList/serializeMap serialize their elements with final=true.
+func serializeValueQ(v Value, compressed, quote, final bool) string {
 	switch x := v.(type) {
 	case *Number:
 		// A number that still carries as-slash provenance serializes back as the
 		// literal "left/right" it came from, recursively (so 1/2/3/4/5 stays a
 		// flat slash chain rather than the collapsed quotient).
 		if x.slashL != nil && x.slashR != nil {
-			return serializeValueQ(x.slashL, compressed, quote) + "/" + serializeValueQ(x.slashR, compressed, quote)
+			return serializeValueQ(x.slashL, compressed, quote, final) + "/" + serializeValueQ(x.slashR, compressed, quote, final)
 		}
 		// dart-sass serializes a number that isn't expressible as a plain CSS
 		// value — a non-finite magnitude, or one carrying complex units (more
@@ -864,7 +874,7 @@ func serializeValueQ(v Value, compressed, quote bool) string {
 		if x.Quoted && quote {
 			return serializeQuoted(x.Text)
 		}
-		return serializeUnquoted(x.Text, compressed, quote)
+		return serializeUnquoted(x.Text, compressed, final)
 	case *Boolean:
 		if x.V {
 			return "true"
@@ -931,7 +941,13 @@ func serializeList(l *List, compressed, quote bool) string {
 		// appearance, joining with the separator (so a slash list inside a slash
 		// list renders "c / d / e / f", not "(c / d) / (e / f)"). Only inspect,
 		// which has its own path, adds the disambiguating parentheses.
-		s := serializeValueQ(e, compressed, quote)
+		//
+		// A string element is serialized as terminal text (final=true) even when
+		// the enclosing list is being woven into an interpolation: dart runs each
+		// list element through its full serializer (`_visitUnquotedString`), which
+		// collapses a newline to a space. Only a string interpolated *directly*
+		// (not through a list) keeps its raw newline.
+		s := serializeValueQ(e, compressed, quote, true)
 		elems = append(elems, s)
 	}
 	var sep string
@@ -967,7 +983,10 @@ func serializeMap(m *Map, compressed, quote bool) string {
 		sep = ","
 	}
 	for i := range m.Keys {
-		parts[i] = serializeValueQ(m.Keys[i], compressed, quote) + kvsep + serializeValueQ(m.Values[i], compressed, quote)
+		// Map keys/values, like list elements, serialize as terminal text
+		// (final=true) even inside an interpolation — dart runs them through the
+		// full serializer, collapsing any newline to a space.
+		parts[i] = serializeValueQ(m.Keys[i], compressed, quote, true) + kvsep + serializeValueQ(m.Values[i], compressed, quote, true)
 	}
 	return "(" + strings.Join(parts, sep) + ")"
 }
