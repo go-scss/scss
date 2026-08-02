@@ -318,6 +318,20 @@ func groupEndOf(n cssNode) bool {
 	return false
 }
 
+// clearGroupEnd removes n's top-level group-end flag. It is applied to a module's
+// CSS that is re-nested under an enclosing style rule (a @forward/@import reached
+// while inlining a legacy @import nested in a rule): those nodes become rule-body
+// content, and dart never treats a rule-body sibling as a top-level group end, so
+// a declaration split after them must not be blank-separated.
+func clearGroupEnd(n cssNode) {
+	switch v := n.(type) {
+	case *cssStyleRule:
+		v.isGroupEnd = false
+	case *cssAtRule:
+		v.isGroupEnd = false
+	}
+}
+
 // setGroupEnd flags n as ending a top-level style-rule group. It is only ever
 // called on the last child produced by a top-level style-rule statement — a
 // style rule or the at-rule a nested rule bubbled into — so those are the only

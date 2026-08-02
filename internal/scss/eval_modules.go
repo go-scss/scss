@@ -379,6 +379,24 @@ type forwardedMod struct {
 // line precedes the chunk when the previous group was a style rule, and the
 // chunk counts (for what follows) as its own last visible node.
 func (e *evaluator) emitModuleCSS(nodes []cssNode, fr *frame) {
+	// A module reached through a legacy @import that is itself nested inside a
+	// style rule (importDepth > 0 && fr.hasParent) contributes its already-
+	// serialized CSS as if it were nested content: dart re-nests each top-level
+	// node under the enclosing selector rather than lifting it to the stylesheet
+	// root. This is the same re-nesting meta.load-css and a direct nested @import
+	// perform (placeLoadedCSS); a @forward reached while inlining such an @import
+	// funnels its forwarded module's CSS here, so it must re-nest too.
+	if e.importDepth > 0 && fr.hasParent {
+		// The module's own top-level rules were flagged as top-level group ends when
+		// it was compiled; re-nested as rule-body content they are no longer group
+		// ends, so a declaration split after them stays gap-free (dart never blanks
+		// rule-body siblings), matching a directly-nested @import.
+		for _, n := range nodes {
+			clearGroupEnd(n)
+		}
+		e.renestLoadedCSS(nodes, fr)
+		return
+	}
 	var firstVisible, lastVisible cssNode
 	for _, n := range nodes {
 		if isEmptyContainer(n) {
