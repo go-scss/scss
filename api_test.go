@@ -450,6 +450,43 @@ func TestImporterWithReferrer(t *testing.T) {
 	}
 }
 
+// TestLoadCssSharedCsslessMidstream is a regression test for sass/sass#3322 (the
+// sass-spec meta/load_css/extend shared_cssless_midstream case): a module @used at
+// the entry top level AND transitively reused inside a meta.load-css must appear
+// TWICE — once unextended (the canonical @use) and once carrying the load's
+// @extend — because dart resolves the loaded CSS in a clone (_combineCss(clone:
+// true)). The reused module is reached through a CSS-less midstream (_midstream
+// only @uses _upstream) so the duplicated copy travels the whole subtree. Before
+// the load-css clone subtree fix the load's @extend leaked onto the shared node
+// and collapsed the two copies into one. The expected output is byte-exact to
+// dart-sass 1.102.
+func TestLoadCssSharedCsslessMidstream(t *testing.T) {
+	files := map[string]string{
+		"extender":   "@use 'target';\n\n.extender {\n  @extend .target;\n}\n",
+		"_target":    "@use 'midstream';\n\n.target {a: b}\n",
+		"_midstream": "@use 'upstream';\n",
+		"_upstream":  "@c;\n",
+	}
+	imp := func(url string) (string, string, bool) {
+		if s, ok := files[url]; ok {
+			return s, url, true
+		}
+		if s, ok := files["_"+url]; ok {
+			return s, "_" + url, true
+		}
+		return "", "", false
+	}
+	src := "@use 'sass:meta';\n@use 'target';\n\n@include meta.load-css('extender');\n"
+	res, err := scss.CompileString(src, &scss.Options{Importer: imp})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "@c;\n.target {\n  a: b;\n}\n\n@c;\n.target, .extender {\n  a: b;\n}\n"
+	if res.CSS != want {
+		t.Errorf("shared_cssless_midstream mismatch:\n got: %q\nwant: %q", res.CSS, want)
+	}
+}
+
 // TestImporterWithReferrerPrecedence confirms ImporterWithReferrer takes
 // precedence over a simultaneously-set legacy Importer.
 func TestImporterWithReferrerPrecedence(t *testing.T) {
