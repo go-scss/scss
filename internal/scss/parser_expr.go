@@ -920,6 +920,18 @@ func (p *parser) parseCalc(name string) Expr {
 	}
 	for !p.eof() && depth > 0 {
 		c := p.peek()
+		// A CSS escape (`\)`, `\(`, `\"`, `\#`) is kept literally: the backslash
+		// and the byte it escapes are copied verbatim so an escaped delimiter is
+		// never mistaken for a real bracket, string quote or interpolation start.
+		// This matches dart-sass, which consumes escapes as content while scanning
+		// a special function's raw argument text.
+		if c == '\\' {
+			sb.WriteByte(p.next())
+			if !p.eof() {
+				sb.WriteByte(p.next())
+			}
+			continue
+		}
 		// A silent comment is stripped and, together with any adjacent
 		// whitespace, collapsed to a single space, as dart-sass does inside a
 		// special function's argument text.
