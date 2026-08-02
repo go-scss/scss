@@ -877,13 +877,16 @@ func unitOutput(n *Number) string {
 
 // isBlankListElem reports whether a list element is "blank" in the sense of
 // dart-sass's Value.isBlank, which governs which elements are dropped from CSS
-// list output: sassNull, or an unbracketed list all of whose elements are
-// themselves blank (which makes the empty list `()` blank). Unlike the
-// declaration-level isBlankValue, an empty string is NOT blank here.
+// list output: sassNull, an *unquoted empty string* (SassString.isBlank is
+// `!hasQuotes && text.isEmpty`, so `foo #{""}` renders as `foo`, not `foo `),
+// or an unbracketed list all of whose elements are themselves blank (which makes
+// the empty list `()` blank). A *quoted* empty string `""` is NOT blank.
 func isBlankListElem(v Value) bool {
 	switch x := v.(type) {
 	case *Null:
 		return true
+	case *SassString:
+		return !x.Quoted && x.Text == ""
 	case *List:
 		if x.Bracketed {
 			return false
@@ -899,12 +902,15 @@ func isBlankListElem(v Value) bool {
 }
 
 func serializeList(l *List, compressed, quote bool) string {
+	// dart-sass omits "blank" elements from a space- or comma-separated list's CSS
+	// output (sassNull, an unquoted empty string, or an unbracketed all-blank
+	// sublist), so `foo #{""}` renders as `foo` and `1 2 () 3` as `1 2 3`. A
+	// slash-separated list keeps every element, so the empty slots survive as
+	// adjacent separators (`1 / #{""} / bar` -> `1//bar`).
+	dropBlank := l.Sep != SepSlash
 	elems := make([]string, 0, len(l.Elements))
 	for _, e := range l.Elements {
-		// dart-sass omits "blank" elements from CSS list output: sassNull and any
-		// unbracketed list whose members are all themselves blank (so an empty
-		// list `()` in `1 2 () 3` renders as `1 2 3`, not `1 2  3`).
-		if isBlankListElem(e) {
+		if dropBlank && isBlankListElem(e) {
 			continue
 		}
 		// CSS output never parenthesizes a nested list — dart-sass flattens the

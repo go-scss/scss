@@ -212,6 +212,29 @@ func TestBangFlagBoundary(t *testing.T) {
 	}
 }
 
+// TestBlankListElement verifies dart-sass list-blank semantics: an unquoted
+// empty string (e.g. from `#{""}`) is dropped from a space- or comma-separated
+// list but kept in a slash-separated list, and a quoted empty string is always
+// kept. Byte-verified against dart-sass 1.102.0 (sass-spec
+// libsass-closed-issues/issue_1092).
+func TestBlankListElement(t *testing.T) {
+	for _, tc := range []struct{ in, want string }{
+		{"a { b: foo #{\"\"} }", "a {\n  b: foo;\n}\n"},
+		{"a { b: foo #{\" \"} }", "a {\n  b: foo  ;\n}\n"},
+		{"a { b: (foo, #{\"\"}, bar) }", "a {\n  b: foo, bar;\n}\n"},
+		{"a { b: 1 / #{\"\"} / bar }", "a {\n  b: 1//bar;\n}\n"},
+		{"a { b: (foo \"\" bar) }", "a {\n  b: foo \"\" bar;\n}\n"},
+	} {
+		res, err := scss.CompileString(tc.in, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if res.CSS != tc.want {
+			t.Errorf("in %q: got %q want %q", tc.in, res.CSS, tc.want)
+		}
+	}
+}
+
 func TestCompileStringCompressed(t *testing.T) {
 	res, err := scss.CompileString(".a{x:1}", &scss.Options{Style: scss.Compressed})
 	if err != nil {
