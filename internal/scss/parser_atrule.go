@@ -297,7 +297,7 @@ func (p *parser) parseAtRoot() Stmt {
 	p.ws()
 	var query *Interp
 	if p.peek() == '(' {
-		query = p.parseInterpolatedText(func(pp *parser) bool { return pp.peek() == '{' })
+		query = p.parseInterpolatedText(func(pp *parser) bool { return pp.peek() == '{' }, false)
 		p.ws()
 	}
 	if p.peek() == '{' {
@@ -325,7 +325,7 @@ func (p *parser) parseExtend() Stmt {
 	sel := p.parseInterpolatedText(func(pp *parser) bool {
 		c := pp.peek()
 		return c == '!' || c == ';' || c == '}' || c == 0
-	})
+	}, false)
 	optional := false
 	if p.peek() == '!' {
 		p.next() // !
@@ -380,7 +380,7 @@ func (p *parser) parseImport() Stmt {
 			if strings.Contains(item.URL, "#{") {
 				end := p.pos
 				p.pos = pfx
-				item.URLInterp = p.parseInterpolatedText(func(pp *parser) bool { return pp.pos >= end })
+				item.URLInterp = p.parseInterpolatedText(func(pp *parser) bool { return pp.pos >= end }, false)
 				p.pos = end
 			}
 		} else {
@@ -721,7 +721,7 @@ func (p *parser) parseGenericAtRule(name string) Stmt {
 		value = p.parseInterpolatedText(func(pp *parser) bool {
 			c := pp.peek()
 			return c == '{' || c == ';' || c == '}' || c == 0
-		})
+		}, false)
 	} else {
 		value = p.parseAtRulePrelude(true)
 	}

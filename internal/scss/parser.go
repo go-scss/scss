@@ -511,7 +511,7 @@ func (p *parser) tryDeclaration() (stmt Stmt, ok bool) {
 	name := p.parseInterpolatedText(func(pp *parser) bool {
 		c := pp.peek()
 		return c == ':' || c == '{' || c == '}' || c == ';' || c == 0
-	})
+	}, true)
 	plain, isPlain := name.isPlain()
 	trimmedPlain := strings.TrimSpace(plain)
 	// A declaration is a custom property when the *plain prefix* of its name
@@ -741,7 +741,7 @@ func (p *parser) parseCustomPropertyValue() *Interp {
 func (p *parser) parseStyleRule() Stmt {
 	sel := p.parseInterpolatedText(func(pp *parser) bool {
 		return pp.peek() == '{' || pp.peek() == '}' || pp.peek() == ';' || pp.peek() == 0
-	})
+	}, false)
 	if p.peek() != '{' {
 		p.fail("Expected \"{\".")
 	}
@@ -904,7 +904,14 @@ func (p *parser) parseAtRulePrelude(collapse bool) *Interp {
 
 // parseInterpolatedText reads text (as an Interp) up to a stop predicate,
 // honoring strings, brackets, and #{...} interpolation.
-func (p *parser) parseInterpolatedText(stop func(*parser) bool) *Interp {
+//
+// When keepGluedComment is set (a property-declaration name), a loud comment
+// that is glued directly to the preceding identifier text — no intervening
+// whitespace — is preserved verbatim, matching dart-sass which keeps such a
+// comment as part of the property name (`foo/*c*/:` -> `foo/*c*/`). A loud
+// comment preceded by whitespace stays folded to a single space, as everywhere
+// else.
+func (p *parser) parseInterpolatedText(stop func(*parser) bool, keepGluedComment bool) *Interp {
 	var parts []any
 	var sb strings.Builder
 	depth := 0
@@ -958,7 +965,12 @@ func (p *parser) parseInterpolatedText(stop func(*parser) bool) *Interp {
 				p.pos++
 			}
 		case c == '/' && p.peekAt(1) == '*':
-			// skip block comment inside prelude
+			// A loud comment glued to the preceding identifier text is kept as part
+			// of a property name; otherwise it folds to a single space.
+			if s := sb.String(); keepGluedComment && s != "" && !isCustomWS(s[len(s)-1]) {
+				sb.WriteString(p.scanLoudComment())
+				break
+			}
 			p.pos += 2
 			for !p.eof() && !(p.peek() == '*' && p.peekAt(1) == '/') {
 				p.pos++
