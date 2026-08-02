@@ -438,7 +438,17 @@ func (e *evaluator) reEmitImportedCSS(m *module, fr *frame) {
 	if e.importDepth == 0 || len(m.cssNodes) == 0 {
 		return
 	}
-	e.emitModuleCSS(cloneCSSNodes(m.cssNodes), fr)
+	clones := cloneCSSNodes(m.cssNodes)
+	// Step 1 of the per-@import-clone extend rebuild: give the duplicate its own
+	// extension store (a clone of the source module's own store) and register
+	// each duplicated style rule under a fresh box, so a later wave can compose
+	// downstream @extends onto the duplicate. The store is recorded but NOT
+	// composed here — no addExtensions is called on it and writeBackSelectors
+	// never reaches these boxes — so the emitted CSS is byte-identical.
+	store := e.cloneStoreFor(m)
+	registerCloneBoxes(clones, store)
+	*e.importClones = append(*e.importClones, &importClone{store: store, source: m.scope})
+	e.emitModuleCSS(clones, fr)
 }
 
 func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *module {
@@ -631,6 +641,43 @@ func cloneCSSNode(n cssNode) cssNode {
 		// child). Copy it by value so the clone is independent.
 		c := *n.(*cssComment)
 		return &c
+	}
+}
+
+// cloneStoreFor returns a fresh extension store for a legacy-@import CSS
+// duplicate of module m: a clone of the source module's OWN store, so the
+// duplicate reproduces the module's internal @extend relationships and can be
+// extended independently. The module's own store is built once (lazily) and
+// cached on its scope, then reused by applyAllExtends pass 1. A module with no
+// extend scope (a plain-CSS file) gets a fresh empty store.
+func (e *evaluator) cloneStoreFor(m *module) *extensionStore {
+	if m.scope == nil {
+		return newExtensionStore(extendNormal)
+	}
+	if m.scope.ownStore == nil {
+		m.scope.ownStore = m.scope.ev.buildOwnStore()
+	}
+	return m.scope.ownStore.clone()
+}
+
+// registerCloneBoxes walks a cloned CSS tree and registers every style rule
+// under a fresh extension box in store, so the duplicated rules participate in
+// their own store rather than the source module's. The box wraps the rule's
+// current (clone-time) selector; because store is never composed in step 1,
+// these boxes stay untouched and the emitted selectors are unchanged. Raw
+// plain-CSS rules (no parsed selector list) carry no box.
+func registerCloneBoxes(nodes []cssNode, store *extensionStore) {
+	for _, n := range nodes {
+		switch v := n.(type) {
+		case *cssStyleRule:
+			if v.selector.list != nil {
+				v.box = &box{value: v.selector.list}
+				store.registerSelector(v.selector.list, v.box)
+			}
+			registerCloneBoxes(v.nodes, store)
+		case *cssAtRule:
+			registerCloneBoxes(v.nodes, store)
+		}
 	}
 }
 

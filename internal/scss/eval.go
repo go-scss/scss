@@ -56,6 +56,12 @@ type evaluator struct {
 	// by reference with every sub-evaluator so the entry evaluator can finalise
 	// extends across the whole module graph in one pass.
 	allScopes *[]*moduleScope
+	// importClones is the compilation-wide registry of per-@import CSS clones,
+	// shared like allScopes. Each entry pairs a duplicated module's own-store
+	// clone with the source module scope. Step 1 of the per-clone extend rebuild
+	// only records them (boxes wired, not composed); a later wave walks this list
+	// at finalize to compose downstream @extends onto each duplicate.
+	importClones *[]*importClone
 	// incomingConfig is the evaluated `with (...)` configuration passed into
 	// this module by the @use/@forward that loaded it. It flows onward through
 	// this module's own @forward rules (a @forward propagates its importer's
@@ -193,7 +199,19 @@ func newEvaluator(importer Importer) *evaluator {
 	e.combine = &combineNode{}
 	scopes := []*moduleScope{e.scope}
 	e.allScopes = &scopes
+	clones := []*importClone{}
+	e.importClones = &clones
 	return e
+}
+
+// importClone pairs a legacy-@import CSS duplicate's own extension store (a clone
+// of the source module's own store, with the duplicate's rule boxes registered)
+// with the source module scope whose CSS was duplicated. Step 1 of the per-clone
+// extend rebuild records these; composing downstream extends onto `store` is a
+// later wave.
+type importClone struct {
+	store  *extensionStore
+	source *moduleScope
 }
 
 // moduleScope is one @extend module boundary. Its evaluator supplies the ordered
@@ -205,13 +223,20 @@ type moduleScope struct {
 	upstream         []*moduleScope
 	store            *extensionStore
 	downstreamStores []*extensionStore
-	visited          bool
+	// ownStore caches this module's own extend store (buildOwnStore) so it can be
+	// built once and reused: applyAllExtends pass 1 seeds `store` from it, and a
+	// legacy @import that re-emits this module's CSS clones it for the duplicate
+	// (cloneStoreFor). Building it early for a re-imported module is invisible to
+	// evaluation — a rule's box is read only by the extend engine at finalize.
+	ownStore *extensionStore
+	visited  bool
 }
 
 // adoptScope wires a freshly spawned sub-evaluator into this compilation's
 // shared scope registry so its rules take part in the global extend finalize.
 func (e *evaluator) adoptScope(sub *evaluator) {
 	sub.allScopes = e.allScopes
+	sub.importClones = e.importClones
 	*e.allScopes = append(*e.allScopes, sub.scope)
 }
 
@@ -1275,9 +1300,15 @@ func mediaContextOf(fr *frame) []string {
 // rules has been collected.
 func (e *evaluator) applyAllExtends() {
 	// Pass 1: build each module's own store (its own selectors extended by its
-	// own @extends), exactly as a standalone stylesheet would.
+	// own @extends), exactly as a standalone stylesheet would. A module reached
+	// by a legacy @import may already have had its own store built (and cached)
+	// when the duplicate CSS was re-emitted; reuse it so buildOwnStore — which
+	// stamps each rule's box — runs exactly once per module.
 	for _, m := range *e.allScopes {
-		m.store = m.ev.buildOwnStore()
+		if m.ownStore == nil {
+			m.ownStore = m.ev.buildOwnStore()
+		}
+		m.store = m.ownStore
 	}
 	// Pass 2: finalise downstream-first. Merging a module's (already downstream-
 	// enriched) store into each module it depends on carries extends transitively
