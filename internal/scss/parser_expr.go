@@ -152,29 +152,19 @@ func (p *parser) parseOr() Expr {
 }
 
 func (p *parser) parseAnd() Expr {
-	left := p.parseNot()
+	left := p.parseEquality()
 	for {
 		save := p.pos
 		p.ws()
 		if p.matchOperator("and") {
 			p.ws()
-			right := p.parseNot()
+			right := p.parseEquality()
 			left = &Binary{Op: "and", Left: left, Right: right}
 		} else {
 			p.pos = save
 			return left
 		}
 	}
-}
-
-func (p *parser) parseNot() Expr {
-	save := p.pos
-	if p.matchOperator("not") {
-		p.ws()
-		return &Unary{Op: "not", Expr: p.parseNot()}
-	}
-	p.pos = save
-	return p.parseEquality()
 }
 
 func (p *parser) parseEquality() Expr {
@@ -383,6 +373,15 @@ func isLiteralNumberish(e Expr) bool {
 }
 
 func (p *parser) parseUnary() Expr {
+	// `not` is a high-precedence unary operator in dart-sass: its operand is a
+	// single value (_singleExpression), so `not 1 + 2` is `(not 1) + 2` and
+	// `not 1 * 2` is `(not 1) * 2` (a bool-times-number error), not `not (1 + 2)`.
+	// A chained `not not x` recurses. Every binary operator (`*`, `+`, `==`,
+	// `and`, `or`) therefore applies to the already-negated value.
+	if p.matchOperator("not") {
+		p.ws()
+		return &Unary{Op: "not", Expr: p.parseUnary()}
+	}
 	c := p.peek()
 	if c == '-' || c == '+' {
 		// A "-" immediately followed by an identifier start is part of the

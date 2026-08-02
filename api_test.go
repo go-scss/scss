@@ -249,6 +249,28 @@ func TestCallStringUnknownFunction(t *testing.T) {
 	}
 }
 
+// TestNotPrecedence verifies that `not` is a high-precedence unary operator
+// binding to a single value, so `not 1 + 2` is `(not 1) + 2` = false2 and
+// `not not 1 + 2` is `(not (not 1)) + 2` = true2, matching dart-sass rather
+// than negating the whole expression. Byte-verified against dart-sass 1.102.0
+// (sass-spec libsass/test.hrx).
+func TestNotPrecedence(t *testing.T) {
+	for _, tc := range []struct{ in, want string }{
+		{"a { b: not 1 + 2 }", "a {\n  b: false2;\n}\n"},
+		{"a { b: not not 1 + 2 }", "a {\n  b: true2;\n}\n"},
+		{"a { b: not true and false }", "a {\n  b: false;\n}\n"},
+		{"a { b: not (1 + 2) }", "a {\n  b: false;\n}\n"},
+	} {
+		res, err := scss.CompileString(tc.in, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if res.CSS != tc.want {
+			t.Errorf("in %q: got %q want %q", tc.in, res.CSS, tc.want)
+		}
+	}
+}
+
 func TestCompileStringCompressed(t *testing.T) {
 	res, err := scss.CompileString(".a{x:1}", &scss.Options{Style: scss.Compressed})
 	if err != nil {
