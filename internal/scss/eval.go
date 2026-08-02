@@ -1087,6 +1087,15 @@ func (e *evaluator) evalSupports(n *Supports, fr *frame) {
 }
 
 func (e *evaluator) evalAtRoot(n *AtRoot, fr *frame) {
+	// @at-root introduces a nested, opaque variable scope, exactly like a style
+	// rule (dart-sass wraps the body in Environment.scope() without semiGlobal).
+	// Consequences the suite pins: an implicit (non-!global) assignment to a
+	// variable that exists only at the global scope creates a scope-local shadow
+	// rather than mutating the global, and any variable/mixin/function declared
+	// inside the body is local to it and does not persist once the body closes.
+	e.env.pushScope()
+	defer e.env.popScope()
+
 	// An @at-root query controls which enclosing frames the body escapes. The
 	// default (no query) is `(without: rule)`: climb out of the style rules but
 	// STAY within any @media/@supports frame, so `@media screen { .foo { @at-root
