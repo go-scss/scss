@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -69,6 +70,35 @@ func TestRunReadError(t *testing.T) {
 		t.Errorf("expected exit 1 on read error, got %d", code)
 	}
 	if !strings.Contains(errb.String(), "read error") {
+		t.Errorf("stderr: %q", errb.String())
+	}
+}
+
+func TestRunFileArg(t *testing.T) {
+	dir := t.TempDir()
+	partial := filepath.Join(dir, "_p.scss")
+	if err := os.WriteFile(partial, []byte("$c: red;"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	entry := filepath.Join(dir, "in.scss")
+	if err := os.WriteFile(entry, []byte("@import 'p';\n.a{color:$c}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var out, errb bytes.Buffer
+	if code := run([]string{entry}, strings.NewReader(""), &out, &errb); code != 0 {
+		t.Fatalf("exit %d: %s", code, errb.String())
+	}
+	if !strings.Contains(out.String(), "color: red") {
+		t.Errorf("got %q", out.String())
+	}
+}
+
+func TestRunFileArgMissing(t *testing.T) {
+	var out, errb bytes.Buffer
+	if code := run([]string{filepath.Join(t.TempDir(), "nope.scss")}, strings.NewReader(""), &out, &errb); code != 1 {
+		t.Errorf("expected exit 1 for missing file, got %d", code)
+	}
+	if !strings.Contains(errb.String(), "error:") {
 		t.Errorf("stderr: %q", errb.String())
 	}
 }

@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // Copyright (c) 2026, the go-scss/scss authors
 
-// Command scssc compiles SCSS/Sass from stdin to CSS on stdout. It doubles as
-// the differential-testing harness against dart-sass.
+// Command scssc compiles SCSS/Sass to CSS on stdout. Source is read from a file
+// named as a positional argument (with @import/@use resolution relative to its
+// directory, as `sass <file>` does) or, with no argument, from stdin. It doubles
+// as the differential-testing harness against dart-sass.
 package main
 
 import (
@@ -22,11 +24,6 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if err := fs.Parse(args); err != nil {
 		return 2
 	}
-	data, err := io.ReadAll(stdin)
-	if err != nil {
-		fmt.Fprintln(stderr, "read error:", err)
-		return 1
-	}
 	opts := &scss.Options{}
 	if *style == "compressed" {
 		opts.Style = scss.Compressed
@@ -34,7 +31,21 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if *indented {
 		opts.Syntax = scss.SyntaxIndented
 	}
-	res, err := scss.CompileString(string(data), opts)
+	var res *scss.CompileResult
+	var err error
+	if files := fs.Args(); len(files) > 0 {
+		// A positional argument names an input file, compiled with @import/@use
+		// resolution relative to its directory — the mode used to compile real
+		// frameworks such as Bootstrap.
+		res, err = scss.Compile(files[0], opts)
+	} else {
+		data, rerr := io.ReadAll(stdin)
+		if rerr != nil {
+			fmt.Fprintln(stderr, "read error:", rerr)
+			return 1
+		}
+		res, err = scss.CompileString(string(data), opts)
+	}
 	if err != nil {
 		fmt.Fprintln(stderr, "error:", err)
 		return 1
