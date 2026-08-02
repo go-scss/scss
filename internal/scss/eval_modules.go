@@ -789,16 +789,18 @@ func (e *evaluator) evalImport(n *Import, fr *frame) {
 			fr.container.appendNode(at)
 			continue
 		}
-		// A .css file imported at the top level is parsed as plain CSS and
-		// injected verbatim (nesting preserved). A nested @import of a .css file
-		// resolves through the ordinary path so its first level combines with the
-		// enclosing selector, matching dart-sass.
-		if !fr.hasParent && strings.HasSuffix(resolved, ".css") {
+		// A .css file is parsed as plain CSS — its native nesting and `&` kept
+		// verbatim — never re-parsed as Sass. At the top level it is injected as-is;
+		// nested inside a style rule it is re-nested under the enclosing selector by
+		// the same machinery meta.load-css and a nested load-css `.css` use
+		// (placeLoadedCSS / renestLoadedNode), so a native-nested child stays nested
+		// and a top-level `&` picks up the enclosing rule, matching dart-sass.
+		if strings.HasSuffix(resolved, ".css") {
 			nodes, err := parsePlainCSS(src)
 			if err != nil {
 				panic(err)
 			}
-			e.emitModuleCSS(nodes, fr)
+			e.placeLoadedCSS(nodes, fr)
 			continue
 		}
 		stmts, err := parseModuleSource(resolved, src)
