@@ -100,6 +100,96 @@ func newExtensionStore(mode extendMode) *extensionStore {
 	}
 }
 
+// clone returns a deep, independent copy of the store: its extensions map and
+// every selector registration. Selector ASTs (simpleSel/selComplex) are treated
+// as immutable and shared, exactly as extension does; the only mutable state —
+// each box's selector value and the maps themselves — is copied. Shared pointer
+// identity is preserved WITHIN the copy: a box or extension reachable through
+// several maps clones to a single new instance, so the copy extends exactly as
+// the original would, yet a subsequent addSelector/addExtension/addExtensions on
+// either store never disturbs the other.
+//
+// This is step 1 of the per-@import-clone extension rebuild. A legacy @import
+// duplicates a module's CSS (reEmitImportedCSS), and each duplicate needs its
+// own store so the importing context can extend the duplicated rules without
+// touching the original module's rules. clone() supplies that per-duplicate
+// store; wiring downstream composition onto it is a later wave.
+func (s *extensionStore) clone() *extensionStore {
+	c := newExtensionStore(s.mode)
+	boxMap := map[*box]*box{}
+	extMap := map[*extension]*extension{}
+
+	cloneBox := func(b *box) *box {
+		if b == nil {
+			return nil
+		}
+		if nb, ok := boxMap[b]; ok {
+			return nb
+		}
+		nb := &box{value: b.value}
+		boxMap[b] = nb
+		return nb
+	}
+	cloneExtension := func(e *extension) *extension {
+		if e == nil {
+			return nil
+		}
+		if ne, ok := extMap[e]; ok {
+			return ne
+		}
+		ne := &extension{target: e.target, optional: e.optional}
+		if e.mediaContext != nil {
+			ne.mediaContext = append([]string(nil), e.mediaContext...)
+		}
+		extMap[e] = ne
+		if e.extender != nil {
+			ne.extender = &extender{
+				selector:    e.extender.selector,
+				specificity: e.extender.specificity,
+				isOriginal:  e.extender.isOriginal,
+				ext:         ne,
+			}
+		}
+		return ne
+	}
+
+	for k, set := range s.selectors {
+		ns := &selectorSet{simple: set.simple}
+		for _, b := range set.boxes {
+			ns.boxes = append(ns.boxes, cloneBox(b))
+		}
+		c.selectors[k] = ns
+	}
+	for k, te := range s.extensions {
+		nt := &targetExtensions{
+			target:  te.target,
+			sources: make(map[string]*extension, len(te.sources)),
+			order:   append([]string(nil), te.order...),
+		}
+		for ck, e := range te.sources {
+			nt.sources[ck] = cloneExtension(e)
+		}
+		c.extensions[k] = nt
+	}
+	for k, exts := range s.extensionsByExtender {
+		ne := make([]*extension, len(exts))
+		for i, e := range exts {
+			ne[i] = cloneExtension(e)
+		}
+		c.extensionsByExtender[k] = ne
+	}
+	for b, mc := range s.mediaContexts {
+		c.mediaContexts[cloneBox(b)] = append([]string(nil), mc...)
+	}
+	for k, v := range s.sourceSpecificity {
+		c.sourceSpecificity[k] = v
+	}
+	for k, v := range s.originals {
+		c.originals[k] = v
+	}
+	return c
+}
+
 func simpleKey(s simpleSel) string    { return selSimpleString(s) }
 func complexKey(c *selComplex) string { return c.String() }
 
