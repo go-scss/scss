@@ -286,6 +286,21 @@ func TestNestedPropAfterNestedRule(t *testing.T) {
 	}
 }
 
+// TestInlineAtRuleKeepsBlock verifies that a childless at-rule (`@apply x;`)
+// interleaved with declarations stays inside the one enclosing block rather than
+// splitting the parent selector into several blocks. Byte-verified against
+// dart-sass 1.102.0.
+func TestInlineAtRuleKeepsBlock(t *testing.T) {
+	res, err := scss.CompileString("foo {\n  a: 1;\n  @apply x;\n  b: 2;\n}\n", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "foo {\n  a: 1;\n  @apply x;\n  b: 2;\n}\n"
+	if res.CSS != want {
+		t.Errorf("got %q want %q", res.CSS, want)
+	}
+}
+
 func TestCompileStringCompressed(t *testing.T) {
 	res, err := scss.CompileString(".a{x:1}", &scss.Options{Style: scss.Compressed})
 	if err != nil {

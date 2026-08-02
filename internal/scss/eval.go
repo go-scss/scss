@@ -336,9 +336,14 @@ func (e *evaluator) recordCombineStmt(s Stmt, before int) {
 // rule, produces a nested rule or an at-rule that bubbles above the current
 // block — the statements after which trailing declarations need a fresh block.
 func isNestedRuleStmt(s Stmt) bool {
-	switch s.(type) {
-	case *StyleRule, *Media, *Supports, *AtRoot, *AtRule:
+	switch v := s.(type) {
+	case *StyleRule, *Media, *Supports, *AtRoot:
 		return true
+	case *AtRule:
+		// Only an at-rule with a block bubbles and closes the enclosing block; a
+		// childless at-rule (`@apply x;`) stays inline like a declaration, so it
+		// must not force the following siblings into a fresh parent block.
+		return !v.NoBody
 	}
 	return false
 }
