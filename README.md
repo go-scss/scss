@@ -89,21 +89,19 @@ Audited 2026-08-02 against a full sass/sass-spec checkout, with **dart-sass 1.10
 
 | | passes | of denominator |
 |---|---|---|
-| **go-scss** | **11190 / 11406** | **98.11%** |
+| **go-scss** | **11220 / 11406** | **98.37%** |
 | dart-sass 1.102 (achievable ceiling) | 11341 / 11406 | 99.43% |
-| **go-scss as a share of the ceiling** | **11190 / 11341** | **98.67%** |
+| **go-scss as a share of the ceiling** | **11220 / 11341** | **98.93%** |
 
 go-scss is byte-exact against dart-sass 1.102 across the entire real-world language. It even **matches the vendored fixture where current dart-sass does not on 16 cases** — stale fixtures that dart-sass 1.102 itself now fails (its last-ULP behaviour drifted; go-scss still matches the frozen expectation).
 
-The remaining **216** go-scss misses are honestly, oracle-bucketed:
+The remaining **186** go-scss misses are honestly, oracle-bucketed into three groups:
 
 | bucket | count | why it is where it is |
 |---|---:|---|
-| **C — libm-ULP** (color/math last-bit) | 127 | Far-out-of-gamut `color.to-space` conversions and math asymptotes (`math.tan`, `math.pow`) that differ from dart in the last 1–2 ULPs. Irreducible without CGO or breaking cross-arch determinism: pure-Go math vs dart's platform `libm`, where products are rounded separately so results stay identical across all six arches. |
-| **B — stale-vendored** | 49 | The vendored fixture is stale; **dart-sass 1.102 itself fails these** (oracle-proven), so they are outside the achievable ceiling and not closeable by go-scss. |
-| **WALL — per-import-clone extension store** | 6 | The proven architectural residual (`@use`/`@import` × `@extend` scope isolation: `use/extend/scope/*`, `meta.load-css` `extend::shared_cssless_midstream`, `use/css/import::nested_import_into_use`). Would require replacing the single-pass `@extend` finalize with dart's per-clone `_extendModules`. |
-| **SERIALIZER — comment-only block** | 2 | A block whose sole content is a comment must serialise on one line (`@font-face { /**/ }`, `@keyframes { /**/ }`); go-scss expands the braces. |
-| **OTHER — assorted small gaps** | 32 | A long tail of unrelated small divergences: `@import` inlining/resolution, plain-CSS nesting preserved through `@import`, indented-syntax (`.sass`) multiline parsing, unknown at-rule handling, argument-splat ordering, and trailing-comment placement. |
+| **libm-ULP** (color/math last-bit) | ~127 | Far-out-of-gamut `color.to-space` conversions and math asymptotes (`math.tan`, `math.pow`) that differ from dart in the last 1–2 ULPs. Irreducible without CGO or breaking cross-arch determinism: pure-Go math vs dart's platform `libm`, where products are rounded separately so results stay identical across all six arches. |
+| **stale-vendored** | ~49 | The vendored fixture is stale; **dart-sass 1.102 itself fails these** (oracle-proven), so they lie outside the achievable ceiling and are not closeable by go-scss. On 16 neighbouring stale cases go-scss is in fact *ahead* of dart — it still matches the frozen expectation that dart 1.102 has drifted away from. |
+| **architectural** | ~10 | A small, named set of structural gaps. The largest is the per-import-clone `@extend`-store cluster (5–6 cases: `use/extend/scope/*`, `meta.load-css` `extend::shared_cssless_midstream`) — the `ExtensionStore.clone()` foundation is landed, but closing it needs combine-level clone-node separation plus ordered per-clone finalize, a documented multi-layer follow-up. The rest are `issue_2055` (single-pass extend composition-ordering) and two high-blast-radius core reworks, `issue_1786` (value-interpolation) and `blead-global` (env-scoping). |
 
 Scored via the annotation-aware harness that reproduces the official runner's `options.yml`/per-impl-override logic; the full per-case bucket assignment is reproducible with `TestSassSpecFull` + `SASS_SPEC_ORACLE`.
 
@@ -124,11 +122,11 @@ Dart Sass output is the source of truth; where this compiler intentionally diver
 
 **Still divergent** (named, not hidden — see the [sass-spec conformance](#sass-spec-conformance) table for exact per-bucket counts):
 
-- **Extreme out-of-gamut colors and math asymptotes** (bucket C, 127) — far-out-of-gamut `color.to-space` conversions (`core_functions/color/to_space/*/out_of_range/far`) and math asymptotes (`math.tan`, `math.pow`) differ from dart in the last 1–2 ULPs: the magnitudes amplify unavoidable floating-point rounding-order differences between pure-Go math and dart's platform `libm`. Irreducible without CGO or breaking cross-arch determinism.
-- **Per-import-clone `@extend` scope** (bucket WALL, 6) — `@extend` interacting with `@use`/`@import` module boundaries (`use/extend/scope/*`, `meta.load-css` `extend::shared_cssless_midstream`, `use/css/import::nested_import_into_use`) would require replacing the single-pass `@extend` finalize with dart's per-clone `_extendModules`.
-- **Comment-only-block serialization** (bucket SERIALIZER, 2) — a block whose sole content is a comment must serialise on one line (`@font-face { /**/ }`, `@keyframes { /**/ }`); go-scss expands the braces.
-- **Assorted small gaps** (bucket OTHER, 32) — `@import` inlining/resolution, plain-CSS nesting preserved through `@import`, indented-syntax (`.sass`) multiline parsing, unknown at-rule handling, argument-splat ordering, and trailing-comment placement.
-- **Stale-vendored fixtures** (bucket B, 49) — the vendored `output.css` is out of date; dart-sass 1.102 itself fails these, so they lie outside the achievable ceiling.
+- **Extreme out-of-gamut colors and math asymptotes** (libm-ULP bucket, ~127) — far-out-of-gamut `color.to-space` conversions (`core_functions/color/to_space/*/out_of_range/far`) and math asymptotes (`math.tan`, `math.pow`) differ from dart in the last 1–2 ULPs: the magnitudes amplify unavoidable floating-point rounding-order differences between pure-Go math and dart's platform `libm`. Irreducible without CGO or breaking cross-arch determinism.
+- **Stale-vendored fixtures** (stale-vendored bucket, ~49) — the vendored `output.css` is out of date; dart-sass 1.102 itself fails these, so they lie outside the achievable ceiling. On 16 neighbouring cases go-scss is ahead of dart 1.102.
+- **Per-import-clone `@extend` scope** (architectural bucket, 5–6) — `@extend` interacting with `@use`/`@import` module boundaries (`use/extend/scope/*`, `meta.load-css` `extend::shared_cssless_midstream`). The `ExtensionStore.clone()` foundation is landed; closing the cluster needs combine-level clone-node separation plus ordered per-clone finalize — a documented multi-layer follow-up.
+- **`issue_2055` extend composition-ordering** (architectural bucket, 1) — single-pass `@extend` composition applies extensions in an order that diverges from dart's staged resolution.
+- **`issue_1786` / `blead-global`** (architectural bucket, 2) — two high-blast-radius core reworks: value-interpolation semantics (`issue_1786`) and global-variable env-scoping (`blead-global`).
 - **Source maps** — not emitted (`CompileResult.SourceMap` is empty).
 - **Coverage** is **100.0%** of statements (up from 79.3%); every parser/eval error-recovery and defensive branch is exercised, either through malformed-SCSS tests or via direct white-box drives of the defensive seams. The CI floor is **100%**.
 
