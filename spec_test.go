@@ -306,6 +306,36 @@ func hrxImporter(files map[string]string, baseDir, specDir, hrxPrefix string) Re
 				return src, c, true
 			}
 		}
+		// 1b) hrxPrefix-anchored resolution. Dart materialises the whole archive
+		// under <root>/<hrxPrefix>/, so a referrer-relative or case-relative load
+		// that climbs out of and back into the archive dir — e.g. a nested
+		// `@import "../14_imports/b.scss"` from an archive whose own directory is
+		// named `14_imports` — round-trips to one of the archive's virtual keys.
+		// The un-anchored virtual joins above cannot express that (their keys omit
+		// the prefix), so replay the join in the anchored namespace: root the
+		// referrer's dir (or the case dir when there is no referrer) at hrxPrefix,
+		// clean, and strip the prefix back to a virtual key. Only paths that stay
+		// within the archive resolve, matching what dart resolves off disk.
+		if hrxPrefix != "" {
+			anchorDir := hrxPrefix
+			if referrer != "" {
+				if _, ok := files[referrer]; ok {
+					anchorDir = path.Join(hrxPrefix, path.Dir(filepath.ToSlash(referrer)))
+				}
+			} else if baseDir != "" {
+				anchorDir = path.Join(hrxPrefix, filepath.ToSlash(baseDir))
+			}
+			full := path.Clean(path.Join(anchorDir, url))
+			if strings.HasPrefix(full, hrxPrefix+"/") {
+				rel := strings.TrimPrefix(full, hrxPrefix+"/")
+				for _, c := range importCandidateNames(rel, url, forImport) {
+					c = strings.TrimPrefix(c, "./")
+					if src, ok := files[c]; ok {
+						return src, c, true
+					}
+				}
+			}
+		}
 		// 2) load-path (spec root) relative: within-archive partials are stored
 		// under hrxPrefix, so strip that prefix to get the virtual key.
 		if hrxPrefix != "" && strings.HasPrefix(url, hrxPrefix+"/") {
