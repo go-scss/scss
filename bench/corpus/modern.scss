@@ -1,0 +1,90 @@
+// SPDX-License-Identifier: BSD-3-Clause
+// A small, deliberately *modern* stylesheet: the Sass module system
+// (@use/@forward) plus the sass:color / sass:math / sass:map built-in modules
+// and CSS Color Level 4 functions. dart-sass and go-scss compile this; libsass
+// (feature-frozen at the pre-module era) cannot parse it at all. It exists to
+// make the "libsass cannot compile the input" correctness gap concrete in the
+// benchmark table, not to be a speed headline.
+
+@use "sass:color";
+@use "sass:math";
+@use "sass:map";
+@use "sass:list";
+@use "sass:string";
+
+$brand: (
+  "primary": #0d6efd,
+  "secondary": #6c757d,
+  "success": #198754,
+  "danger": #dc3545,
+  "warning": #ffc107,
+  "info": #0dcaf0,
+);
+
+$steps: 12;
+
+@function tint($color, $weight) {
+  @return color.mix(white, $color, $weight);
+}
+
+@function shade($color, $weight) {
+  @return color.mix(black, $color, $weight);
+}
+
+:root {
+  @each $name, $value in $brand {
+    --c-#{$name}: #{$value};
+    --c-#{$name}-lit: #{color.adjust($value, $lightness: 12%)};
+    --c-#{$name}-sat: #{color.adjust($value, $saturation: -8%)};
+    --c-#{$name}-hue: #{color.adjust($value, $hue: 20deg)};
+  }
+}
+
+@each $name, $value in $brand {
+  .btn-#{$name} {
+    color: color.invert($value, 100%);
+    background-color: $value;
+    border-color: shade($value, 20%);
+
+    &:hover {
+      background-color: shade($value, 12%);
+      border-color: shade($value, 28%);
+    }
+
+    &:disabled {
+      background-color: tint($value, 40%);
+      border-color: tint($value, 30%);
+    }
+  }
+
+  .alert-#{$name} {
+    color: shade($value, 60%);
+    background-color: tint($value, 80%);
+    border-color: tint($value, 60%);
+  }
+}
+
+@for $i from 1 through $steps {
+  .col-#{$i} {
+    width: math.div($i, $steps) * 100%;
+    padding-inline: math.div($i, 2) * 0.25rem;
+  }
+  .g-#{$i} {
+    gap: math.pow(2, $i) * 1px;
+  }
+}
+
+.grid {
+  display: grid;
+  $cols: ();
+  @for $i from 1 through 6 {
+    $cols: list.append($cols, minmax(0, 1fr), space);
+  }
+  grid-template-columns: $cols;
+}
+
+.meta {
+  --brand-count: #{list.length(map.keys($brand))};
+  --first-name: #{string.to-upper-case("primary")};
+  --scaled: #{math.max(3, 7, math.div(20, 4))};
+}
