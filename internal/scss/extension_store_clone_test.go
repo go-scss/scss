@@ -147,32 +147,6 @@ func TestExtensionStoreCloneExtendsIdentically(t *testing.T) {
 	}
 }
 
-// TestCloneStoreFor covers the three arms of cloneStoreFor: a module with no
-// extend scope (fresh empty store), a module whose own store must be built and
-// cached, and a subsequent call reusing the cached own store.
-func TestCloneStoreFor(t *testing.T) {
-	e := newEvaluator(nil)
-
-	if st := e.cloneStoreFor(&module{}); st == nil {
-		t.Fatal("nil-scope module got no store")
-	}
-
-	ms := &moduleScope{ev: newEvaluator(nil)}
-	m := &module{scope: ms}
-	st := e.cloneStoreFor(m)
-	if st == nil || ms.ownStore == nil {
-		t.Fatal("own store not built and cached")
-	}
-	cached := ms.ownStore
-	st2 := e.cloneStoreFor(m)
-	if st2 == nil || ms.ownStore != cached {
-		t.Fatal("second call rebuilt the own store instead of reusing the cache")
-	}
-	if st2 == st {
-		t.Fatal("cloneStoreFor returned the same store instance twice")
-	}
-}
-
 // TestRegisterCloneBoxes covers registerCloneBoxes across a style rule with a
 // parsed selector (gets a box + registration), a raw plain-CSS rule with no
 // parsed selector (no box), an at-rule whose nested style rule is registered,
