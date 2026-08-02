@@ -19,7 +19,7 @@ regressions in CI via Go `Benchmark*` on the hot paths.
 
 Correctness is the precondition for every number here: go-scss produces
 **byte-identical** output to dart-sass on the whole corpus, and the full
-sass-spec differential (11220/11406 dart-applicable cases) stays byte-identical.
+sass-spec differential (11227/11406 dart-applicable cases) stays byte-identical.
 A speed win that changes a single output byte is not a win.
 
 ## Methodology
@@ -197,7 +197,7 @@ on the inputs libsass can compile.
 ## Optimization log
 
 Each change was landed only after verifying byte-identical output on the whole
-corpus, an unchanged sass-spec differential (11220/11406, identical failure
+corpus, an unchanged sass-spec differential (11227/11406, identical failure
 set), and 100% coverage.
 
 1. **Parser line-number lookup: O(n²) → O(n log n)** (`internal/scss/parser.go`).
