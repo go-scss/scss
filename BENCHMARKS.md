@@ -71,5 +71,65 @@ go-scss compile time (in-process median) vs dart-sass 1.102 AOT (compile-only):
 
 At baseline go-scss already beat dart-sass on the many-partials framework
 (Bootstrap) but **lost by ~3x on the large single file** (`generated`). Profiling
-identified the cause; see the optimization log once it lands. This document is
-updated with the post-optimization numbers as each change merges.
+(`go test -cpuprofile`) showed a single dominant cause — see the optimization log.
+
+## Results (after the perf campaign)
+
+go-scss compile time (in-process median) vs dart-sass 1.102 AOT (compile-only),
+same methodology as the baseline:
+
+| corpus | style | go-scss median | go-scss min | dart-sass compile-only | throughput | ratio (dart / go) |
+|---|---|---:|---:|---:|---:|---:|
+| generated | expanded | **13.2 ms** | 12.7 ms | 39.7 ms | 18.9 MB/s | **3.01x faster** |
+| generated | compressed | **14.1 ms** | 13.5 ms | 40.4 ms | 14.6 MB/s | **2.86x faster** |
+| bootstrap | expanded | **59.5 ms** | 58.3 ms | 123.8 ms | 4.4 MB/s | **2.08x faster** |
+| bootstrap | compressed | **59.4 ms** | 58.1 ms | 122.8 ms | 3.8 MB/s | **2.07x faster** |
+
+go-scss is **faster than dart-sass 1.102 AOT on every corpus/style combination**,
+by 2.07x–3.01x on pure compile time. Including startup, the end-to-end
+wall-clock gap is wider still: the static `scssc` binary compiles Bootstrap in
+**~70 ms end-to-end** (process start + file I/O + compile) versus dart-sass's
+~145 ms — a ~2x end-to-end win — and dart-sass's slower `npm` (dart2js
+JavaScript) build is several times slower again.
+
+Throughput is generated-CSS bytes per second (well defined across the
+multi-file Bootstrap input, unlike entry-file size).
+
+## Optimization log
+
+Each change was landed only after verifying byte-identical output on the whole
+corpus, an unchanged sass-spec differential (11220/11406, identical failure
+set), and 100% coverage.
+
+1. **Parser line-number lookup: O(n²) → O(n log n)** (`internal/scss/parser.go`).
+   `lineAt` counted newlines from the start of the source on every call, and it
+   is called per statement/block, so line-number resolution was quadratic in the
+   file length. This was **70% of CPU** on `generated`. Fixed by indexing the
+   newline offsets once and binary-searching them.
+   Effect (identical harness methodology): `generated` **120.7 → 13.2 ms
+   (9.1x)** expanded, 121.1 → 14.1 ms compressed. Bootstrap (many small
+   partials, where the per-file quadratic never bit) is unaffected. This alone
+   turned the single-large-file loss into a win.
+
+2. **Lazy per-scope tables** (`internal/scss/env.go`). Opening a scope
+   eagerly allocated three maps (variables, mixins, functions); the vast
+   majority of scopes — a style rule with only property declarations, a loop
+   body — populate none of them. Allocate each map on first write instead, with
+   `closureAt` materialising any captured-but-empty scope so lexical-closure
+   sharing stays identical to the eager version. Effect: **−7.6% allocations and
+   −7% peak memory on Bootstrap** (1.06M → 0.98M allocs/op; 55.5 → 51.6 MB/op),
+   −2.6% allocations on `generated`. Wall-clock is essentially flat at these
+   input sizes (GC was not on the critical path), so this is a memory/GC-pressure
+   win rather than a latency one.
+
+## Honest gaps
+
+- The large single-file (`generated`) result rests on optimization #1; that
+  input class is real (compiled design-token bundles, concatenated output) but
+  is synthetic here.
+- After the O(n²) fix, both corpora are dominated by allocation/GC rather than a
+  single algorithmic hot spot; the remaining allocation cost is spread thinly
+  across the evaluator. Further wins are available but would be many small,
+  individually-verified changes with diminishing returns — go-scss already
+  clears the dart-sass-parity bar on every measured input, so they are deferred
+  over risking the correctness/coverage guarantees.
