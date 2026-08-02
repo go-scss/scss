@@ -435,19 +435,23 @@ func parseModuleSource(resolved, src string) ([]Stmt, error) {
 // clone: true). A plain @use of an already-loaded module stays deduped and does
 // nothing here.
 func (e *evaluator) reEmitImportedCSS(m *module, fr *frame) {
-	if e.importDepth == 0 || len(m.cssNodes) == 0 {
+	// "Reached through a legacy @import" is signalled by an open import subtree,
+	// not importDepth: a module @used several levels deep inside the imported file
+	// runs in its own sub-evaluator where importDepth has reset to 0, yet dart
+	// still clones it as part of the import's subtree. importSubtree propagates to
+	// those sub-evaluators (adoptScope); importDepth does not.
+	if e.importSubtree == nil || len(m.cssNodes) == 0 {
 		return
 	}
 	clones := cloneCSSNodes(m.cssNodes)
-	// Step 1 of the per-@import-clone extend rebuild: give the duplicate its own
-	// extension store (a clone of the source module's own store) and register
-	// each duplicated style rule under a fresh box, so a later wave can compose
-	// downstream @extends onto the duplicate. The store is recorded but NOT
-	// composed here — no addExtensions is called on it and writeBackSelectors
-	// never reaches these boxes — so the emitted CSS is byte-identical.
-	store := e.cloneStoreFor(m)
-	registerCloneBoxes(clones, store)
-	*e.importClones = append(*e.importClones, &importClone{store: store, source: m.scope})
+	// Give the duplicate its own fresh extension store with every duplicated style
+	// rule registered under a fresh box; composeImportClones later applies the
+	// import subtree's @extends to those boxes. The subtree collector, shared with
+	// every other duplicate this @import produces, records which modules' extends
+	// belong to this clone.
+	store := newExtensionStore(extendNormal)
+	rules := registerCloneBoxes(clones, store)
+	*e.importClones = append(*e.importClones, &importClone{store: store, rules: rules, source: m.scope, subtree: e.importSubtree})
 	e.emitModuleCSS(clones, fr)
 }
 
@@ -465,37 +469,15 @@ func (e *evaluator) reEmitImportedCSS(m *module, fr *frame) {
 // subtree is cloned in one pass, so a module TRANSITIVELY @used by the fresh
 // module (its CSS is inlined into `orig`) is separated too.
 //
-// A mirror pairing is recorded so, until step 4 composes the clone's store, the
-// duplicate copies the source rules' final selectors — keeping today's output
-// byte-for-byte, since the two references previously shared exactly those nodes.
+// The clone gets a fresh store with its duplicated rules registered; the import
+// subtree collector (shared with every duplicate this @import produces) records
+// which modules' @extends compose onto it in composeImportClones.
 func (e *evaluator) emitFreshImportClone(orig []cssNode, source *moduleScope, fr *frame) {
 	clones := cloneCSSNodes(orig)
-	store := e.cloneStoreForScope(source)
-	registerCloneBoxes(clones, store)
-	mirror := collectRuleMirror(clones, orig)
-	*e.importClones = append(*e.importClones, &importClone{store: store, source: source, mirror: mirror})
+	store := newExtensionStore(extendNormal)
+	rules := registerCloneBoxes(clones, store)
+	*e.importClones = append(*e.importClones, &importClone{store: store, rules: rules, source: source, subtree: e.importSubtree})
 	e.emitModuleCSS(clones, fr)
-}
-
-// collectRuleMirror walks a cloned CSS tree in lockstep with the original it was
-// cloned from and pairs every style rule with its source. cloneCSSNodes produces
-// a structurally identical tree (same node kinds in the same order), so the walk
-// stays aligned. Only style rules carry a selector an @extend can change, so only
-// they are paired; declarations and comments are copied verbatim and need none.
-func collectRuleMirror(clones, orig []cssNode) []ruleMirror {
-	var out []ruleMirror
-	for i := range clones {
-		switch c := clones[i].(type) {
-		case *cssStyleRule:
-			o := orig[i].(*cssStyleRule)
-			out = append(out, ruleMirror{clone: c, orig: o})
-			out = append(out, collectRuleMirror(c.nodes, o.nodes)...)
-		case *cssAtRule:
-			o := orig[i].(*cssAtRule)
-			out = append(out, collectRuleMirror(c.nodes, o.nodes)...)
-		}
-	}
-	return out
 }
 
 func (e *evaluator) loadModule(url string, config map[string]Value, fr *frame) *module {
@@ -706,48 +688,37 @@ func cloneCSSNode(n cssNode) cssNode {
 	}
 }
 
-// cloneStoreFor returns a fresh extension store for a legacy-@import CSS
-// duplicate of module m: a clone of the source module's OWN store, so the
-// duplicate reproduces the module's internal @extend relationships and can be
-// extended independently. The module's own store is built once (lazily) and
-// cached on its scope, then reused by applyAllExtends pass 1. A module with no
-// extend scope (a plain-CSS file) gets a fresh empty store.
-func (e *evaluator) cloneStoreFor(m *module) *extensionStore {
-	return e.cloneStoreForScope(m.scope)
-}
-
-// cloneStoreForScope is cloneStoreFor keyed on a module scope directly, so the
-// fresh-during-import path (which holds the loading sub-evaluator's scope but has
-// not yet built its module wrapper) can reuse the same own-store cloning.
-func (e *evaluator) cloneStoreForScope(sc *moduleScope) *extensionStore {
-	if sc == nil {
-		return newExtensionStore(extendNormal)
-	}
-	if sc.ownStore == nil {
-		sc.ownStore = sc.ev.buildOwnStore()
-	}
-	return sc.ownStore.clone()
-}
-
-// registerCloneBoxes walks a cloned CSS tree and registers every style rule
-// under a fresh extension box in store, so the duplicated rules participate in
-// their own store rather than the source module's. The box wraps the rule's
-// current (clone-time) selector; because store is never composed in step 1,
-// these boxes stay untouched and the emitted selectors are unchanged. Raw
-// plain-CSS rules (no parsed selector list) carry no box.
-func registerCloneBoxes(nodes []cssNode, store *extensionStore) {
-	for _, n := range nodes {
-		switch v := n.(type) {
-		case *cssStyleRule:
-			if v.selector.list != nil {
-				v.box = &box{value: v.selector.list}
-				store.registerSelector(v.selector.list, v.box)
+// registerCloneBoxes walks a cloned CSS tree, registers every style rule under a
+// fresh extension box in store, marks the clone's selectors as originals (so the
+// extend engine's trimming preserves them exactly as a standalone stylesheet's
+// own selectors), and returns the duplicated rules so their composed selectors
+// can be written back. Raw plain-CSS rules (no parsed selector list) carry no box
+// and are simply not extendable, keeping their verbatim output.
+func registerCloneBoxes(nodes []cssNode, store *extensionStore) []*cssStyleRule {
+	var rules []*cssStyleRule
+	var walk func([]cssNode)
+	walk = func(nodes []cssNode) {
+		for _, n := range nodes {
+			switch v := n.(type) {
+			case *cssStyleRule:
+				if v.selector.list != nil {
+					v.box = &box{value: v.selector.list}
+					store.registerSelector(v.selector.list, v.box)
+					if !v.selector.list.isInvisible() {
+						for _, c := range v.selector.list.components {
+							store.originals[complexKey(c)] = true
+						}
+					}
+					rules = append(rules, v)
+				}
+				walk(v.nodes)
+			case *cssAtRule:
+				walk(v.nodes)
 			}
-			registerCloneBoxes(v.nodes, store)
-		case *cssAtRule:
-			registerCloneBoxes(v.nodes, store)
 		}
 	}
+	walk(nodes)
+	return rules
 }
 
 // emptyModule builds a module with no members, used for plain-CSS files loaded
@@ -871,6 +842,15 @@ func (e *evaluator) evalImportBody(stmts []Stmt, fr *frame) {
 }
 
 func (e *evaluator) evalImport(n *Import, fr *frame) {
+	// The OUTERMOST legacy @import opens a clone subtree collector, shared by every
+	// nested @import and every module loaded while inlining (threaded through
+	// adoptScope), so each CSS duplicate this import produces composes exactly the
+	// subtree's @extends. A nested @import keeps the outer collector — dart clones
+	// the whole transitive subtree as one isolated unit.
+	if e.importSubtree == nil {
+		e.importSubtree = &importSubtreeCtx{seen: map[*moduleScope]bool{}}
+		defer func() { e.importSubtree = nil }()
+	}
 	for _, item := range n.Imports {
 		if item.Plain {
 			params := "\"" + item.URL + "\""
