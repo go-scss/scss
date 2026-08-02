@@ -79,10 +79,14 @@ func (p *parser) parseSpaceList(stop func(*parser) bool) Expr {
 		// back because it begins a fresh value rather than a binary subtraction
 		// (`1--em` -> `1 --em`, `1 -2` -> `1 -2`); it therefore always starts a
 		// new space-list element.
+		// A `!` glued to the previous value opens a fresh token: a CSS/Sass flag
+		// (`c!important` -> `c !important`, dart-sass normalises the missing space)
+		// or a `!`-prefixed value. A Sass variable flag (`!default`/`!global`/
+		// `!optional`) still ends the value list because canStartValue rejects it.
 		adjacentBoundary := prevUnicodeRange || prev == '"' || prev == '\'' ||
 			prev == ')' || prev == ']' || prev == '%' || prev == '&' ||
 			p.peek() == '"' || p.peek() == '\'' || p.peek() == '$' || p.peek() == '&' ||
-			p.peek() == '-' || (p.peek() == '#' && p.peekAt(1) == '{')
+			p.peek() == '-' || p.peek() == '!' || (p.peek() == '#' && p.peekAt(1) == '{')
 		if (!had && !adjacentBoundary) || stop(p) || p.stopChar() || p.peek() == ',' || !p.canStartValue() {
 			p.pos = save
 			break
