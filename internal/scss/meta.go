@@ -624,6 +624,18 @@ func (e *evaluator) loadCSSInto(url string, config []ConfigVar, fr *frame) {
 	sub.sharedLoaded = e.sharedLoaded
 	e.adoptScope(sub)
 	e.dependsOn(sub.scope)
+	// meta.load-css resolves the loaded module's CSS in a clone — dart's
+	// _combineCss(clone: true), the same primitive a legacy @import uses. A module
+	// the loaded stylesheet reuses from the canonical compilation (a diamond onto
+	// an already-@used module) is DUPLICATED for this load, so an @extend written
+	// inside the loaded module composes onto this copy alone and never mutates the
+	// canonical CSS. Opening a clone subtree makes reEmitImportedCSS duplicate each
+	// such shared module and composeImportClones resolve the load's @extends over
+	// the duplicates, exactly as for @import. A load nested inside an inlining
+	// @import keeps that import's outer subtree (dart clones the whole unit once).
+	if sub.importSubtree == nil {
+		sub.importSubtree = &importSubtreeCtx{seen: map[*moduleScope]bool{}}
+	}
 	sub.incomingConfig = cfg
 	sub.hoistGlobalVarSlots(stmts, sub.env, map[string]bool{})
 	sub.runModule(stmts)
