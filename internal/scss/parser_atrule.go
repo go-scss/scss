@@ -141,7 +141,7 @@ func (p *parser) parseCssCustomFunction(keyword string) Stmt {
 	p.ws()
 	// The prelude always begins with the custom-property name (`--…`), so it is
 	// never empty.
-	v := trimInterp(p.parseAtRulePrelude())
+	v := trimInterp(p.parseAtRulePrelude(false))
 	if p.peek() == '{' {
 		p.cssFuncDepth++
 		body := p.parseBlock()
@@ -696,7 +696,7 @@ func (p *parser) scanInterpolatedIdentifier() (*Interp, bool) {
 // the interpolated name for eval-time resolution.
 func (p *parser) parseGenericAtRuleInterp(name *Interp) Stmt {
 	p.ws()
-	value := p.parseAtRulePrelude()
+	value := p.parseAtRulePrelude(true)
 	v := trimInterp(value)
 	if plain, ok := v.isPlain(); ok && plain == "" {
 		v = nil
@@ -723,7 +723,7 @@ func (p *parser) parseGenericAtRule(name string) Stmt {
 			return c == '{' || c == ';' || c == '}' || c == 0
 		})
 	} else {
-		value = p.parseAtRulePrelude()
+		value = p.parseAtRulePrelude(true)
 	}
 	v := trimInterp(value)
 	if plain, ok := v.isPlain(); ok && plain == "" {
