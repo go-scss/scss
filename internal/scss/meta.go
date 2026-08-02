@@ -188,17 +188,28 @@ func (e *evaluator) getFunctionValue(name string, css bool, moduleName string) V
 		}
 		e.fail("There is no module with the namespace \"%s\".", moduleName)
 	}
-	if fn, ok := e.env.getFunc(name); ok {
-		return &SassFunction{name: name, user: fn}
-	}
-	if fn, ok := e.env.globalModuleFunc(normIdent(name)); ok {
-		return &SassFunction{name: name, user: fn}
-	}
-	if bf, ok := globalFns[normIdent(strings.ToLower(name))]; ok {
-		return &SassFunction{name: name, builtin: bf, key: "global:" + normIdent(strings.ToLower(name))}
+	if v, ok := e.lookupFunctionValue(name); ok {
+		return v
 	}
 	e.fail("Function not found: %s", name)
 	return nil
+}
+
+// lookupFunctionValue resolves an unnamespaced function name to a first-class
+// function reference without failing when it is undefined, returning ok=false
+// instead. Used by the deprecated string form of call(), which falls back to a
+// plain-CSS function rather than erroring on an unknown name.
+func (e *evaluator) lookupFunctionValue(name string) (Value, bool) {
+	if fn, ok := e.env.getFunc(name); ok {
+		return &SassFunction{name: name, user: fn}, true
+	}
+	if fn, ok := e.env.globalModuleFunc(normIdent(name)); ok {
+		return &SassFunction{name: name, user: fn}, true
+	}
+	if bf, ok := globalFns[normIdent(strings.ToLower(name))]; ok {
+		return &SassFunction{name: name, builtin: bf, key: "global:" + normIdent(strings.ToLower(name))}, true
+	}
+	return nil, false
 }
 
 func (e *evaluator) getMixinValue(name, moduleName string) Value {
@@ -281,9 +292,13 @@ func (e *evaluator) callFunctionValue(fnv Value, pos []Value, named map[string]V
 		}
 		return f.builtin(&callInfo{positional: pos, named: named, e: e, fn: f.name})
 	case *SassString:
-		// Deprecated call("name", ...): resolve by name.
-		resolved := e.getFunctionValue(f.Text, false, "")
-		return e.callFunctionValue(resolved, pos, named)
+		// Deprecated call("name", ...): resolve by name, falling back to a
+		// plain-CSS function when the name is undefined (dart-sass wraps an
+		// unresolved call-string in a PlainCssCallable rather than erroring).
+		if resolved, ok := e.lookupFunctionValue(f.Text); ok {
+			return e.callFunctionValue(resolved, pos, named)
+		}
+		return &SassString{Text: f.Text + "(" + joinCSSArgs(pos, named) + ")", Quoted: false}
 	default:
 		e.fail("$function: %s is not a function reference.", serializeValue(fnv, false))
 		return nil
