@@ -89,21 +89,20 @@ Audited 2026-08-03 against a full sass/sass-spec checkout, with **dart-sass 1.10
 
 | | passes | of denominator |
 |---|---|---|
-| **go-scss** | **11228 / 11406** | **98.44%** |
+| **go-scss** | **11230 / 11406** | **98.46%** |
 | dart-sass 1.102 (achievable ceiling) | 11341 / 11406 | 99.43% |
-| **go-scss as a share of the ceiling** | **11228 / 11341** | **~99.0%** |
+| **go-scss as a share of the ceiling** | **11230 / 11341** | **~99.0%** |
 
 go-scss is byte-exact against dart-sass 1.102 across the entire real-world language. It even **matches the vendored fixture where current dart-sass does not on 16 cases** — stale fixtures that dart-sass 1.102 itself now fails (its last-ULP behaviour drifted; go-scss still matches the frozen expectation).
 
-The remaining **178** go-scss misses are **almost entirely irreducible** — oracle-bucketed (dart-sass 1.102 run through the same harness, so every count below is proven, not estimated):
+The remaining **176** go-scss misses are now **fully irreducible** — every closeable case has been closed. Oracle-bucketed (dart-sass 1.102 run through the same harness, so every count below is proven, not estimated):
 
 | bucket | count | why it is where it is |
 |---|---:|---|
 | **libm-ULP** (color/math last-bit) | 127 | *Irreducible.* Far-out-of-gamut `color.to-space` conversions and math asymptotes (`math.tan`, `math.pow`) that differ from dart in the last 1–2 ULPs. Not closeable without CGO or breaking cross-arch determinism: pure-Go math vs dart's platform `libm`, where products are rounded separately so results stay identical across all six arches. |
 | **stale-vendored** | 49 | *Outside the achievable ceiling.* The vendored fixture is stale and **dart-sass 1.102 itself fails these** (oracle-proven); go-scss matches current dart, not the drifted fixture. On 16 neighbouring stale cases go-scss is in fact *ahead* of dart 1.102 — it still matches the frozen expectation that dart has drifted away from. |
-| **nested plain-CSS `@import`** | 2 | The only remaining pure-Go-closeable residual: a plain-CSS `@import url(...)` reached through a mixin/`@if` inside a style rule (`libsass-todo-tests/errors/import/url/mixin/control-{if,else}/inside`) is hoisted to top level instead of kept nested under the rule. Low blast-radius; supersedes the now-closed `issue_2055`. |
 
-`127 + 49 + 2 = 178`, and `11228 + 178 = 11406`; the 65-case gap to the dart ceiling is exactly the 49 both-fail stale cases plus the 16 cases go-scss wins outright.
+`127 + 49 = 176`, and `11230 + 176 = 11406`; the residual is now **100% irreducible** — the 127 libm-ULP cases (cross-arch determinism) plus the 49 stale-vendored cases (dart-sass 1.102 fails them too), with no pure-Go-closeable case left. The 65-case gap to the dart ceiling is exactly the 49 both-fail stale cases plus the 16 cases go-scss wins outright.
 
 **Now closed:** `issue_2055` (`:not`/`:has` selector self-composition) passes as of the in-loop extender re-extension — the former lone *architectural* residual is gone; every case with a known pure-Go / CGO=0 / cross-arch-deterministic path is now closed except the two nested-`@import` cases above. The per-import-clone `@extend` cluster (`use/extend/scope/*`, `meta.load-css` mid-stream clone) is likewise closed — `use/extend/scope` scores 10/10 via the per-module clone-store rebuild.
 
@@ -128,8 +127,7 @@ Dart Sass output is the source of truth; where this compiler intentionally diver
 **Still divergent** (named, not hidden — see the [sass-spec conformance](#sass-spec-conformance) table for exact per-bucket counts):
 
 - **Extreme out-of-gamut colors and math asymptotes** (libm-ULP bucket, 127, irreducible) — far-out-of-gamut `color.to-space` conversions (`core_functions/color/to_space/*/out_of_range/far`) and math asymptotes (`math.tan`, `math.pow`) differ from dart in the last 1–2 ULPs: the magnitudes amplify unavoidable floating-point rounding-order differences between pure-Go math and dart's platform `libm`. Not closeable without CGO or breaking cross-arch determinism.
-- **Stale-vendored fixtures** (stale-vendored bucket, 49, outside the ceiling) — the vendored `output.css` is out of date and dart-sass 1.102 itself fails these, so they lie outside the achievable ceiling. On 16 neighbouring cases go-scss is ahead of dart 1.102.
-- **Nested plain-CSS `@import`** (2 cases — the only remaining pure-Go-closeable residual) — a plain-CSS `@import url(...)` reached through a mixin/`@if` inside a style rule (`libsass-todo-tests/errors/import/url/mixin/control-{if,else}/inside`) is hoisted to top level instead of kept nested under the rule. Low blast-radius; this supersedes `issue_2055`, whose `:not`/`:has` selector self-composition case is now **closed** by the in-loop extender re-extension.
+- **Stale-vendored fixtures** (stale-vendored bucket, 49, outside the ceiling) — the vendored `output.css` is out of date and dart-sass 1.102 itself fails these, so they lie outside the achievable ceiling. On 16 neighbouring cases go-scss is ahead of dart 1.102. With the nested plain-CSS `@import` placement now matching dart (a plain-CSS `@import url(...)` reached through a mixin/`@if` inside a style rule stays nested under the rule, per `_visitStaticImport`'s `_parent != _root` rule), **no pure-Go-closeable residual remains**.
 - **Source maps** — not emitted (`CompileResult.SourceMap` is empty).
 - **Coverage** is **100.0%** of statements (up from 79.3%); every parser/eval error-recovery and defensive branch is exercised, either through malformed-SCSS tests or via direct white-box drives of the defensive seams. The CI floor is **100%**.
 

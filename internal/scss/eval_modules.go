@@ -871,8 +871,19 @@ func (e *evaluator) evalImport(n *Import, fr *frame) {
 				}
 			}
 			at := &cssAtRule{name: "import", params: params, hasBody: false}
-			at.blankBefore = e.consumeGroup(fr)
-			fr.container.appendNode(at)
+			// A plain-CSS @import behaves exactly like a childless at-rule (`@b c;`):
+			// inside a style rule that is not escaped by @at-root it stays nested in
+			// the enclosing selector's block, interleaving with declarations; only a
+			// root-level (or @media/@at-root-escaped) import is hoisted to its
+			// container's import region. This mirrors dart-sass's _visitStaticImport,
+			// which routes an import to _endOfImports only when _parent == _root and
+			// otherwise adds it as an ordinary child of the current parent.
+			if fr.hasParent && !fr.atRoot {
+				e.ensureBlock(fr).appendNode(at)
+			} else {
+				at.blankBefore = e.consumeGroup(fr)
+				e.liveContainer(fr).appendNode(at)
+			}
 			continue
 		}
 		// A legacy @import prefers an import-only file (x.import.scss) of the same
