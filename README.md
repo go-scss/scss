@@ -85,25 +85,27 @@ The **CSS Color 4 color-space module** is now implemented (see residuals for the
 
 ### sass-spec conformance
 
-Audited 2026-08-02 against a full sass/sass-spec checkout, with **dart-sass 1.102.0** run through the *same* annotation-aware harness as the ceiling oracle (`GOWORK=off`, `SASS_SPEC_ORACLE=sass`). Over the **11406** dart-applicable success-output cases:
+Audited 2026-08-03 against a full sass/sass-spec checkout, with **dart-sass 1.102.0** run through the *same* annotation-aware harness as the ceiling oracle (`GOWORK=off`, `SASS_SPEC_ORACLE=sass`). Over the **11406** dart-applicable success-output cases:
 
 | | passes | of denominator |
 |---|---|---|
-| **go-scss** | **11227 / 11406** | **98.43%** |
+| **go-scss** | **11228 / 11406** | **98.44%** |
 | dart-sass 1.102 (achievable ceiling) | 11341 / 11406 | 99.43% |
-| **go-scss as a share of the ceiling** | **11227 / 11341** | **~99.0%** |
+| **go-scss as a share of the ceiling** | **11228 / 11341** | **~99.0%** |
 
-go-scss is byte-exact against dart-sass 1.102 across the entire real-world language. It even **matches the vendored fixture where current dart-sass does not on ~16 cases** — stale fixtures that dart-sass 1.102 itself now fails (its last-ULP behaviour drifted; go-scss still matches the frozen expectation).
+go-scss is byte-exact against dart-sass 1.102 across the entire real-world language. It even **matches the vendored fixture where current dart-sass does not on 16 cases** — stale fixtures that dart-sass 1.102 itself now fails (its last-ULP behaviour drifted; go-scss still matches the frozen expectation).
 
-The remaining **179** go-scss misses are now **essentially fully irreducible** — oracle-bucketed:
+The remaining **178** go-scss misses are **almost entirely irreducible** — oracle-bucketed (dart-sass 1.102 run through the same harness, so every count below is proven, not estimated):
 
 | bucket | count | why it is where it is |
 |---|---:|---|
-| **libm-ULP** (color/math last-bit) | ~127 | *Irreducible.* Far-out-of-gamut `color.to-space` conversions and math asymptotes (`math.tan`, `math.pow`) that differ from dart in the last 1–2 ULPs. Not closeable without CGO or breaking cross-arch determinism: pure-Go math vs dart's platform `libm`, where products are rounded separately so results stay identical across all six arches. |
-| **stale-vendored** | ~49 | *Outside the achievable ceiling.* The vendored fixture is stale and **dart-sass 1.102 itself fails these** (oracle-proven); go-scss matches current dart, not the drifted fixture. On ~16 neighbouring stale cases go-scss is in fact *ahead* of dart 1.102 — it still matches the frozen expectation that dart has drifted away from. |
-| **architectural** | 1 | The lone non-irreducible residual: **`issue_2055`**. A `:not`/`:has` self-composition term is never generated as a candidate in the core `extendComplex`/weave/unify recursion. The port matches dart 1.102 line-for-line, so closing it would require reworking the weave/unify surface underlying hundreds of passing `@extend` cases — very high blast-radius for one obscure case (+0.009%), and a naive fixpoint diverges. |
+| **libm-ULP** (color/math last-bit) | 127 | *Irreducible.* Far-out-of-gamut `color.to-space` conversions and math asymptotes (`math.tan`, `math.pow`) that differ from dart in the last 1–2 ULPs. Not closeable without CGO or breaking cross-arch determinism: pure-Go math vs dart's platform `libm`, where products are rounded separately so results stay identical across all six arches. |
+| **stale-vendored** | 49 | *Outside the achievable ceiling.* The vendored fixture is stale and **dart-sass 1.102 itself fails these** (oracle-proven); go-scss matches current dart, not the drifted fixture. On 16 neighbouring stale cases go-scss is in fact *ahead* of dart 1.102 — it still matches the frozen expectation that dart has drifted away from. |
+| **nested plain-CSS `@import`** | 2 | The only remaining pure-Go-closeable residual: a plain-CSS `@import url(...)` reached through a mixin/`@if` inside a style rule (`libsass-todo-tests/errors/import/url/mixin/control-{if,else}/inside`) is hoisted to top level instead of kept nested under the rule. Low blast-radius; supersedes the now-closed `issue_2055`. |
 
-The per-import-clone `@extend` cluster previously listed here (`use/extend/scope/*`, `meta.load-css` mid-stream clone) is now **closed** — `use/extend/scope` scores 10/10 via the per-module clone-store rebuild.
+`127 + 49 + 2 = 178`, and `11228 + 178 = 11406`; the 65-case gap to the dart ceiling is exactly the 49 both-fail stale cases plus the 16 cases go-scss wins outright.
+
+**Now closed:** `issue_2055` (`:not`/`:has` selector self-composition) passes as of the in-loop extender re-extension — the former lone *architectural* residual is gone; every case with a known pure-Go / CGO=0 / cross-arch-deterministic path is now closed except the two nested-`@import` cases above. The per-import-clone `@extend` cluster (`use/extend/scope/*`, `meta.load-css` mid-stream clone) is likewise closed — `use/extend/scope` scores 10/10 via the per-module clone-store rebuild.
 
 Scored via the annotation-aware harness that reproduces the official runner's `options.yml`/per-impl-override logic; the full per-case bucket assignment is reproducible with `TestSassSpecFull` + `SASS_SPEC_ORACLE`.
 
@@ -119,15 +121,15 @@ Dart Sass output is the source of truth; where this compiler intentionally diver
 - **`meta.feature-exists`** returns the correct booleans for known features.
 - **CSS Color Level 4 color-space module** — all Color 4 spaces (`srgb`, `srgb-linear`, `display-p3`, `a98-rgb`, `prophoto-rgb`, `rec2020`, `xyz`/`xyz-d65`, `xyz-d50`, `lab`, `lch`, `oklab`, `oklch`) plus the `color()`, `lab()`/`lch()`/`oklab()`/`oklch()`/`hwb()` constructors and the `sass:color` module (`space`, `to-space`, `channel`, `is-legacy`, `is-missing`, `is-in-gamut`, `is-powerless`, `same`, `to-gamut` with `clip`/`local-minde`, plus `change`/`adjust`/`scale`/`mix`/`invert`/`complement` extended with `$space` and space-specific channels). Conversion matrices, gamma companding, Bradford D65↔D50 adaptation, OkLab/OkLCH, missing/`none`-channel carrying and powerless-channel rules match dart-sass 1.102 byte-for-byte (all products are rounded separately to keep results identical to dart across every architecture — dart never fuses multiply-add). This closed ~4400 sass-spec cases.
 - **Special-number passthrough in color functions** — `calc()`/`var()`/`env()`/`attr()` and `min()`/`max()`/`clamp()` channel arguments now serialize as dart does (all `core_functions/color/**/special_functions/*` pass).
-- **`sass:selector` + `@extend` unification** — `selector.extend`, `selector.is-superselector`, `selector.parse` and complex/compound selector unification are implemented; every dart-applicable `core_functions/selector/**` and `@extend` case passes except the single `issue_2055` self-composition residual noted below.
+- **`sass:selector` + `@extend` unification** — `selector.extend`, `selector.is-superselector`, `selector.parse` and complex/compound selector unification are implemented; every dart-applicable `core_functions/selector/**` and `@extend` case now passes, including the former `issue_2055` `:not`/`:has` self-composition residual (closed by re-extending in-loop extenders so self-composition matches dart).
 - **Per-import-clone `@extend` scope** — `@extend` interacting with `@use`/`@import` module boundaries (`use/extend/scope/*`, `meta.load-css` mid-stream clone) now matches dart; `use/extend/scope` scores 10/10 via the per-module clone-store rebuild.
 - **Modern media-query syntax** — range (`width < 100px`) and `and`/`or`/`not` logic merging/pruning match dart for every dart-applicable case; the remaining `css/media/**` fixtures are stale-vendored (dart-sass 1.102 fails them too).
 
 **Still divergent** (named, not hidden — see the [sass-spec conformance](#sass-spec-conformance) table for exact per-bucket counts):
 
-- **Extreme out-of-gamut colors and math asymptotes** (libm-ULP bucket, ~127, irreducible) — far-out-of-gamut `color.to-space` conversions (`core_functions/color/to_space/*/out_of_range/far`) and math asymptotes (`math.tan`, `math.pow`) differ from dart in the last 1–2 ULPs: the magnitudes amplify unavoidable floating-point rounding-order differences between pure-Go math and dart's platform `libm`. Not closeable without CGO or breaking cross-arch determinism.
-- **Stale-vendored fixtures** (stale-vendored bucket, ~49, outside the ceiling) — the vendored `output.css` is out of date and dart-sass 1.102 itself fails these, so they lie outside the achievable ceiling. On ~16 neighbouring cases go-scss is ahead of dart 1.102.
-- **`issue_2055` selector self-composition** (architectural bucket, 1 — the lone non-irreducible residual) — a `:not`/`:has` self-composition term is never generated as a candidate in the core `extendComplex`/weave/unify recursion. The port matches dart 1.102 line-for-line; closing it would rework the weave/unify surface underlying hundreds of passing `@extend` cases — very high blast-radius for one obscure case (+0.009%), and a naive fixpoint diverges.
+- **Extreme out-of-gamut colors and math asymptotes** (libm-ULP bucket, 127, irreducible) — far-out-of-gamut `color.to-space` conversions (`core_functions/color/to_space/*/out_of_range/far`) and math asymptotes (`math.tan`, `math.pow`) differ from dart in the last 1–2 ULPs: the magnitudes amplify unavoidable floating-point rounding-order differences between pure-Go math and dart's platform `libm`. Not closeable without CGO or breaking cross-arch determinism.
+- **Stale-vendored fixtures** (stale-vendored bucket, 49, outside the ceiling) — the vendored `output.css` is out of date and dart-sass 1.102 itself fails these, so they lie outside the achievable ceiling. On 16 neighbouring cases go-scss is ahead of dart 1.102.
+- **Nested plain-CSS `@import`** (2 cases — the only remaining pure-Go-closeable residual) — a plain-CSS `@import url(...)` reached through a mixin/`@if` inside a style rule (`libsass-todo-tests/errors/import/url/mixin/control-{if,else}/inside`) is hoisted to top level instead of kept nested under the rule. Low blast-radius; this supersedes `issue_2055`, whose `:not`/`:has` selector self-composition case is now **closed** by the in-loop extender re-extension.
 - **Source maps** — not emitted (`CompileResult.SourceMap` is empty).
 - **Coverage** is **100.0%** of statements (up from 79.3%); every parser/eval error-recovery and defensive branch is exercised, either through malformed-SCSS tests or via direct white-box drives of the defensive seams. The CI floor is **100%**.
 
