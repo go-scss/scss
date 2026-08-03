@@ -336,7 +336,16 @@ func (s *extensionStore) addExtension(extenderList *selList, target simpleSel, o
 	}
 
 	if existingExtensions != nil {
-		additional := s.extendExistingExtensions(existingExtensions, newExtensions)
+		// Dart captures `existingExtensions` as a live reference to
+		// `_extensionsByExtender[target]` and mutates that same list in place while
+		// registering the new extenders above (`.add`), so by the time it iterates
+		// (`.toList()`), the snapshot includes those just-added extenders. A newly
+		// added extender that itself contains `target` (self-composition, e.g.
+		// `:has(:not(.x))` extending `.x`) must therefore be re-extended too. Go's
+		// slice-header capture would miss the loop's appends, so re-read the current
+		// slice from the map to preserve Dart's aliasing semantics. The nil guard
+		// above still reflects the entry-time state, matching Dart's local variable.
+		additional := s.extendExistingExtensions(s.extensionsByExtender[targetK], newExtensions)
 		// extendExistingExtensions only ever keys `additional` by targets it has
 		// already confirmed present in newExtensions, so dst is always non-nil.
 		for k, te := range additional {
